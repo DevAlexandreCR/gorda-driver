@@ -20,6 +20,11 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+    private val signInLauncher = registerForActivityResult(
+        FirebaseAuthUIActivityResultContract()
+    ) { res ->
+        this.onSignInResult(res)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,22 +52,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        val auth = Auth()
-        val signInLauncher = registerForActivityResult(
-            FirebaseAuthUIActivityResultContract()
-        ) { res ->
-            this.onSignInResult(res)
-        }
-        if (auth.getCurrentUser() == null) {
-            val providers = arrayListOf(
-                AuthUI.IdpConfig.EmailBuilder().build())
-
-            val signInIntent = AuthUI.getInstance()
-                .createSignInIntentBuilder()
-                .setAvailableProviders(providers)
-                .build()
-            signInLauncher.launch(signInIntent)
-            Log.d("debug", "user no logged")
+        if (Auth.getCurrentUser() == null) {
+            val intent = Auth.launchLogin()
+            this.signInLauncher.launch(intent)
+            Log.d("debug", "launch login ...")
         }
     }
 
@@ -70,8 +63,7 @@ class MainActivity : AppCompatActivity() {
         val response = result.idpResponse
         if (result.resultCode == RESULT_OK) {
             // Successfully signed in
-            val auth = Auth()
-            val user = auth.getCurrentUser()
+            val user = Auth.getCurrentUser()
             // ...
         } else {
             // Sign in failed. If response is null the user canceled the
