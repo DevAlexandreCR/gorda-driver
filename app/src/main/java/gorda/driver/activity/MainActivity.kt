@@ -15,16 +15,25 @@ import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import gorda.driver.R
 import gorda.driver.databinding.ActivityMainBinding
-import services.firebase.Auth
+import gorda.driver.interfaces.DriverInterface
+import gorda.driver.models.Driver
+import gorda.driver.repositories.DriverRepository
+import gorda.driver.services.firebase.Auth
+import gorda.driver.services.firebase.FirebaseInitializeApp
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+    private var driver: Driver = Driver()
     private val signInLauncher = registerForActivityResult(
         FirebaseAuthUIActivityResultContract()
     ) { res ->
         this.onSignInResult(res)
+    }
+    private val setDriver: (driver: Driver) -> Unit =  {
+        this.driver = it
+        Log.i("debug", "driver " + this.driver.email)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,8 +45,9 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.appBarMain.toolbar)
 
         binding.appBarMain.fab.setOnClickListener {
-            Auth.logOut()
-            this.onStart()
+//            Auth.logOut()
+//            this.onStart()
+            this.driver.connect()
         }
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
@@ -51,6 +61,8 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        FirebaseInitializeApp.initializeApp()
     }
 
     override fun onStart() {
@@ -59,6 +71,13 @@ class MainActivity : AppCompatActivity() {
             val intent = Auth.launchLogin()
             this.signInLauncher.launch(intent)
             Log.d("debug", "launch login ...")
+        } else {
+            val user = Auth.getCurrentUser()
+            user?.uid.let { s ->
+                if (s != null) {
+                    DriverRepository.getDriver(s, this.setDriver)
+                }
+            }
         }
     }
 
@@ -67,6 +86,12 @@ class MainActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK) {
             // Successfully signed in
             val user = Auth.getCurrentUser()
+            user?.uid.let { s ->
+                if (s != null) {
+                    Log.d("debug", "setting the driver $s")
+                    DriverRepository.getDriver(s, this.setDriver)
+                }
+            }
             // ...
         } else {
             // Sign in failed. If response is null the user canceled the
