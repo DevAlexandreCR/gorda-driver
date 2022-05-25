@@ -1,5 +1,6 @@
 package gorda.driver.models
 
+import com.google.android.gms.tasks.Task
 import gorda.driver.interfaces.DriverInterface
 import gorda.driver.repositories.DriverRepository
 
@@ -15,7 +16,11 @@ class Driver() : DriverInterface {
     override var enabled_at: Int? = null
     override var created_at: Int = 0
 
-    fun connect(): Unit {
-        DriverRepository.connect(this)
+    fun connect(): Task<Void> {
+        return DriverRepository.connect(this)
+    }
+
+    fun disconnect(): Task<Void> {
+        return DriverRepository.disconnect(this)
     }
 }

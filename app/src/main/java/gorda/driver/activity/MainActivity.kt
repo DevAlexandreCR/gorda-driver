@@ -1,8 +1,10 @@
 package gorda.driver.activity
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
-import android.view.Menu
+import android.widget.CompoundButton
+import android.widget.Switch
 import com.google.android.material.navigation.NavigationView
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -15,7 +17,6 @@ import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import gorda.driver.R
 import gorda.driver.databinding.ActivityMainBinding
-import gorda.driver.interfaces.DriverInterface
 import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.services.firebase.Auth
@@ -33,9 +34,9 @@ class MainActivity : AppCompatActivity() {
     }
     private val setDriver: (driver: Driver) -> Unit =  {
         this.driver = it
-        Log.i("debug", "driver " + this.driver.email)
     }
 
+    @SuppressLint("UseSwitchCompatOrMaterialCode")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -45,9 +46,8 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.appBarMain.toolbar)
 
         binding.appBarMain.fab.setOnClickListener {
-//            Auth.logOut()
-//            this.onStart()
-            this.driver.connect()
+            Auth.logOut()
+            this.onStart()
         }
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
@@ -62,6 +62,11 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
+        val switchConnect = binding.appBarMain.toolbar.findViewById<Switch>(R.id.switchConnect)
+        switchConnect.setOnCheckedChangeListener { buttonView, isChecked ->
+            this.setConnected(isChecked, buttonView)
+        }
+
         FirebaseInitializeApp.initializeApp()
     }
 
@@ -70,7 +75,6 @@ class MainActivity : AppCompatActivity() {
         if (Auth.getCurrentUser() == null) {
             val intent = Auth.launchLogin()
             this.signInLauncher.launch(intent)
-            Log.d("debug", "launch login ...")
         } else {
             val user = Auth.getCurrentUser()
             user?.uid.let { s ->
@@ -82,7 +86,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
-        val response = result.idpResponse
         if (result.resultCode == RESULT_OK) {
             // Successfully signed in
             val user = Auth.getCurrentUser()
@@ -101,14 +104,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.main, menu)
-        return true
-    }
-
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+    }
+
+    private fun setConnected(checked: Boolean, switch: CompoundButton): Unit {
+        if (checked) {
+            this.driver.connect()
+                .addOnSuccessListener {
+                    switch.setText(R.string.status_connected)
+                }
+                .addOnCanceledListener {
+                    switch.isChecked = false
+                }
+        } else {
+            this.driver.disconnect()
+                .addOnSuccessListener {
+                    switch.setText(R.string.status_disconnected)
+                }
+                .addOnFailureListener {
+                    switch.isChecked = true
+                }
+        }
     }
 }

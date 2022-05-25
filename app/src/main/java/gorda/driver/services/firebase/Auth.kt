@@ -22,6 +22,7 @@ object Auth {
             .createSignInIntentBuilder()
             .setLogo(R.drawable.ic_launcher_foreground)
             .setAvailableProviders(providers)
+            .setIsSmartLockEnabled(false)
             .build()
     }
 
