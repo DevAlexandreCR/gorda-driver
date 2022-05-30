@@ -8,7 +8,7 @@ interface DriverInterface {
     var docType: String
     var document: String
     var photoUrl: String?
-//    var vehicle: VehicleInterface
+    var vehicle: VehicleInterface
     var enabled_at: Int?
     var created_at: Int
 }

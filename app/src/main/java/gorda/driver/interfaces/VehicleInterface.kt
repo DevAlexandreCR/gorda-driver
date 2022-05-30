@@ -1,8 +1,8 @@
 package gorda.driver.interfaces
 
-interface VehicleInterface {
-    var brand: String
-    var model: String
-    var photoUrl: String?
-    var plate: String
+object VehicleInterface {
+    lateinit var brand: String
+    lateinit var model: String
+    var photoUrl: String? = null
+    lateinit var plate: String
 }
