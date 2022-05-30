@@ -13,6 +13,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import gorda.driver.R
@@ -22,11 +23,13 @@ import gorda.driver.repositories.DriverRepository
 import gorda.driver.services.firebase.Auth
 import gorda.driver.services.firebase.FirebaseInitializeApp
 
+@SuppressLint("UseSwitchCompatOrMaterialCode")
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private var driver: Driver = Driver()
+    private lateinit var switchConnect: Switch
     private val signInLauncher = registerForActivityResult(
         FirebaseAuthUIActivityResultContract()
     ) { res ->
@@ -34,9 +37,11 @@ class MainActivity : AppCompatActivity() {
     }
     private val setDriver: (driver: Driver) -> Unit =  {
         this.driver = it
+        switchConnect.setOnCheckedChangeListener { buttonView, isChecked ->
+            this.setConnected(isChecked, buttonView)
+        }
     }
 
-    @SuppressLint("UseSwitchCompatOrMaterialCode")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -49,6 +54,7 @@ class MainActivity : AppCompatActivity() {
             Auth.logOut()
             this.onStart()
         }
+
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
@@ -62,10 +68,7 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        val switchConnect = binding.appBarMain.toolbar.findViewById<Switch>(R.id.switchConnect)
-        switchConnect.setOnCheckedChangeListener { buttonView, isChecked ->
-            this.setConnected(isChecked, buttonView)
-        }
+        this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
 
         FirebaseInitializeApp.initializeApp()
     }
@@ -80,6 +83,14 @@ class MainActivity : AppCompatActivity() {
             user?.uid.let { s ->
                 if (s != null) {
                     DriverRepository.getDriver(s, this.setDriver)
+                    DriverRepository.isConnected(s) {
+                        this.switchConnect.isChecked = it
+                        if (it) {
+                            this.switchConnect.setText(R.string.status_connected)
+                        } else {
+                            this.switchConnect.setText(R.string.status_disconnected)
+                        }
+                    }
                 }
             }
         }

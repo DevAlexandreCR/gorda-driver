@@ -3,6 +3,7 @@ package gorda.driver.models
 import com.google.android.gms.tasks.Task
 import gorda.driver.interfaces.DriverInterface
 import gorda.driver.repositories.DriverRepository
+import kotlinx.coroutines.awaitAll
 
 class Driver() : DriverInterface {
     override var id: String? = null
