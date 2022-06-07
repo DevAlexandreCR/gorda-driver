@@ -7,15 +7,17 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.RecyclerView
+import gorda.driver.activity.ui.services.ServiceAdapter
 import gorda.driver.databinding.FragmentHomeBinding
+import gorda.driver.models.Service
+import gorda.driver.repositories.ServiceRepository
 
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
+    private val serviceAdapter = ServiceAdapter()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -29,8 +31,14 @@ class HomeFragment : Fragment() {
         val root: View = binding.root
 
         val textView: TextView = binding.textHome
+        val recyclerView: RecyclerView = binding.listServices
+        recyclerView.adapter = serviceAdapter
         homeViewModel.text.observe(viewLifecycleOwner) {
             textView.text = it
+        }
+
+        homeViewModel.serviceList.observe(viewLifecycleOwner) {
+            this.serviceAdapter.submitList(it)
         }
         return root
     }

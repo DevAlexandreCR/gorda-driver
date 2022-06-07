@@ -35,10 +35,10 @@ object DriverRepository {
 
     fun getDriver(driverId: String, listener: (driver: Driver) -> Unit): Unit {
         Database.dbDrivers().child(driverId).get()
-            .addOnSuccessListener {
-            it.getValue<Driver>()?.let { driver -> listener(driver)}
-        }.addOnFailureListener{
-                Log.e("firebase", "Error getting data", it)
+            .addOnSuccessListener { snapshot ->
+                snapshot.getValue<Driver>()?.let { driver -> listener(driver)}
+        }.addOnFailureListener{ e ->
+                Log.e("firebase", "Error getting data: ${e.message}", e)
             }
     }
 }

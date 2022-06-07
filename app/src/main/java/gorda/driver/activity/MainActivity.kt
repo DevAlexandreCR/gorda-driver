@@ -16,6 +16,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
 import gorda.driver.R
 import gorda.driver.databinding.ActivityMainBinding
 import gorda.driver.models.Driver
@@ -69,8 +71,6 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
 
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
-
-        FirebaseInitializeApp.initializeApp()
     }
 
     override fun onStart() {
