@@ -14,11 +14,12 @@ class ServiceAdapter() :
     ListAdapter<Service, ServiceAdapter.ViewHolder>(ServiceDiffCallback) {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val textView: TextView
+        val textAddress: TextView
+        val textLocInfo: TextView
 
         init {
-            // Define click listener for the ViewHolder's View.
-            textView = view.findViewById(R.id.service_address)
+            textAddress = view.findViewById(R.id.service_address)
+            textLocInfo = view.findViewById(R.id.location_info)
         }
     }
 
@@ -29,7 +30,8 @@ class ServiceAdapter() :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.textView.text = getItem(position).start_address
+        holder.textAddress.text = getItem(position).start_loc.name
+        holder.textLocInfo.text = getItem(position).start_loc.lat.toString()
     }
 
     object ServiceDiffCallback : DiffUtil.ItemCallback<Service>() {

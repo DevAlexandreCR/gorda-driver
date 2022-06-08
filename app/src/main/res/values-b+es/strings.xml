@@ -12,4 +12,7 @@
 
     <string name="status_connected">Conectado</string>
     <string name="status_disconnected">Desconectado</string>
+    <string name="services_list">Servicios</string>
+    <string name="apply">Postularse</string>
+    <string name="map">Mapa</string>
 </resources>

@@ -1,5 +1,6 @@
 package gorda.driver.models
 
+import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.ServiceInterface
 
 class Service(): ServiceInterface {
@@ -9,8 +10,8 @@ class Service(): ServiceInterface {
 
     override var id: String? = null
     override lateinit var status: String
-    override lateinit var start_address: String
-    override var end_address: String? = null
+    override lateinit var start_loc: LocType
+    override var end_loc: LocType? = null
     override lateinit var phone: String
     override lateinit var name: String
     override var comment: String? = null

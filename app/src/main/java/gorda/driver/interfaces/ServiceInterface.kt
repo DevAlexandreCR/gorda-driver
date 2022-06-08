@@ -3,8 +3,8 @@ package gorda.driver.interfaces
 interface ServiceInterface {
     var id: String?
     var status: String
-    var start_address: String
-    var end_address: String?
+    var start_loc: LocType
+    var end_loc: LocType?
     var phone: String
     var name: String
     var comment: String?

@@ -34,7 +34,7 @@ class HomeFragment : Fragment() {
         val recyclerView: RecyclerView = binding.listServices
         recyclerView.adapter = serviceAdapter
         homeViewModel.text.observe(viewLifecycleOwner) {
-            textView.text = it
+            textView.text = getString(it)
         }
 
         homeViewModel.serviceList.observe(viewLifecycleOwner) {
