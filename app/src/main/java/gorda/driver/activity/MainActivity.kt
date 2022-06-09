@@ -1,10 +1,18 @@
 package gorda.driver.activity
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.CompoundButton
 import android.widget.Switch
+import android.widget.Toast
 import com.google.android.material.navigation.NavigationView
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -14,20 +22,31 @@ import androidx.navigation.ui.setupWithNavController
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import gorda.driver.R
+import gorda.driver.activity.background.LocationService
 import gorda.driver.databinding.ActivityMainBinding
+import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.services.firebase.Auth
 import gorda.driver.services.firebase.FirebaseInitializeApp
+import gorda.driver.utils.Utils
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        private const val TAG = "MainActivity"
+    }
+
+    private var isConnected = false
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private var driver: Driver = Driver()
@@ -71,6 +90,10 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
 
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
+
+        if (!LocationHandler.checkPermissions(this)) {
+            requestPermissions()
+        }
     }
 
     override fun onStart() {
@@ -82,13 +105,16 @@ class MainActivity : AppCompatActivity() {
             val user = Auth.getCurrentUser()
             user?.uid.let { s ->
                 if (s != null) {
+                    // TODO: refactor this code within setConnected function
                     DriverRepository.getDriver(s, this.setDriver)
                     DriverRepository.isConnected(s) {
                         this.switchConnect.isChecked = it
                         if (it) {
                             this.switchConnect.setText(R.string.status_connected)
+                            startLocationService()
                         } else {
                             this.switchConnect.setText(R.string.status_disconnected)
+                            stopLocationService()
                         }
                     }
                 }
@@ -98,20 +124,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
         if (result.resultCode == RESULT_OK) {
-            // Successfully signed in
             val user = Auth.getCurrentUser()
             user?.uid.let { s ->
                 if (s != null) {
-                    Log.d("debug", "setting the driver $s")
+                    Log.d(TAG, "setting the driver $s")
                     DriverRepository.getDriver(s, this.setDriver)
                 }
             }
-            // ...
         } else {
-            // Sign in failed. If response is null the user canceled the
-            // sign-in flow using the back button. Otherwise check
-            // response.getError().getErrorCode() and handle the error.
-            // ...
+            Log.e(TAG, "error ${result.resultCode}")
+            Toast.makeText(this, R.string.common_error, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -125,6 +147,7 @@ class MainActivity : AppCompatActivity() {
             this.driver.connect()
                 .addOnSuccessListener {
                     switch.setText(R.string.status_connected)
+                    startLocationService()
                 }
                 .addOnCanceledListener {
                     switch.isChecked = false
@@ -133,10 +156,47 @@ class MainActivity : AppCompatActivity() {
             this.driver.disconnect()
                 .addOnSuccessListener {
                     switch.setText(R.string.status_disconnected)
+                    stopLocationService()
                 }
                 .addOnFailureListener {
                     switch.isChecked = true
                 }
         }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION) {
+            if (grantResults.isEmpty() && grantResults[0] == PackageManager.PERMISSION_DENIED) {
+                finish()
+            }
+        }
+    }
+
+    private fun startLocationService() {
+        this.isConnected = true
+        val intent = Intent(this, LocationService::class.java)
+        intent.action = LocationService.START_SERVICE
+        ContextCompat.startForegroundService(this, intent)
+    }
+
+    private fun stopLocationService() {
+        this.isConnected = false
+        val intent = Intent(this, LocationService::class.java)
+        intent.action = LocationService.STOP_SERVICE
+        ContextCompat.startForegroundService(this, intent)
+    }
+
+    private fun requestPermissions() {
+        ActivityCompat.requestPermissions(this, arrayOf(
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ), LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
+        )
     }
 }

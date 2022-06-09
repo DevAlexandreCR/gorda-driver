@@ -15,4 +15,5 @@
     <string name="services_list">Servicios</string>
     <string name="apply">Postularse</string>
     <string name="map">Mapa</string>
+    <string name="common_error">"Someting went wrong, try late "</string>
 </resources>
