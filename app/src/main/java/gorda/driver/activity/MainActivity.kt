@@ -13,20 +13,20 @@ import android.widget.CompoundButton
 import android.widget.Switch
 import android.widget.Toast
 import androidx.activity.viewModels
-import com.google.android.material.navigation.NavigationView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.Observer
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import androidx.drawerlayout.widget.DrawerLayout
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.Observer
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
+import com.google.android.material.navigation.NavigationView
 import gorda.driver.R
 import gorda.driver.activity.background.LocationService
 import gorda.driver.activity.ui.MainViewModel
@@ -38,7 +38,6 @@ import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.services.firebase.Auth
-import java.io.Serializable
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class MainActivity : AppCompatActivity() {
@@ -67,7 +66,7 @@ class MainActivity : AppCompatActivity() {
     }
     private var locationService: Messenger? = null
     private var mBound: Boolean = false
-    private val connection = object: ServiceConnection {
+    private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             locationService = Messenger(service)
             mBound = true
@@ -78,14 +77,15 @@ class MainActivity : AppCompatActivity() {
             mBound = false
         }
     }
-    private val locationBroadcastReceiver = LocationBroadcastReceiver(object: LocationUpdateInterface {
-        override fun onUpdate(intent: Intent) {
-            val extra: Location? = intent.getParcelableExtra("location")
-            extra?.let { location ->
-                viewModel.updateLocation(location)
+    private val locationBroadcastReceiver =
+        LocationBroadcastReceiver(object : LocationUpdateInterface {
+            override fun onUpdate(intent: Intent) {
+                val extra: Location? = intent.getParcelableExtra("location")
+                extra?.let { location ->
+                    viewModel.updateLocation(location)
+                }
             }
-        }
-    })
+        })
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -116,7 +116,7 @@ class MainActivity : AppCompatActivity() {
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
 
         viewModel.lastLocation.observe(this, Observer { locationUpdate ->
-            when(locationUpdate) {
+            when (locationUpdate) {
                 is LocationUpdates.LastLocation -> {
                     lastLocation = locationUpdate.location
                 }
@@ -154,8 +154,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         LocalBroadcastManager.getInstance(this)
-            .registerReceiver(locationBroadcastReceiver,
-                IntentFilter(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES))
+            .registerReceiver(
+                locationBroadcastReceiver,
+                IntentFilter(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
+            )
     }
 
     override fun onStop() {
@@ -267,7 +269,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("HandlerLeak")
-    inner class IncomingHandler() : Handler(Looper.getMainLooper()) {
+    inner class IncomingHandler : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             when (msg.what) {
                 LocationService.STOP_SERVICE_MSG -> {
