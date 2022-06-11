@@ -2,17 +2,17 @@ package gorda.driver.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.pm.PackageManager
+import android.location.Location
 import android.location.LocationManager
-import android.os.Bundle
+import android.os.*
+import android.provider.Settings
 import android.util.Log
 import android.widget.CompoundButton
 import android.widget.Switch
 import android.widget.Toast
+import androidx.activity.viewModels
 import com.google.android.material.navigation.NavigationView
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -21,23 +21,24 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
-import com.google.firebase.FirebaseApp
-import com.google.firebase.FirebaseOptions
 import gorda.driver.R
 import gorda.driver.activity.background.LocationService
+import gorda.driver.activity.ui.MainViewModel
+import gorda.driver.activity.ui.service.LocationBroadcastReceiver
+import gorda.driver.activity.ui.service.LocationUpdates
 import gorda.driver.databinding.ActivityMainBinding
+import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.services.firebase.Auth
-import gorda.driver.services.firebase.FirebaseInitializeApp
-import gorda.driver.utils.Utils
+import java.io.Serializable
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class MainActivity : AppCompatActivity() {
@@ -47,21 +48,44 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var isConnected = false
+    private var msg: Messenger? = null
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private var driver: Driver = Driver()
     private lateinit var switchConnect: Switch
-    private val signInLauncher = registerForActivityResult(
-        FirebaseAuthUIActivityResultContract()
-    ) { res ->
+    private lateinit var lastLocation: Location
+    private val viewModel: MainViewModel by viewModels()
+    private val signInLauncher = registerForActivityResult(FirebaseAuthUIActivityResultContract())
+    { res ->
         this.onSignInResult(res)
     }
-    private val setDriver: (driver: Driver) -> Unit =  {
+    private val setDriver: (driver: Driver) -> Unit = {
         this.driver = it
         switchConnect.setOnCheckedChangeListener { buttonView, isChecked ->
             this.setConnected(isChecked, buttonView)
         }
     }
+    private var locationService: Messenger? = null
+    private var mBound: Boolean = false
+    private val connection = object: ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            locationService = Messenger(service)
+            mBound = true
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            locationService = null
+            mBound = false
+        }
+    }
+    private val locationBroadcastReceiver = LocationBroadcastReceiver(object: LocationUpdateInterface {
+        override fun onUpdate(intent: Intent) {
+            val extra: Location? = intent.getParcelableExtra("location")
+            extra?.let { location ->
+                viewModel.updateLocation(location)
+            }
+        }
+    })
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,6 +115,14 @@ class MainActivity : AppCompatActivity() {
 
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
 
+        viewModel.lastLocation.observe(this, Observer { locationUpdate ->
+            when(locationUpdate) {
+                is LocationUpdates.LastLocation -> {
+                    lastLocation = locationUpdate.location
+                }
+            }
+        })
+
         if (!LocationHandler.checkPermissions(this)) {
             requestPermissions()
         }
@@ -119,6 +151,27 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(locationBroadcastReceiver,
+                IntentFilter(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES))
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (mBound) {
+            this.unbindService(connection)
+            mBound = false
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!isLocationEnabled()) {
+            val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+            startActivity(intent)
         }
     }
 
@@ -180,23 +233,48 @@ class MainActivity : AppCompatActivity() {
 
     private fun startLocationService() {
         this.isConnected = true
-        val intent = Intent(this, LocationService::class.java)
-        intent.action = LocationService.START_SERVICE
-        ContextCompat.startForegroundService(this, intent)
+        Intent(this, LocationService::class.java).also { intent ->
+            intent.putExtra(Driver.DRIVER_KEY, this.driver.id)
+            ContextCompat.startForegroundService(this, intent)
+            this.bindService(intent, connection, BIND_AUTO_CREATE)
+            mBound = true
+        }
     }
 
     private fun stopLocationService() {
         this.isConnected = false
-        val intent = Intent(this, LocationService::class.java)
-        intent.action = LocationService.STOP_SERVICE
-        ContextCompat.startForegroundService(this, intent)
+        if (mBound) {
+            this.unbindService(connection)
+            val msg: Message = Message.obtain(null, LocationService.STOP_SERVICE_MSG, 0, 0)
+            locationService?.send(msg)
+            mBound = false
+        }
     }
 
     private fun requestPermissions() {
-        ActivityCompat.requestPermissions(this, arrayOf(
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ), LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
+        ActivityCompat.requestPermissions(
+            this, arrayOf(
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ), LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
         )
+    }
+
+    private fun isLocationEnabled(): Boolean {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+    @SuppressLint("HandlerLeak")
+    inner class IncomingHandler() : Handler(Looper.getMainLooper()) {
+        override fun handleMessage(msg: Message) {
+            when (msg.what) {
+                LocationService.STOP_SERVICE_MSG -> {
+                    println("helo from activity")
+                }
+                else -> super.handleMessage(msg)
+            }
+        }
     }
 }

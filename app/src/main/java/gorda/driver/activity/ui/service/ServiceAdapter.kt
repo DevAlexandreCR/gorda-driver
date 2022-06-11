@@ -1,5 +1,6 @@
 package gorda.driver.activity.ui.service
 
+import android.location.Location
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +13,8 @@ import gorda.driver.models.Service
 
 class ServiceAdapter() :
     ListAdapter<Service, ServiceAdapter.ViewHolder>(ServiceDiffCallback) {
+
+    var lastLocation: Location? = null
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textAddress: TextView
@@ -31,7 +34,10 @@ class ServiceAdapter() :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.textAddress.text = getItem(position).start_loc.name
-        holder.textLocInfo.text = getItem(position).start_loc.lat.toString()
+
+        lastLocation?.let { location ->
+            holder.textLocInfo.text = (getItem(position).start_loc.lat?.minus(location.latitude)).toString() + "m"
+        }
     }
 
     object ServiceDiffCallback : DiffUtil.ItemCallback<Service>() {

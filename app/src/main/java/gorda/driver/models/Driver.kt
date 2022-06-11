@@ -7,6 +7,10 @@ import gorda.driver.repositories.DriverRepository
 import kotlinx.coroutines.awaitAll
 
 class Driver() : DriverInterface {
+    companion object {
+        const val DRIVER_KEY = "driver_id"
+    }
+
     override var id: String? = null
     override lateinit var name: String
     override lateinit var email: String

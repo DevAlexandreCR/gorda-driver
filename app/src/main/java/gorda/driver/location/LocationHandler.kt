@@ -22,7 +22,6 @@ class LocationHandler(context: Context, listener: CustomLocationListener) {
         const val PERMISSION_REQUEST_ACCESS_LOCATION = 100
         private const val TAG = "LocationHandler"
         private const val LOCATION_REFRESH_TIME = 5000
-        private const val LOCATION_REFRESH_DISTANCE = 10
 
         fun checkPermissions(context: Context): Boolean {
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -54,11 +53,6 @@ class LocationHandler(context: Context, listener: CustomLocationListener) {
         }
     }
 
-    fun isLocationEnabled(): Boolean {
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-    }
-
     @SuppressLint("MissingPermission")
     fun startListeningUserLocation() {
         fusedLocationClient.requestLocationUpdates(
@@ -66,5 +60,9 @@ class LocationHandler(context: Context, listener: CustomLocationListener) {
             locationCallback,
             Looper.getMainLooper()
         )
+    }
+
+    fun stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 }

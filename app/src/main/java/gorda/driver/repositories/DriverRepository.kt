@@ -8,6 +8,7 @@ import com.google.firebase.database.DatabaseReference.CompletionListener
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.interfaces.DriverInterface
+import gorda.driver.interfaces.LocInterface
 import gorda.driver.models.Driver
 import gorda.driver.services.firebase.Database
 
@@ -19,6 +20,10 @@ object DriverRepository {
 
     fun disconnect(driver: DriverInterface): Task<Void> {
         return Database.dbOnlineDrivers().child(driver.id!!).removeValue()
+    }
+
+    fun updateLocation(driverId: String, location: LocInterface): Unit {
+        Database.dbOnlineDrivers().child(driverId).child("location").setValue(location)
     }
 
     fun isConnected(driverId: String, listener: (connected: Boolean) -> Unit): Unit{
