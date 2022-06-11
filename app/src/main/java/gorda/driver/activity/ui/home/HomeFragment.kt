@@ -1,20 +1,14 @@
 package gorda.driver.activity.ui.home
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.*
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
-import gorda.driver.activity.background.LocationService
 import gorda.driver.activity.ui.MainViewModel
 import gorda.driver.activity.ui.service.LocationUpdates
 import gorda.driver.activity.ui.service.ServiceAdapter

@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import gorda.driver.R
 import gorda.driver.models.Service
 
-class ServiceAdapter() :
+class ServiceAdapter :
     ListAdapter<Service, ServiceAdapter.ViewHolder>(ServiceDiffCallback) {
 
     var lastLocation: Location? = null
@@ -36,7 +36,8 @@ class ServiceAdapter() :
         holder.textAddress.text = getItem(position).start_loc.name
 
         lastLocation?.let { location ->
-            holder.textLocInfo.text = (getItem(position).start_loc.lat?.minus(location.latitude)).toString() + "m"
+            holder.textLocInfo.text =
+                (getItem(position).start_loc.lat?.minus(location.latitude)).toString() + "m"
         }
     }
 

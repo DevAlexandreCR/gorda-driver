@@ -24,9 +24,15 @@ class LocationHandler(context: Context, listener: CustomLocationListener) {
         private const val LOCATION_REFRESH_TIME = 5000
 
         fun checkPermissions(context: Context): Boolean {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context,
-                    Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+                == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
                 return true
             }
 
@@ -44,7 +50,7 @@ class LocationHandler(context: Context, listener: CustomLocationListener) {
             fastestInterval = LOCATION_REFRESH_TIME.toLong()
             priority = Priority.PRIORITY_HIGH_ACCURACY
         }
-        this.locationCallback = object: LocationCallback() {
+        this.locationCallback = object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult) {
                 for (location in p0.locations) {
                     listener.onLocationChanged(location)

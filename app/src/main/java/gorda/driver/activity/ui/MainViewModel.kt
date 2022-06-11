@@ -6,7 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import gorda.driver.activity.ui.service.LocationUpdates
 
-class MainViewModel: ViewModel() {
+class MainViewModel : ViewModel() {
     private val _lastLocation = MutableLiveData<LocationUpdates>()
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
