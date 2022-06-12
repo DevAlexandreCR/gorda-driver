@@ -55,7 +55,6 @@ class LocationService: Service() {
         return START_STICKY
     }
     override fun onBind(intent: Intent?): IBinder {
-        Toast.makeText(applicationContext, "binding ok", Toast.LENGTH_SHORT).show()
         messenger = Messenger(IncomingHandler())
         return messenger.binder
     }
