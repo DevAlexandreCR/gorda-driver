@@ -9,8 +9,6 @@ import android.location.LocationManager
 import android.os.*
 import android.provider.Settings
 import android.util.Log
-import android.view.View
-import android.widget.CompoundButton
 import android.widget.Switch
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -18,7 +16,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.Observer
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -47,7 +44,6 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
     }
 
-    private var isConnected = false
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private var driver: Driver = Driver()
@@ -117,13 +113,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.lastLocation.observe(this, Observer { locationUpdate ->
+        viewModel.lastLocation.observe(this) { locationUpdate ->
             when (locationUpdate) {
                 is LocationUpdates.LastLocation -> {
                     lastLocation = locationUpdate.location
                 }
             }
-        })
+        }
+
+        viewModel.setAuth()
 
         observeDriver()
 
@@ -134,19 +132,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (Auth.getCurrentUser() == null) {
-            val intent = Auth.launchLogin()
-            this.signInLauncher.launch(intent)
-        } else {
-            val user = Auth.getCurrentUser()
-            user?.uid.let { uuid ->
-                if (uuid != null) {
-                    viewModel.getDriver(uuid)
-                    viewModel.isConnected(uuid)
-                }
-            }
-        }
-
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(
                 locationBroadcastReceiver,
@@ -172,15 +157,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
-        if (result.resultCode == RESULT_OK) {
-            val user = Auth.getCurrentUser()
-            user?.uid.let { uuid ->
-                if (uuid != null) {
-                    viewModel.getDriver(uuid)
-                    viewModel.isConnected(uuid)
-                }
-            }
-        } else {
+        if (result.resultCode != RESULT_OK) {
             Log.e(TAG, "error ${result.resultCode}")
             Toast.makeText(this, R.string.common_error, Toast.LENGTH_SHORT).show()
         }
@@ -192,7 +169,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeDriver() {
-        viewModel.driverStatus.observe(this, Observer {
+        viewModel.driverStatus.observe(this) {
             when (it) {
                 is DriverUpdates.SetDriver -> {
                     this.driver = it.driver
@@ -212,8 +189,20 @@ class MainActivity : AppCompatActivity() {
                         Toast.makeText(this, "conectando...", Toast.LENGTH_SHORT).show()
                     }
                 }
+
+                is DriverUpdates.AuthDriver -> {
+                    if (it.uuid == null) {
+                        viewModel.disconnect(driver)
+                        val intent = Auth.launchLogin()
+                        this.signInLauncher.launch(intent)
+                    } else {
+                        viewModel.getDriver(it.uuid!!)
+                        viewModel.isConnected(it.uuid!!)
+                    }
+
+                }
             }
-        })
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -231,7 +220,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startLocationService() {
-        this.isConnected = true
         Intent(this, LocationService::class.java).also { intent ->
             intent.putExtra(Driver.DRIVER_KEY, this.driver.id)
             ContextCompat.startForegroundService(this, intent)
@@ -241,7 +229,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stopLocationService() {
-        this.isConnected = false
         if (mBound) {
             this.unbindService(connection)
             val msg: Message = Message.obtain(null, LocationService.STOP_SERVICE_MSG, 0, 0)

@@ -9,6 +9,7 @@ import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.LocationUpdates
 import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
+import gorda.driver.services.firebase.Auth
 
 class MainViewModel : ViewModel() {
     companion object {
@@ -27,6 +28,12 @@ class MainViewModel : ViewModel() {
     fun getDriver(driverId: String) {
         DriverRepository.getDriver(driverId) { driver ->
             _driverState.postValue(DriverUpdates.setDriver(driver))
+        }
+    }
+
+    fun setAuth() {
+        Auth.onAuthChanges { uuid ->
+            _driverState.postValue(DriverUpdates.setUUID(uuid))
         }
     }
 
