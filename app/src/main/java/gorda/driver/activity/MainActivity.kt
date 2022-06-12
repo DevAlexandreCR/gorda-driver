@@ -186,7 +186,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 is DriverUpdates.Connecting -> {
                     if (it.connecting) {
-                        Toast.makeText(this, "conectando...", Toast.LENGTH_SHORT).show()
+                        switchConnect.setText(R.string.status_connecting)
                     }
                 }
 
