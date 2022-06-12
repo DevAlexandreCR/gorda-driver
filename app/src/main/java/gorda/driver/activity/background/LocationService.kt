@@ -82,7 +82,6 @@ class LocationService: Service() {
     }
 
     fun stop() {
-        println("stop service")
         locationHandler?.stopLocationUpdates()
         stopSelf()
     }

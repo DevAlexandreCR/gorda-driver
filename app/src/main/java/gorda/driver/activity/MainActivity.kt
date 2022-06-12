@@ -267,16 +267,4 @@ class MainActivity : AppCompatActivity() {
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
-
-    @SuppressLint("HandlerLeak")
-    inner class IncomingHandler : Handler(Looper.getMainLooper()) {
-        override fun handleMessage(msg: Message) {
-            when (msg.what) {
-                LocationService.STOP_SERVICE_MSG -> {
-                    println("helo from activity")
-                }
-                else -> super.handleMessage(msg)
-            }
-        }
-    }
 }

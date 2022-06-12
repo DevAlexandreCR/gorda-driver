@@ -49,7 +49,6 @@ class HomeFragment : Fragment() {
                     it.location
                     this.serviceAdapter.lastLocation = it.location
                     this.serviceAdapter.notifyDataSetChanged()
-                    println("location updated from view model fragment ${it.location.longitude}")
                 }
             }
         }
