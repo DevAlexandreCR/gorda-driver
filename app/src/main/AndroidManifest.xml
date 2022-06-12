@@ -32,7 +32,7 @@
         </activity>
 
         <service
-            android:name=".activity.background.LocationService"
+            android:name="gorda.driver.background.LocationService"
             android:enabled="true"
             android:exported="true"/>
 

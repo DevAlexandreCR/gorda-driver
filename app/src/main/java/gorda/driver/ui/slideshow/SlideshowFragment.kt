@@ -1,4 +1,4 @@
-package gorda.driver.activity.ui.slideshow
+package gorda.driver.ui.slideshow
 
 import android.os.Bundle
 import android.view.LayoutInflater

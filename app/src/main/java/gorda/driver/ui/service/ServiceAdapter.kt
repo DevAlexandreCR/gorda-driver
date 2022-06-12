@@ -1,4 +1,4 @@
-package gorda.driver.activity.ui.service
+package gorda.driver.ui.service
 
 import android.location.Location
 import android.view.LayoutInflater

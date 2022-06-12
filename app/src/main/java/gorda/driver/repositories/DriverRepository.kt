@@ -14,6 +14,8 @@ import gorda.driver.services.firebase.Database
 
 object DriverRepository {
 
+    val TAG = DriverRepository::class.java.toString()
+
     fun connect(driver: DriverInterface): Task<Void> {
         return Database.dbOnlineDrivers().child(driver.id!!).setValue(driver)
     }
@@ -39,11 +41,16 @@ object DriverRepository {
     }
 
     fun getDriver(driverId: String, listener: (driver: Driver) -> Unit): Unit {
-        Database.dbDrivers().child(driverId).get()
-            .addOnSuccessListener { snapshot ->
-                snapshot.getValue<Driver>()?.let { driver -> listener(driver)}
-        }.addOnFailureListener{ e ->
-                Log.e("firebase", "Error getting data: ${e.message}", e)
+        Database.dbDrivers().child(driverId).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.getValue<Driver>()?.let {
+                    listener(it)
+                }
             }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, error.message)
+            }
+        })
     }
 }

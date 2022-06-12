@@ -1,4 +1,4 @@
-package gorda.driver.activity.background
+package gorda.driver.background
 
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -11,7 +11,7 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import gorda.driver.R
-import gorda.driver.activity.ui.service.LocationBroadcastReceiver
+import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.interfaces.CustomLocationListener
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.location.LocationHandler

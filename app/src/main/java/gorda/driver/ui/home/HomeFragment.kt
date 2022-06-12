@@ -1,4 +1,4 @@
-package gorda.driver.activity.ui.home
+package gorda.driver.ui.home
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,10 +9,12 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
-import gorda.driver.activity.ui.MainViewModel
-import gorda.driver.activity.ui.service.LocationUpdates
-import gorda.driver.activity.ui.service.ServiceAdapter
+import gorda.driver.ui.MainViewModel
+import gorda.driver.ui.service.LocationUpdates
+import gorda.driver.ui.service.ServiceAdapter
+import gorda.driver.ui.service.ServiceUpdates
 import gorda.driver.databinding.FragmentHomeBinding
+import gorda.driver.ui.driver.DriverUpdates
 
 class HomeFragment : Fragment() {
 
@@ -40,7 +42,14 @@ class HomeFragment : Fragment() {
         }
 
         homeViewModel.serviceList.observe(viewLifecycleOwner) {
-            this.serviceAdapter.submitList(it)
+            when(it) {
+                is ServiceUpdates.SetList -> {
+                    this.serviceAdapter.submitList(it.services)
+                }
+                is ServiceUpdates.StopListen -> {
+                    this.serviceAdapter.submitList(mutableListOf())
+                }
+            }
         }
 
         mainViewModel.lastLocation.observe(viewLifecycleOwner) {
@@ -50,6 +59,19 @@ class HomeFragment : Fragment() {
                     this.serviceAdapter.lastLocation = it.location
                     this.serviceAdapter.notifyDataSetChanged()
                 }
+            }
+        }
+
+        mainViewModel.driverStatus.observe(viewLifecycleOwner) {
+            when (it) {
+                is DriverUpdates.IsConnected -> {
+                    if (it.connected) {
+                        homeViewModel.startListenServices()
+                    } else {
+                        homeViewModel.stopListenServices()
+                    }
+                }
+                else -> {  }
             }
         }
         return root

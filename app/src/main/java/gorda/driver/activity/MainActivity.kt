@@ -9,6 +9,7 @@ import android.location.LocationManager
 import android.os.*
 import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.widget.CompoundButton
 import android.widget.Switch
 import android.widget.Toast
@@ -28,16 +29,16 @@ import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.navigation.NavigationView
 import gorda.driver.R
-import gorda.driver.activity.background.LocationService
-import gorda.driver.activity.ui.MainViewModel
-import gorda.driver.activity.ui.service.LocationBroadcastReceiver
-import gorda.driver.activity.ui.service.LocationUpdates
+import gorda.driver.background.LocationService
+import gorda.driver.ui.MainViewModel
+import gorda.driver.ui.service.LocationBroadcastReceiver
+import gorda.driver.ui.service.LocationUpdates
 import gorda.driver.databinding.ActivityMainBinding
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
-import gorda.driver.repositories.DriverRepository
 import gorda.driver.services.firebase.Auth
+import gorda.driver.ui.driver.DriverUpdates
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class MainActivity : AppCompatActivity() {
@@ -47,7 +48,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var isConnected = false
-    private var msg: Messenger? = null
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private var driver: Driver = Driver()
@@ -57,12 +57,6 @@ class MainActivity : AppCompatActivity() {
     private val signInLauncher = registerForActivityResult(FirebaseAuthUIActivityResultContract())
     { res ->
         this.onSignInResult(res)
-    }
-    private val setDriver: (driver: Driver) -> Unit = {
-        this.driver = it
-        switchConnect.setOnCheckedChangeListener { buttonView, isChecked ->
-            this.setConnected(isChecked, buttonView)
-        }
     }
     private var locationService: Messenger? = null
     private var mBound: Boolean = false
@@ -115,6 +109,14 @@ class MainActivity : AppCompatActivity() {
 
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
 
+        switchConnect.setOnClickListener {
+            if (switchConnect.isChecked) {
+                viewModel.connect(driver)
+            } else {
+                viewModel.disconnect(driver)
+            }
+        }
+
         viewModel.lastLocation.observe(this, Observer { locationUpdate ->
             when (locationUpdate) {
                 is LocationUpdates.LastLocation -> {
@@ -122,6 +124,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+
+        observeDriver()
 
         if (!LocationHandler.checkPermissions(this)) {
             requestPermissions()
@@ -135,20 +139,10 @@ class MainActivity : AppCompatActivity() {
             this.signInLauncher.launch(intent)
         } else {
             val user = Auth.getCurrentUser()
-            user?.uid.let { s ->
-                if (s != null) {
-                    // TODO: refactor this code within setConnected function
-                    DriverRepository.getDriver(s, this.setDriver)
-                    DriverRepository.isConnected(s) {
-                        this.switchConnect.isChecked = it
-                        if (it) {
-                            this.switchConnect.setText(R.string.status_connected)
-                            startLocationService()
-                        } else {
-                            this.switchConnect.setText(R.string.status_disconnected)
-                            stopLocationService()
-                        }
-                    }
+            user?.uid.let { uuid ->
+                if (uuid != null) {
+                    viewModel.getDriver(uuid)
+                    viewModel.isConnected(uuid)
                 }
             }
         }
@@ -180,15 +174,15 @@ class MainActivity : AppCompatActivity() {
     private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
         if (result.resultCode == RESULT_OK) {
             val user = Auth.getCurrentUser()
-            user?.uid.let { s ->
-                if (s != null) {
-                    Log.d(TAG, "setting the driver $s")
-                    DriverRepository.getDriver(s, this.setDriver)
+            user?.uid.let { uuid ->
+                if (uuid != null) {
+                    viewModel.getDriver(uuid)
+                    viewModel.isConnected(uuid)
                 }
             }
         } else {
             Log.e(TAG, "error ${result.resultCode}")
-            Toast.makeText(this, R.string.common_error, Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.common_error, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -197,26 +191,29 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
-    private fun setConnected(checked: Boolean, switch: CompoundButton): Unit {
-        if (checked) {
-            this.driver.connect()
-                .addOnSuccessListener {
-                    switch.setText(R.string.status_connected)
-                    startLocationService()
+    private fun observeDriver() {
+        viewModel.driverStatus.observe(this, Observer {
+            when (it) {
+                is DriverUpdates.SetDriver -> {
+                    this.driver = it.driver
                 }
-                .addOnCanceledListener {
-                    switch.isChecked = false
+                is DriverUpdates.IsConnected -> {
+                    switchConnect.isChecked = it.connected
+                    if (it.connected) {
+                        startLocationService()
+                        switchConnect.setText(R.string.status_connected)
+                    } else {
+                        switchConnect.setText(R.string.status_disconnected)
+                        stopLocationService()
+                    }
                 }
-        } else {
-            this.driver.disconnect()
-                .addOnSuccessListener {
-                    switch.setText(R.string.status_disconnected)
-                    stopLocationService()
+                is DriverUpdates.Connecting -> {
+                    if (it.connecting) {
+                        Toast.makeText(this, "conectando...", Toast.LENGTH_SHORT).show()
+                    }
                 }
-                .addOnFailureListener {
-                    switch.isChecked = true
-                }
-        }
+            }
+        })
     }
 
     override fun onRequestPermissionsResult(
