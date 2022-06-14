@@ -123,8 +123,6 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.setAuth()
 
-        observeDriver()
-
         if (!LocationHandler.checkPermissions(this)) {
             requestPermissions()
         }
@@ -132,6 +130,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        observeDriver()
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(
                 locationBroadcastReceiver,
@@ -192,7 +191,7 @@ class MainActivity : AppCompatActivity() {
 
                 is DriverUpdates.AuthDriver -> {
                     if (it.uuid == null) {
-                        viewModel.disconnect(driver)
+                        if (driver.id != null) viewModel.disconnect(driver)
                         val intent = Auth.launchLogin()
                         this.signInLauncher.launch(intent)
                     } else {
