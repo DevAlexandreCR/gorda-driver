@@ -7,10 +7,14 @@ import com.google.firebase.auth.FirebaseUser
 import gorda.driver.R
 
 object Auth {
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseInitializeApp.auth
 
-    fun getCurrentUser(): FirebaseUser? {
-        return auth.currentUser
+    fun getCurrentUserUUID(): String? {
+        return auth.uid
+    }
+
+    fun onAuthChanges(listener: (uuid: String?) -> Unit) {
+        auth.addAuthStateListener { p0 -> listener(p0.uid) }
     }
 
     fun launchLogin(): Intent {

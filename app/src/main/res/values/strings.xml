@@ -22,4 +22,9 @@
     <string name="menu_home">Home</string>
     <string name="menu_gallery">Gallery</string>
     <string name="menu_slideshow">Slideshow</string>
+    <string name="services_list">Service list</string>
+    <string name="apply">Apply at</string>
+    <string name="map">Map</string>
+    <string name="common_error">"Someting went wrong, try late "</string>
+    <string name="status_connecting">Connecting...</string>
 </resources>

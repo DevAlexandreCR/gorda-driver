@@ -1,4 +1,4 @@
-package gorda.driver.activity.ui.gallery
+package gorda.driver.ui.gallery
 
 import android.os.Bundle
 import android.view.LayoutInflater

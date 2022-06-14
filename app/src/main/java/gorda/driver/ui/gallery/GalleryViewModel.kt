@@ -1,4 +1,4 @@
-package gorda.driver.activity.ui.gallery
+package gorda.driver.ui.gallery
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
