@@ -17,4 +17,9 @@
             android:icon="@drawable/ic_menu_slideshow"
             android:title="@string/menu_slideshow" />
     </group>
+    <item
+        android:id="@+id/logout"
+        android:icon="@drawable/common_full_open_on_phone"
+        android:title="@string/logout"
+        android:visible="true" />
 </menu>

@@ -9,19 +9,20 @@ import android.location.LocationManager
 import android.os.*
 import android.provider.Settings
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Switch
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.view.menu.MenuView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
+import androidx.navigation.ui.*
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.navigation.NavigationView
@@ -85,11 +86,6 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.appBarMain.toolbar)
 
-        binding.appBarMain.fab.setOnClickListener {
-            Auth.logOut()
-            this.onStart()
-        }
-
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
@@ -102,6 +98,13 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        navView.setNavigationItemSelectedListener { item ->
+            if (item.itemId == R.id.logout) Auth.logOut()
+            NavigationUI.onNavDestinationSelected(item, navController)
+            drawerLayout.closeDrawer(GravityCompat.START)
+            true
+        }
 
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
 
@@ -193,9 +196,7 @@ class MainActivity : AppCompatActivity() {
                         val intent = Auth.launchLogin()
                         this.signInLauncher.launch(intent)
                     } else {
-                        switchConnect.isEnabled = true
                         viewModel.getDriver(it.uuid!!)
-                        viewModel.isConnected(it.uuid!!)
                     }
 
                 }
@@ -206,6 +207,8 @@ class MainActivity : AppCompatActivity() {
             when(it) {
                 is Driver -> {
                     this.driver = it
+                    switchConnect.isEnabled = true
+                    viewModel.isConnected(it.id!!)
                 }
             }
         }

@@ -37,25 +37,29 @@
             android:id="@+id/profile_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/fields_name" />
+            android:text="@string/fields_name"
+            android:textSize="20sp" />
 
         <TextView
             android:id="@+id/profile_email"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/fields_email" />
+            android:text="@string/fields_email"
+            android:textSize="20sp" />
 
         <TextView
             android:id="@+id/profile_phone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/fields_phone" />
+            android:text="@string/fields_phone"
+            android:textSize="20sp" />
 
         <TextView
             android:id="@+id/profile_vehicle_plate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/fields_plate" />
+            android:text="@string/fields_plate"
+            android:textSize="20sp" />
 
     </LinearLayout>
 
