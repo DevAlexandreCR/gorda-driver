@@ -47,10 +47,10 @@ class ProfileFragment : Fragment() {
         textPlate = binding.profileVehiclePlate
         image = binding.imageProfile
 
-        mainViewModel.driverStatus.observe(viewLifecycleOwner) { driverUpdates ->
-            when (driverUpdates) {
-                is DriverUpdates.SetDriver -> {
-                    viewModel.setDriver(driverUpdates.driver)
+        mainViewModel.driver.observe(viewLifecycleOwner) { driver ->
+            when (driver) {
+                is Driver -> {
+                    viewModel.setDriver(driver)
                 }
                 else -> {}
             }

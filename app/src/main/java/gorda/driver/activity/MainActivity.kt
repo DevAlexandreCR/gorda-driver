@@ -122,6 +122,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.setAuth()
+        observeDriver()
 
         if (!LocationHandler.checkPermissions(this)) {
             requestPermissions()
@@ -130,7 +131,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        observeDriver()
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(
                 locationBroadcastReceiver,
@@ -170,9 +170,6 @@ class MainActivity : AppCompatActivity() {
     private fun observeDriver() {
         viewModel.driverStatus.observe(this) {
             when (it) {
-                is DriverUpdates.SetDriver -> {
-                    this.driver = it.driver
-                }
                 is DriverUpdates.IsConnected -> {
                     switchConnect.isChecked = it.connected
                     if (it.connected) {
@@ -192,13 +189,23 @@ class MainActivity : AppCompatActivity() {
                 is DriverUpdates.AuthDriver -> {
                     if (it.uuid == null) {
                         if (driver.id != null) viewModel.disconnect(driver)
+                        switchConnect.isEnabled = false
                         val intent = Auth.launchLogin()
                         this.signInLauncher.launch(intent)
                     } else {
+                        switchConnect.isEnabled = true
                         viewModel.getDriver(it.uuid!!)
                         viewModel.isConnected(it.uuid!!)
                     }
 
+                }
+            }
+        }
+
+        viewModel.driver.observe(this) {
+            when(it) {
+                is Driver -> {
+                    this.driver = it
                 }
             }
         }
