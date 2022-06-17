@@ -100,7 +100,11 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
 
         navView.setNavigationItemSelectedListener { item ->
-            if (item.itemId == R.id.logout) Auth.logOut()
+            if (item.itemId == R.id.logout) {
+                stopLocationService()
+                viewModel.disconnect(driver)
+                Auth.logOut()
+            }
             NavigationUI.onNavDestinationSelected(item, navController)
             drawerLayout.closeDrawer(GravityCompat.START)
             true
@@ -112,6 +116,7 @@ class MainActivity : AppCompatActivity() {
             if (switchConnect.isChecked) {
                 viewModel.connect(driver)
             } else {
+                stopLocationService()
                 viewModel.disconnect(driver)
             }
         }
@@ -231,7 +236,7 @@ class MainActivity : AppCompatActivity() {
     private fun startLocationService() {
         Intent(this, LocationService::class.java).also { intent ->
             intent.putExtra(Driver.DRIVER_KEY, this.driver.id)
-            ContextCompat.startForegroundService(this, intent)
+            applicationContext.startForegroundService(intent)
             this.bindService(intent, connection, BIND_AUTO_CREATE)
             mBound = true
         }
