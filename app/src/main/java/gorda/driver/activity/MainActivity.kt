@@ -9,19 +9,20 @@ import android.location.LocationManager
 import android.os.*
 import android.provider.Settings
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Switch
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.view.menu.MenuView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
+import androidx.navigation.ui.*
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.navigation.NavigationView
@@ -85,11 +86,6 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.appBarMain.toolbar)
 
-        binding.appBarMain.fab.setOnClickListener {
-            Auth.logOut()
-            this.onStart()
-        }
-
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
@@ -97,11 +93,22 @@ class MainActivity : AppCompatActivity() {
         // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow
+                R.id.nav_home, R.id.nav_profile, R.id.nav_slideshow
             ), drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        navView.setNavigationItemSelectedListener { item ->
+            if (item.itemId == R.id.logout) {
+                stopLocationService()
+                if (driver.id != null) viewModel.disconnect(driver)
+                Auth.logOut()
+            }
+            NavigationUI.onNavDestinationSelected(item, navController)
+            drawerLayout.closeDrawer(GravityCompat.START)
+            true
+        }
 
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
 
@@ -109,6 +116,7 @@ class MainActivity : AppCompatActivity() {
             if (switchConnect.isChecked) {
                 viewModel.connect(driver)
             } else {
+                stopLocationService()
                 viewModel.disconnect(driver)
             }
         }
@@ -122,6 +130,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.setAuth()
+        observeDriver()
 
         if (!LocationHandler.checkPermissions(this)) {
             requestPermissions()
@@ -130,7 +139,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        observeDriver()
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(
                 locationBroadcastReceiver,
@@ -170,9 +178,6 @@ class MainActivity : AppCompatActivity() {
     private fun observeDriver() {
         viewModel.driverStatus.observe(this) {
             when (it) {
-                is DriverUpdates.SetDriver -> {
-                    this.driver = it.driver
-                }
                 is DriverUpdates.IsConnected -> {
                     switchConnect.isChecked = it.connected
                     if (it.connected) {
@@ -192,13 +197,23 @@ class MainActivity : AppCompatActivity() {
                 is DriverUpdates.AuthDriver -> {
                     if (it.uuid == null) {
                         if (driver.id != null) viewModel.disconnect(driver)
+                        switchConnect.isEnabled = false
                         val intent = Auth.launchLogin()
                         this.signInLauncher.launch(intent)
                     } else {
                         viewModel.getDriver(it.uuid!!)
-                        viewModel.isConnected(it.uuid!!)
                     }
 
+                }
+            }
+        }
+
+        viewModel.driver.observe(this) {
+            when(it) {
+                is Driver -> {
+                    this.driver = it
+                    switchConnect.isEnabled = true
+                    viewModel.isConnected(it.id!!)
                 }
             }
         }
@@ -221,7 +236,7 @@ class MainActivity : AppCompatActivity() {
     private fun startLocationService() {
         Intent(this, LocationService::class.java).also { intent ->
             intent.putExtra(Driver.DRIVER_KEY, this.driver.id)
-            ContextCompat.startForegroundService(this, intent)
+            applicationContext.startForegroundService(intent)
             this.bindService(intent, connection, BIND_AUTO_CREATE)
             mBound = true
         }

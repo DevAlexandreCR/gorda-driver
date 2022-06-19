@@ -7,7 +7,6 @@ import android.app.Service
 import android.content.Intent
 import android.location.Location
 import android.os.*
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import gorda.driver.R
@@ -22,21 +21,18 @@ import gorda.driver.utils.Utils
 class LocationService: Service() {
 
     companion object {
-        const val STOP_SERVICE = "stop.locationService"
         const val SERVICE_ID = 100
         private const val NOTIFICATION_CHANNEL_ID = "location_service"
         const val STOP_SERVICE_MSG = 1
     }
 
-    private var driverId: String? = null
-    private var locationHandler: LocationHandler? = null
     lateinit var lastLocation: Location
     private lateinit var messenger: Messenger
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
             val driverId = intent.getStringExtra(Driver.DRIVER_KEY)
-            this.locationHandler = LocationHandler(this, object : CustomLocationListener {
+            LocationHandler.startListeningUserLocation(this, object : CustomLocationListener {
                 override fun onLocationChanged(location: Location?) {
                     if (location !== null && driverId != null) {
                         lastLocation = location
@@ -50,7 +46,6 @@ class LocationService: Service() {
                     }
                 }
             })
-            locationHandler!!.startListeningUserLocation()
         }
         return START_STICKY
     }
@@ -81,13 +76,8 @@ class LocationService: Service() {
     }
 
     fun stop() {
-        locationHandler?.stopLocationUpdates()
+        LocationHandler.stopLocationUpdates()
         stopSelf()
-    }
-
-    fun sayHello() {
-        val msg: Message = Message.obtain(null, STOP_SERVICE_MSG, 0, 0)
-        messenger.send(msg)
     }
 
     @SuppressLint("HandlerLeak")

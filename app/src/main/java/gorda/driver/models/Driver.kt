@@ -4,9 +4,9 @@ import com.google.android.gms.tasks.Task
 import gorda.driver.interfaces.DriverInterface
 import gorda.driver.interfaces.VehicleInterface
 import gorda.driver.repositories.DriverRepository
-import kotlinx.coroutines.awaitAll
+import java.io.Serializable
 
-class Driver() : DriverInterface {
+class Driver() : DriverInterface, Serializable {
     companion object {
         const val DRIVER_KEY = "driver_id"
     }
