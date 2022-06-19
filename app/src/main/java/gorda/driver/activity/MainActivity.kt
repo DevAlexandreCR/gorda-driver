@@ -102,7 +102,7 @@ class MainActivity : AppCompatActivity() {
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
                 stopLocationService()
-                viewModel.disconnect(driver)
+                if (driver.id != null) viewModel.disconnect(driver)
                 Auth.logOut()
             }
             NavigationUI.onNavDestinationSelected(item, navController)
