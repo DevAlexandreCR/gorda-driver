@@ -21,7 +21,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.navigation.NavController
 import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.*
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
@@ -32,6 +34,7 @@ import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.LocationUpdates
 import gorda.driver.databinding.ActivityMainBinding
+import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
@@ -47,6 +50,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+    private lateinit var navController: NavController
     private var driver: Driver = Driver()
     private lateinit var switchConnect: Switch
     private lateinit var lastLocation: Location
@@ -88,7 +92,7 @@ class MainActivity : AppCompatActivity() {
 
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
+        navController = findNavController(R.id.nav_host_fragment_content_main)
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(
