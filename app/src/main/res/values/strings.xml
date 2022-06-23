@@ -32,5 +32,6 @@
     <string name="fields_phone">Phone</string>
     <string name="fields_plate">Plate</string>
     <string name="logout">Logout</string>
-    <string name="no_routes_available">No routes availables</string>
+    <string name="no_routes_available">No routes available</string>
+    <string name="ago">After</string>
 </resources>

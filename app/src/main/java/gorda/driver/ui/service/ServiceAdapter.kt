@@ -1,10 +1,14 @@
 package gorda.driver.ui.service
 
+import android.content.Context
 import android.location.Location
+import android.os.SystemClock
+import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.Chronometer
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -14,19 +18,19 @@ import gorda.driver.interfaces.LocType
 import gorda.driver.models.Service
 import java.util.*
 
-class ServiceAdapter(private val showMap: (location: LocType) -> Unit) :
+class ServiceAdapter(private val context: Context, private val showMap: (location: LocType) -> Unit) :
     ListAdapter<Service, ServiceAdapter.ViewHolder>(ServiceDiffCallback) {
 
     var lastLocation: Location? = null
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textAddress: TextView
-        val textLocInfo: TextView
+        val serviceTimer: Chronometer
         val btnShowMap: Button
 
         init {
             textAddress = view.findViewById(R.id.service_address)
-            textLocInfo = view.findViewById(R.id.location_info)
+            serviceTimer = view.findViewById(R.id.service_timer)
             btnShowMap = view.findViewById(R.id.btn_show_map)
         }
     }
@@ -42,12 +46,11 @@ class ServiceAdapter(private val showMap: (location: LocType) -> Unit) :
         holder.btnShowMap.setOnClickListener {
             showMap(getItem(position).start_loc)
         }
-        lastLocation?.let {
-            // TODO: Show time incrementing each second
-            val service = getItem(position)
-            val time = (Date().time / 1000) - service.created_at
-            holder.textLocInfo.text = (time / 60).toString() + " m"
-        }
+        val service = getItem(position)
+        val time = Date().toInstant().minusMillis(service.created_at * 1000).toEpochMilli()
+        holder.serviceTimer.base = SystemClock.elapsedRealtime() - time
+        holder.serviceTimer.start()
+        holder.serviceTimer.format = context.resources.getString(R.string.ago) + " %s"
     }
 
     object ServiceDiffCallback : DiffUtil.ItemCallback<Service>() {

@@ -26,4 +26,5 @@
     <string name="fields_plate">Plate</string>
     <string name="logout">Cerrar Sesión</string>
     <string name="no_routes_available">No routes availables</string>
+    <string name="ago">Hace</string>
 </resources>
