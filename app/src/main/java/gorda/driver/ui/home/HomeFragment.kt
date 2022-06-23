@@ -8,17 +8,16 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import gorda.driver.R
+import gorda.driver.databinding.FragmentHomeBinding
+import gorda.driver.interfaces.LocType
 import gorda.driver.ui.MainViewModel
+import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.LocationUpdates
 import gorda.driver.ui.service.ServiceAdapter
 import gorda.driver.ui.service.ServiceUpdates
-import gorda.driver.databinding.FragmentHomeBinding
-import gorda.driver.interfaces.LocType
-import gorda.driver.ui.driver.DriverUpdates
 
 class HomeFragment : Fragment() {
 
@@ -50,7 +49,7 @@ class HomeFragment : Fragment() {
         }
 
         homeViewModel.serviceList.observe(viewLifecycleOwner) {
-            when(it) {
+            when (it) {
                 is ServiceUpdates.SetList -> {
                     serviceAdapter.submitList(it.services)
                 }
@@ -79,7 +78,7 @@ class HomeFragment : Fragment() {
                         homeViewModel.stopListenServices()
                     }
                 }
-                else -> {  }
+                else -> {}
             }
         }
         return root

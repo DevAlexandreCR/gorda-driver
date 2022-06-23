@@ -3,7 +3,6 @@ package gorda.driver.ui.service
 import android.content.Context
 import android.location.Location
 import android.os.SystemClock
-import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,7 +17,10 @@ import gorda.driver.interfaces.LocType
 import gorda.driver.models.Service
 import java.util.*
 
-class ServiceAdapter(private val context: Context, private val showMap: (location: LocType) -> Unit) :
+class ServiceAdapter(
+    private val context: Context,
+    private val showMap: (location: LocType) -> Unit
+) :
     ListAdapter<Service, ServiceAdapter.ViewHolder>(ServiceDiffCallback) {
 
     var lastLocation: Location? = null
