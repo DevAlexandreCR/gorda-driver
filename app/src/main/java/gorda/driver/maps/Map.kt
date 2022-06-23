@@ -1,6 +1,8 @@
 package gorda.driver.maps
 
+import android.graphics.Color
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.PolylineOptions
 
 class Map() {
 
@@ -12,7 +14,22 @@ class Map() {
                 "&key=$secret"
     }
 
-    fun decodePolyline(encoded: String): List<LatLng> {
+    fun makePolylineOptions(routes: ArrayList<Routes>): PolylineOptions {
+        val path =  ArrayList<LatLng>()
+        for (i in 0 until routes[0].legs[0].steps.size) {
+            val decoded = decodePolyline(routes[0].legs[0].steps[i].polyline.points)
+            path.addAll(decoded)
+        }
+        val lineOptions = PolylineOptions()
+        lineOptions.addAll(path)
+        lineOptions.width(10F)
+        lineOptions.color(Color.GREEN)
+        lineOptions.geodesic(true)
+
+        return lineOptions
+    }
+
+    private fun decodePolyline(encoded: String): List<LatLng> {
         val poly = ArrayList<LatLng>()
         var index = 0
         val len = encoded.length

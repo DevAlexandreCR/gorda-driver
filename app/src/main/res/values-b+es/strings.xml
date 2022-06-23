@@ -24,6 +24,6 @@
     <string name="fields_email">E-mail</string>
     <string name="fields_phone">Phone</string>
     <string name="fields_plate">Plate</string>
-    <string name="logout">Logout</string>
+    <string name="logout">Cerrar Sesión</string>
     <string name="no_routes_available">No routes availables</string>
 </resources>

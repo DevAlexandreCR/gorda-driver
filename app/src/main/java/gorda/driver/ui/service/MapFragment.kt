@@ -1,9 +1,7 @@
 package gorda.driver.ui.service
 
-import android.graphics.Color
 import androidx.fragment.app.Fragment
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,10 +14,8 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import gorda.driver.BuildConfig
 import gorda.driver.R
+import gorda.driver.maps.*
 import gorda.driver.maps.Map
-import gorda.driver.maps.MapApiService
-import gorda.driver.maps.OnDirectionCompleteListener
-import gorda.driver.maps.Routes
 import gorda.driver.services.retrofit.RetrofitBase
 import gorda.driver.ui.MainViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +45,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
+        val infoWindow = WindowAdapter(requireContext())
+        googleMap.setInfoWindowAdapter(infoWindow)
         mainViewModel.currentServiceStartLocation.observe(viewLifecycleOwner) { loc ->
             if (loc.lat != null && loc.long != null) {
                 mainViewModel.lastLocation.observe(viewLifecycleOwner) {
@@ -56,9 +54,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                         is LocationUpdates.LastLocation -> {
                             val driverLatLng = LatLng(it.location.latitude, it.location.longitude)
                             val startLatLng = LatLng(loc.lat!!, loc.long!!)
-                            googleMap.addMarker(MarkerOptions().position(driverLatLng).title(loc.name))
-                            googleMap.addMarker(MarkerOptions().position(startLatLng).title(loc.name))
-                                ?.showInfoWindow()
+                            val driverMarker = googleMap.addMarker(MarkerOptions().position(driverLatLng))
+                            driverMarker?.tag = makeInfoWindowData("A")
+                            val markerStartAddress = googleMap.addMarker(MarkerOptions().position(startLatLng).title(loc.name))
+                            markerStartAddress?.tag = makeInfoWindowData("B")
                             val bounds = LatLngBounds
                                 .Builder()
                                 .include(startLatLng)
@@ -71,21 +70,29 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                             val url = mapService.getDirectionURL(driverLatLng, startLatLng, BuildConfig.MAPS_API_KEY)
                             getDirections(url, object: OnDirectionCompleteListener {
                                 override fun onSuccess(routes: ArrayList<Routes>) {
-                                    val path =  ArrayList<LatLng>()
-                                    for (i in 0 until routes[0].legs[0].steps.size) {
-                                        val decoded = mapService.decodePolyline(routes[0].legs[0].steps[i].polyline.points)
-                                        path.addAll(decoded)
-                                    }
-                                    val lineOptions = PolylineOptions()
-                                    lineOptions.addAll(path)
-                                    lineOptions.width(10F)
-                                    lineOptions.color(Color.GREEN)
-                                    lineOptions.geodesic(true)
+                                    val lineOptions = mapService.makePolylineOptions(routes)
                                     googleMap.addPolyline(lineOptions)
+                                    requireActivity().runOnUiThread {
+                                        if (markerStartAddress != null) {
+                                            markerStartAddress.tag = makeInfoWindowData(
+                                                loc.name,
+                                                routes[0].legs[0].distance.value.toString(),
+                                                routes[0].legs[0].duration.value.toString()
+                                            )
+                                            markerStartAddress.showInfoWindow()
+                                        }
+                                    }
                                 }
 
                                 override fun onFailure() {
                                     requireActivity().runOnUiThread {
+                                        // TODO: remove after, only to prove
+                                        markerStartAddress?.tag = makeInfoWindowData(
+                                            loc.name,
+                                            "1500m",
+                                            "8m"
+                                        )
+                                        markerStartAddress?.showInfoWindow()
                                         Toast.makeText(context, R.string.no_routes_available, Toast.LENGTH_SHORT).show()
                                     }
                                 }
@@ -114,5 +121,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 listener.onFailure()
             }
         }
+    }
+
+    private fun makeInfoWindowData(name: String = "", distance: String = "", time: String = ""): InfoWindowData {
+        return InfoWindowData(name, distance, time)
     }
 }
