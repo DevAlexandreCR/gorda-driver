@@ -4,7 +4,7 @@ import android.graphics.Color
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.PolylineOptions
 
-class Map() {
+class Map {
 
     fun getDirectionURL(origin: LatLng, dest:LatLng, secret: String) : String{
         return "directions/json?origin=${origin.latitude},${origin.longitude}" +

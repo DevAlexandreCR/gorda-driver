@@ -3,7 +3,7 @@ package gorda.driver.models
 import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.ServiceInterface
 
-class Service(): ServiceInterface {
+class Service : ServiceInterface {
     companion object {
         const val STATUS_PENDING = "pending"
     }

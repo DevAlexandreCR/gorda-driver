@@ -7,7 +7,7 @@ import gorda.driver.R
 import gorda.driver.ui.service.ServiceUpdates
 import gorda.driver.repositories.ServiceRepository
 
-class HomeViewModel() : ViewModel() {
+class HomeViewModel : ViewModel() {
 
     private val _text = MutableLiveData<Int>().apply {
         value = R.string.services_list
