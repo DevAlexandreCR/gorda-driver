@@ -81,7 +81,7 @@ class LocationService: Service() {
     }
 
     @SuppressLint("HandlerLeak")
-    inner class IncomingHandler() : Handler(Looper.getMainLooper()) {
+    inner class IncomingHandler : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             when (msg.what) {
                 STOP_SERVICE_MSG -> {

@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import gorda.driver.interfaces.LocType
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.LocationUpdates
 import gorda.driver.models.Driver
@@ -19,10 +20,16 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _lastLocation = MutableLiveData<LocationUpdates>()
     private val _driverState = MutableLiveData<DriverUpdates>()
     private val _driver = MutableLiveData<Driver>()
+    private val _currentServiceStartLocation = MutableLiveData<LocType>()
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driverStatus: LiveData<DriverUpdates> = _driverState
     var driver: LiveData<Driver> = savedStateHandle.getLiveData(Driver::class.java.toString())
+    var currentServiceStartLocation: LiveData<LocType> = _currentServiceStartLocation
+
+    fun setCurrentServiceStartLocation(locType: LocType) {
+        _currentServiceStartLocation.postValue(locType)
+    }
 
     fun updateLocation(location: Location) {
         _lastLocation.postValue(LocationUpdates.lastLocation(location))

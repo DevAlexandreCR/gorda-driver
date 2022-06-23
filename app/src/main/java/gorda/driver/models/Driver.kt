@@ -6,7 +6,7 @@ import gorda.driver.interfaces.VehicleInterface
 import gorda.driver.repositories.DriverRepository
 import java.io.Serializable
 
-class Driver() : DriverInterface, Serializable {
+class Driver : DriverInterface, Serializable {
     companion object {
         const val DRIVER_KEY = "driver_id"
     }

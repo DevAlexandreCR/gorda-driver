@@ -4,14 +4,16 @@ import android.location.Location
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import gorda.driver.R
+import gorda.driver.interfaces.LocType
 import gorda.driver.models.Service
 
-class ServiceAdapter :
+class ServiceAdapter(private val showMap: (location: LocType) -> Unit) :
     ListAdapter<Service, ServiceAdapter.ViewHolder>(ServiceDiffCallback) {
 
     var lastLocation: Location? = null
@@ -19,10 +21,12 @@ class ServiceAdapter :
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textAddress: TextView
         val textLocInfo: TextView
+        val btnShowMap: Button
 
         init {
             textAddress = view.findViewById(R.id.service_address)
             textLocInfo = view.findViewById(R.id.location_info)
+            btnShowMap = view.findViewById(R.id.btn_show_map)
         }
     }
 
@@ -34,7 +38,9 @@ class ServiceAdapter :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.textAddress.text = getItem(position).start_loc.name
-
+        holder.btnShowMap.setOnClickListener {
+            showMap(getItem(position).start_loc)
+        }
         lastLocation?.let { location ->
             holder.textLocInfo.text =
                 (getItem(position).start_loc.lat?.minus(location.latitude)).toString() + "m"
