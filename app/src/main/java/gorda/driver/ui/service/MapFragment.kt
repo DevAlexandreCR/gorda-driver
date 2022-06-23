@@ -86,11 +86,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
                                 override fun onFailure() {
                                     requireActivity().runOnUiThread {
-                                        // TODO: remove after, only to prove
                                         markerStartAddress?.tag = makeInfoWindowData(
                                             loc.name,
-                                            "1500m",
-                                            "8m"
                                         )
                                         markerStartAddress?.showInfoWindow()
                                         Toast.makeText(context, R.string.no_routes_available, Toast.LENGTH_SHORT).show()
