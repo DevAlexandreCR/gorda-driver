@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import gorda.driver.R
 import gorda.driver.interfaces.LocType
 import gorda.driver.models.Service
+import java.util.*
 
 class ServiceAdapter(private val showMap: (location: LocType) -> Unit) :
     ListAdapter<Service, ServiceAdapter.ViewHolder>(ServiceDiffCallback) {
@@ -41,9 +42,11 @@ class ServiceAdapter(private val showMap: (location: LocType) -> Unit) :
         holder.btnShowMap.setOnClickListener {
             showMap(getItem(position).start_loc)
         }
-        lastLocation?.let { location ->
-            holder.textLocInfo.text =
-                (getItem(position).start_loc.lat?.minus(location.latitude)).toString() + "m"
+        lastLocation?.let {
+            // TODO: Show time incrementing each second
+            val service = getItem(position)
+            val time = (Date().time / 1000) - service.created_at
+            holder.textLocInfo.text = (time / 60).toString() + " m"
         }
     }
 
