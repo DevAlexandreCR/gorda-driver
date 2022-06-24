@@ -72,7 +72,7 @@ class ProfileFragment : Fragment() {
             Glide
                 .with(this)
                 .load(url)
-                .placeholder(R.drawable.ic_launcher_background)
+                .placeholder(R.mipmap.ic_profile)
                 .into(image)
         }
     }

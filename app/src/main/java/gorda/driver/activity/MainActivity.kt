@@ -11,7 +11,9 @@ import android.provider.Settings
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.ImageView
 import android.widget.Switch
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +27,7 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.*
+import com.bumptech.glide.Glide
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.navigation.NavigationView
@@ -93,8 +96,6 @@ class MainActivity : AppCompatActivity() {
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         navController = findNavController(R.id.nav_host_fragment_content_main)
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(
             setOf(
                 R.id.nav_home, R.id.nav_profile, R.id.nav_slideshow
@@ -134,7 +135,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.setAuth()
-        observeDriver()
+        observeDriver(navView)
 
         if (!LocationHandler.checkPermissions(this)) {
             requestPermissions()
@@ -179,7 +180,24 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
-    private fun observeDriver() {
+    private fun setDrawerHeader(navView: NavigationView) {
+        val header = navView.getHeaderView(0)
+        val imageDrawer = header.findViewById<ImageView>(R.id.drawer_image)
+        val nameDrawer = header.findViewById<TextView>(R.id.drawer_name)
+        val emailDrawer = header.findViewById<TextView>(R.id.drawer_email)
+
+        nameDrawer.text = driver.name
+        emailDrawer.text = driver.email
+        driver.photoUrl?.let { url ->
+            Glide
+                .with(this)
+                .load(url)
+                .placeholder(R.mipmap.ic_profile)
+                .into(imageDrawer)
+        }
+    }
+
+    private fun observeDriver(navView: NavigationView) {
         viewModel.driverStatus.observe(this) {
             when (it) {
                 is DriverUpdates.IsConnected -> {
@@ -217,6 +235,7 @@ class MainActivity : AppCompatActivity() {
                 is Driver -> {
                     this.driver = it
                     switchConnect.isEnabled = true
+                    setDrawerHeader(navView)
                     viewModel.isConnected(it.id!!)
                 }
             }
