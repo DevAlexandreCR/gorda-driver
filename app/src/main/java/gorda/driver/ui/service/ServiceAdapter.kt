@@ -27,11 +27,15 @@ class ServiceAdapter(
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textAddress: TextView
+        val textName: TextView
+        val textComment: TextView
         val serviceTimer: Chronometer
         val btnShowMap: Button
 
         init {
             textAddress = view.findViewById(R.id.service_address)
+            textName = view.findViewById(R.id.text_user_name)
+            textComment = view.findViewById(R.id.text_comment)
             serviceTimer = view.findViewById(R.id.service_timer)
             btnShowMap = view.findViewById(R.id.btn_show_map)
         }
@@ -53,6 +57,8 @@ class ServiceAdapter(
         holder.serviceTimer.base = SystemClock.elapsedRealtime() - time
         holder.serviceTimer.start()
         holder.serviceTimer.format = context.resources.getString(R.string.ago) + " %s"
+        holder.textName.text = service.name
+        holder.textComment.text = service.comment
     }
 
     object ServiceDiffCallback : DiffUtil.ItemCallback<Service>() {
