@@ -1,4 +1,4 @@
-package gorda.driver.ui.slideshow
+package gorda.driver.ui.service.current
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,14 +7,12 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import gorda.driver.databinding.FragmentSlideshowBinding
+import gorda.driver.databinding.FragmentCurrentServiceBinding
 
-class SlideshowFragment : Fragment() {
+class CurrentServiceFragment : Fragment() {
 
-    private var _binding: FragmentSlideshowBinding? = null
+    private var _binding: FragmentCurrentServiceBinding? = null
 
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -22,14 +20,14 @@ class SlideshowFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val slideshowViewModel =
-            ViewModelProvider(this).get(SlideshowViewModel::class.java)
+        val currentServiceViewModel =
+            ViewModelProvider(this).get(CurrentServiceViewModel::class.java)
 
-        _binding = FragmentSlideshowBinding.inflate(inflater, container, false)
+        _binding = FragmentCurrentServiceBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
         val textView: TextView = binding.textSlideshow
-        slideshowViewModel.text.observe(viewLifecycleOwner) {
+        currentServiceViewModel.text.observe(viewLifecycleOwner) {
             textView.text = it
         }
         return root
