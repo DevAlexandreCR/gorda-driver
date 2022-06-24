@@ -1,7 +1,6 @@
 package gorda.driver.ui.service
 
 import android.content.res.Resources
-import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -18,6 +17,7 @@ import com.google.android.gms.maps.model.*
 import gorda.driver.BuildConfig
 import gorda.driver.R
 import gorda.driver.maps.*
+import gorda.driver.maps.Map
 import gorda.driver.services.retrofit.RetrofitBase
 import gorda.driver.ui.MainViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -54,31 +54,51 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         mainViewModel.currentServiceStartLocation.observe(viewLifecycleOwner) { loc ->
             if (loc.lat != null && loc.long != null) {
                 mainViewModel.lastLocation.observe(viewLifecycleOwner) {
-                    when(it) {
+                    when (it) {
                         is LocationUpdates.LastLocation -> {
                             val driverLatLng = LatLng(it.location.latitude, it.location.longitude)
                             val startLatLng = LatLng(loc.lat!!, loc.long!!)
-                            val driverMarker = googleMap.addMarker(MarkerOptions()
-                                .position(driverLatLng)
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                            val driverMarker = googleMap.addMarker(
+                                MarkerOptions()
+                                    .position(driverLatLng)
+                                    .icon(
+                                        BitmapDescriptorFactory.defaultMarker(
+                                            BitmapDescriptorFactory.HUE_GREEN
+                                        )
+                                    )
                             )
                             driverMarker?.tag = makeInfoWindowData("A")
-                            val markerStartAddress = googleMap.addMarker(MarkerOptions()
-                                .position(startLatLng)
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
-                                .title(loc.name))
+                            val markerStartAddress = googleMap.addMarker(
+                                MarkerOptions()
+                                    .position(startLatLng)
+                                    .icon(
+                                        BitmapDescriptorFactory.defaultMarker(
+                                            BitmapDescriptorFactory.HUE_GREEN
+                                        )
+                                    )
+                                    .title(loc.name)
+                            )
                             markerStartAddress?.tag = makeInfoWindowData("B")
                             val bounds = LatLngBounds
                                 .Builder()
                                 .include(startLatLng)
                                 .include(driverLatLng)
                                 .build()
-                            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds , 300))
+                            googleMap.animateCamera(
+                                CameraUpdateFactory.newLatLngBounds(
+                                    bounds,
+                                    300
+                                )
+                            )
                             mainViewModel.lastLocation.removeObservers(viewLifecycleOwner)
 
                             val mapService = Map()
-                            val url = mapService.getDirectionURL(driverLatLng, startLatLng, BuildConfig.MAPS_API_KEY)
-                            getDirections(url, object: OnDirectionCompleteListener {
+                            val url = mapService.getDirectionURL(
+                                driverLatLng,
+                                startLatLng,
+                                BuildConfig.MAPS_API_KEY
+                            )
+                            getDirections(url, object : OnDirectionCompleteListener {
                                 override fun onSuccess(routes: ArrayList<Routes>) {
                                     val lineOptions = mapService.makePolylineOptions(routes)
                                     googleMap.addPolyline(lineOptions)
@@ -100,7 +120,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                                             loc.name,
                                         )
                                         markerStartAddress?.showInfoWindow()
-                                        Toast.makeText(context, R.string.no_routes_available, Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(
+                                            context,
+                                            R.string.no_routes_available,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 }
                             })
@@ -130,7 +154,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    private fun makeInfoWindowData(name: String = "", distance: String = "", time: String = ""): InfoWindowData {
+    private fun makeInfoWindowData(
+        name: String = "",
+        distance: String = "",
+        time: String = ""
+    ): InfoWindowData {
         return InfoWindowData(name, distance, time)
     }
 
