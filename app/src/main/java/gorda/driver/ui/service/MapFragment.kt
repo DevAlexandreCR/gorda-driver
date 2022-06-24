@@ -1,11 +1,14 @@
 package gorda.driver.ui.service
 
-import androidx.fragment.app.Fragment
+import android.content.res.Resources
+import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -15,12 +18,12 @@ import com.google.android.gms.maps.model.*
 import gorda.driver.BuildConfig
 import gorda.driver.R
 import gorda.driver.maps.*
-import gorda.driver.maps.Map
 import gorda.driver.services.retrofit.RetrofitBase
 import gorda.driver.ui.MainViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+
 
 class MapFragment : Fragment(), OnMapReadyCallback {
 
@@ -45,6 +48,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
+        setMapStyle(googleMap)
         val infoWindow = WindowAdapter(requireContext())
         googleMap.setInfoWindowAdapter(infoWindow)
         mainViewModel.currentServiceStartLocation.observe(viewLifecycleOwner) { loc ->
@@ -54,16 +58,22 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                         is LocationUpdates.LastLocation -> {
                             val driverLatLng = LatLng(it.location.latitude, it.location.longitude)
                             val startLatLng = LatLng(loc.lat!!, loc.long!!)
-                            val driverMarker = googleMap.addMarker(MarkerOptions().position(driverLatLng))
+                            val driverMarker = googleMap.addMarker(MarkerOptions()
+                                .position(driverLatLng)
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                            )
                             driverMarker?.tag = makeInfoWindowData("A")
-                            val markerStartAddress = googleMap.addMarker(MarkerOptions().position(startLatLng).title(loc.name))
+                            val markerStartAddress = googleMap.addMarker(MarkerOptions()
+                                .position(startLatLng)
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                                .title(loc.name))
                             markerStartAddress?.tag = makeInfoWindowData("B")
                             val bounds = LatLngBounds
                                 .Builder()
                                 .include(startLatLng)
                                 .include(driverLatLng)
                                 .build()
-                            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds , 250))
+                            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds , 300))
                             mainViewModel.lastLocation.removeObservers(viewLifecycleOwner)
 
                             val mapService = Map()
@@ -122,5 +132,20 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     private fun makeInfoWindowData(name: String = "", distance: String = "", time: String = ""): InfoWindowData {
         return InfoWindowData(name, distance, time)
+    }
+
+    private fun setMapStyle(googleMap: GoogleMap) {
+        try {
+            val success: Boolean = googleMap.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(
+                    requireContext(), R.raw.style_json
+                )
+            )
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.")
+            }
+        } catch (e: Resources.NotFoundException) {
+            Log.e(TAG, "Can't find style. Error: ", e)
+        }
     }
 }

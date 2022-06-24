@@ -24,9 +24,10 @@ object Auth {
 
         return AuthUI.getInstance()
             .createSignInIntentBuilder()
-            .setLogo(R.drawable.ic_launcher_foreground)
             .setAvailableProviders(providers)
             .setIsSmartLockEnabled(false)
+            .setTheme(R.style.Theme_GordaDriver_PopupOverlay)
+            .setLogo(R.drawable.ic_menu_gallery)
             .build()
     }
 

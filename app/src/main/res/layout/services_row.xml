@@ -34,27 +34,23 @@
         app:layout_constraintTop_toBottomOf="@+id/service_address" />
 
     <Button
-        android:id="@+id/button2"
-        android:layout_width="match_parent"
+        android:id="@+id/btn_apply"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
+        android:backgroundTint="@color/secondary_dark"
         android:text="@string/apply"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/service_timer" />
 
     <Button
         android:id="@+id/btn_show_map"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@color/fui_transparent"
         android:text="@string/map"
         android:textAllCaps="false"
-        android:textColor="@color/black"
-        app:icon="@android:drawable/arrow_up_float"
-        app:iconSize="@dimen/fab_margin"
-        app:iconTint="@color/black"
+        app:icon="@drawable/ic_location_24"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>
