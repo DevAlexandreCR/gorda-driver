@@ -1,8 +1,10 @@
 package gorda.driver.models
 
+import com.google.android.gms.tasks.Task
 import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.ServiceInterface
 import gorda.driver.interfaces.ServiceMetadata
+import gorda.driver.repositories.ServiceRepository
 import java.io.Serializable
 
 class Service : ServiceInterface, Serializable {
@@ -25,4 +27,8 @@ class Service : ServiceInterface, Serializable {
     override var client_id: String? = null
     override var created_at: Long = 0
     override var metadata = ServiceMetadata()
+
+    fun update(): Task<Void> {
+        return ServiceRepository.update(this)
+    }
 }

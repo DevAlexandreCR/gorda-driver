@@ -1,5 +1,7 @@
 package gorda.driver.repositories
 
+import com.google.android.gms.tasks.Task
+import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.ui.service.ServicesEventListener
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Database
@@ -24,5 +26,9 @@ object ServiceRepository {
         serviceEventListener = ServicesEventListener(listener)
         Database.dbServices().orderByChild("status").equalTo(Service.STATUS_IN_PROGRESS).limitToLast(100)
             .addValueEventListener(serviceEventListener!!)
+    }
+
+    fun update(service: Service): Task<Void> {
+        return Database.dbServices().child(service.id!!).setValue(service)
     }
 }
