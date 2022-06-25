@@ -131,6 +131,7 @@ class MainActivity : AppCompatActivity() {
                 is LocationUpdates.LastLocation -> {
                     lastLocation = locationUpdate.location
                 }
+                else -> {}
             }
         }
 
@@ -227,6 +228,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                 }
+                else -> {}
             }
         }
 
@@ -237,6 +239,7 @@ class MainActivity : AppCompatActivity() {
                     switchConnect.isEnabled = true
                     setDrawerHeader(navView)
                     viewModel.isConnected(it.id!!)
+                    viewModel.thereIsACurrentService(it.id!!)
                 }
             }
         }

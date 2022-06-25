@@ -2,9 +2,14 @@ package gorda.driver.models
 
 import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.ServiceInterface
+import gorda.driver.interfaces.ServiceMetadata
+import java.io.Serializable
 
-class Service : ServiceInterface {
+class Service : ServiceInterface, Serializable {
     companion object {
+        const val STATUS_COMPLETED = "completed"
+        const val TAG = "gorda.driver.models.Service"
+        const val STATUS_IN_PROGRESS = "in_progress"
         const val STATUS_PENDING = "pending"
     }
 
@@ -19,4 +24,5 @@ class Service : ServiceInterface {
     override var driver_id: String? = null
     override var client_id: String? = null
     override var created_at: Long = 0
+    override var metadata = ServiceMetadata()
 }

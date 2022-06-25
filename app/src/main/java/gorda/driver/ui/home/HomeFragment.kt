@@ -84,6 +84,15 @@ class HomeFragment : Fragment() {
         return root
     }
 
+    override fun onStart() {
+        super.onStart()
+        mainViewModel.currentService.observe(viewLifecycleOwner) { currentService ->
+            if (currentService != null) {
+                findNavController().navigate(R.id.nav_current_service)
+            }
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

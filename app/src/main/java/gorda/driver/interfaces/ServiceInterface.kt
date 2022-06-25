@@ -12,4 +12,5 @@ interface ServiceInterface {
     var driver_id: String?
     var client_id: String?
     var created_at: Long
+    var metadata: ServiceMetadata
 }

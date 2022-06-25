@@ -9,10 +9,10 @@ import gorda.driver.models.Driver
 class ProfileViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     private val _driver = MutableLiveData<Driver>()
 
-    val driver: LiveData<Driver> = savedStateHandle.getLiveData("driver")
+    val driver: LiveData<Driver> = savedStateHandle.getLiveData(Driver.TAG)
 
     fun setDriver(driver: Driver) {
         _driver.postValue(driver)
-        savedStateHandle["driver"] = driver
+        savedStateHandle[Driver.TAG] = driver
     }
 }

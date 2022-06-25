@@ -34,4 +34,10 @@
     <string name="logout">Logout</string>
     <string name="no_routes_available">No routes available</string>
     <string name="ago">After</string>
+    <string name="service_address">Address: </string>
+    <string name="service_comment">Comment: </string>
+    <string name="service_phone">Phone: </string>
+    <string name="service_have_arrived">I have arrived</string>
+    <string name="service_start_trip">Start Trip</string>
+    <string name="service_end_trip">End Trip</string>
 </resources>
