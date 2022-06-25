@@ -29,6 +29,10 @@ class CurrentServiceFragment : Fragment() {
     private var _binding: FragmentCurrentServiceBinding? = null
     private val currentServiceViewModel: CurrentServiceViewModel by viewModels()
     private val mainViewModel: MainViewModel by activityViewModels()
+    private val btnStatus: Button = binding.btnServiceStatus
+    private val haveArrived = requireActivity().resources.getString(R.string.service_have_arrived)
+    private val startTrip = requireActivity().resources.getString(R.string.service_start_trip)
+    private val endTrip = requireActivity().resources.getString(R.string.service_end_trip)
 
     private val binding get() = _binding!!
 
@@ -44,37 +48,9 @@ class CurrentServiceFragment : Fragment() {
         val textPhone: TextView = binding.currentPhone
         val textAddress: TextView = binding.currentAddress
         val textComment: TextView = binding.serviceComment
-        val btnStatus: Button = binding.btnServiceStatus
-        val haveArrived = requireActivity().resources.getString(R.string.service_have_arrived)
-        val startTrip = requireActivity().resources.getString(R.string.service_start_trip)
-        val endTrip = requireActivity().resources.getString(R.string.service_end_trip)
-        val onSuccess = OnSuccessListener<Void> {
-            Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
-        }
-        val onFailure = OnFailureListener {
-            it.message?.let { message -> Log.e(TAG, message) }
-            Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
-        }
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
-                btnStatus.setOnClickListener {
-                    val now = Date().time / 1000
-                    when (btnStatus.text) {
-                        haveArrived -> {
-                            service.metadata.arrivedAt = now
-                        }
-                        startTrip -> {
-                            service.metadata.startTripAt = now
-                        }
-                        else -> {
-                            service.metadata.endTripAt = now
-                            service.status = Service.STATUS_COMPLETED
-                        }
-                    }
-                    service.update()
-                        .addOnSuccessListener(onSuccess)
-                        .addOnFailureListener(onFailure)
-                }
+                setOnClickListener(service)
                 textName.text = service.name
                 textPhone.text = service.phone
                 textAddress.text = service.start_loc.name
@@ -91,6 +67,32 @@ class CurrentServiceFragment : Fragment() {
             }
         }
         return root
+    }
+
+    private fun setOnClickListener(service: Service) {
+        btnStatus.setOnClickListener {
+            val now = Date().time / 1000
+            when (btnStatus.text) {
+                haveArrived -> {
+                    service.metadata.arrivedAt = now
+                }
+                startTrip -> {
+                    service.metadata.startTripAt = now
+                }
+                else -> {
+                    service.metadata.endTripAt = now
+                    service.status = Service.STATUS_COMPLETED
+                }
+            }
+            service.update()
+                .addOnSuccessListener {
+                    Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener {
+                    it.message?.let { message -> Log.e(TAG, message) }
+                    Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                }
+        }
     }
 
     override fun onDestroyView() {
