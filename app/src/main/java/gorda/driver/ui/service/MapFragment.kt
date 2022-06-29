@@ -23,6 +23,7 @@ import gorda.driver.maps.Map
 import gorda.driver.services.retrofit.RetrofitBase
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.dataclasses.LocationUpdates
+import gorda.driver.ui.service.dataclasses.ServiceUpdates
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,91 +61,97 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         setMapStyle(googleMap)
         val infoWindow = WindowAdapter(requireContext())
         googleMap.setInfoWindowAdapter(infoWindow)
-        mainViewModel.currentServiceStartLocation.observe(viewLifecycleOwner) { loc ->
-            if (loc.lat != null && loc.long != null) {
-                mainViewModel.lastLocation.observe(viewLifecycleOwner) {
-                    when (it) {
-                        is LocationUpdates.LastLocation -> {
-                            val driverLatLng = LatLng(it.location.latitude, it.location.longitude)
-                            val startLatLng = LatLng(loc.lat!!, loc.long!!)
-                            val driverMarker = googleMap.addMarker(
-                                MarkerOptions()
-                                    .position(driverLatLng)
-                                    .icon(
-                                        BitmapDescriptorFactory.defaultMarker(
-                                            BitmapDescriptorFactory.HUE_GREEN
-                                        )
-                                    )
-                            )
-                            driverMarker?.tag = makeInfoWindowData("A")
-                            val markerStartAddress = googleMap.addMarker(
-                                MarkerOptions()
-                                    .position(startLatLng)
-                                    .icon(
-                                        BitmapDescriptorFactory.defaultMarker(
-                                            BitmapDescriptorFactory.HUE_GREEN
-                                        )
-                                    )
-                                    .title(loc.name)
-                            )
-                            markerStartAddress?.tag = makeInfoWindowData("B")
-                            val bounds = LatLngBounds
-                                .Builder()
-                                .include(startLatLng)
-                                .include(driverLatLng)
-                                .build()
-                            googleMap.animateCamera(
-                                CameraUpdateFactory.newLatLngBounds(
-                                    bounds,
-                                    300
-                                )
-                            )
-                            mainViewModel.lastLocation.removeObservers(viewLifecycleOwner)
-
-                            val mapService = Map()
-                            val url = mapService.getDirectionURL(
-                                driverLatLng,
-                                startLatLng,
-                                BuildConfig.MAPS_API_KEY
-                            )
-                            getDirections(url, object : OnDirectionCompleteListener {
-                                override fun onSuccess(routes: ArrayList<Routes>) {
-                                    val lineOptions = mapService.makePolylineOptions(routes)
-                                    requireActivity().runOnUiThread {
-                                        googleMap.addPolyline(lineOptions)
-                                        if (markerStartAddress != null) {
-                                            val distance = routes[0].legs[0].distance.getDistanceString()
-                                            val time = routes[0].legs[0].duration.getDurationString()
-                                            textTime.text = time
-                                            textDistance.text = distance
-                                            markerStartAddress.tag = makeInfoWindowData(
-                                                loc.name,
-                                                distance,
-                                                time
+        mainViewModel.serviceUpdates.observe(viewLifecycleOwner) { serviceUpdates ->
+            when (serviceUpdates) {
+                is ServiceUpdates.StarLoc -> {
+                    val loc = serviceUpdates.starLoc
+                    mainViewModel.lastLocation.observe(viewLifecycleOwner) {
+                        when (it) {
+                            is LocationUpdates.LastLocation -> {
+                                val driverLatLng = LatLng(it.location.latitude, it.location.longitude)
+                                val startLatLng = LatLng(loc.lat, loc.long)
+                                val driverMarker = googleMap.addMarker(
+                                    MarkerOptions()
+                                        .position(driverLatLng)
+                                        .icon(
+                                            BitmapDescriptorFactory.defaultMarker(
+                                                BitmapDescriptorFactory.HUE_GREEN
                                             )
-                                            markerStartAddress.showInfoWindow()
+                                        )
+                                )
+                                driverMarker?.tag = makeInfoWindowData("A")
+                                val markerStartAddress = googleMap.addMarker(
+                                    MarkerOptions()
+                                        .position(startLatLng)
+                                        .icon(
+                                            BitmapDescriptorFactory.defaultMarker(
+                                                BitmapDescriptorFactory.HUE_GREEN
+                                            )
+                                        )
+                                        .title(loc.name)
+                                )
+                                markerStartAddress?.tag = makeInfoWindowData("B")
+                                val bounds = LatLngBounds
+                                    .Builder()
+                                    .include(startLatLng)
+                                    .include(driverLatLng)
+                                    .build()
+                                googleMap.animateCamera(
+                                    CameraUpdateFactory.newLatLngBounds(
+                                        bounds,
+                                        300
+                                    )
+                                )
+                                mainViewModel.lastLocation.removeObservers(viewLifecycleOwner)
+
+                                val mapService = Map()
+                                val url = mapService.getDirectionURL(
+                                    driverLatLng,
+                                    startLatLng,
+                                    BuildConfig.MAPS_API_KEY
+                                )
+                                getDirections(url, object : OnDirectionCompleteListener {
+                                    override fun onSuccess(routes: ArrayList<Routes>) {
+                                        val lineOptions = mapService.makePolylineOptions(routes)
+                                        requireActivity().runOnUiThread {
+                                            googleMap.addPolyline(lineOptions)
+                                            if (markerStartAddress != null) {
+                                                val distance = routes[0].legs[0].distance.getDistanceString()
+                                                val time = routes[0].legs[0].duration.getDurationString()
+                                                textTime.text = time
+                                                textDistance.text = distance
+                                                mainViewModel.setServiceUpdateDistTime(distance, time)
+                                                markerStartAddress.tag = makeInfoWindowData(
+                                                    loc.name,
+                                                    distance,
+                                                    time
+                                                )
+                                                markerStartAddress.showInfoWindow()
+                                            }
                                         }
                                     }
-                                }
 
-                                override fun onFailure() {
-                                    requireActivity().runOnUiThread {
-                                        markerStartAddress?.tag = makeInfoWindowData(
-                                            loc.name,
-                                        )
-                                        markerStartAddress?.showInfoWindow()
-                                        Toast.makeText(
-                                            context,
-                                            R.string.no_routes_available,
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                    override fun onFailure() {
+                                        requireActivity().runOnUiThread {
+                                            markerStartAddress?.tag = makeInfoWindowData(
+                                                loc.name,
+                                            )
+                                            markerStartAddress?.showInfoWindow()
+                                            Toast.makeText(
+                                                context,
+                                                R.string.no_routes_available,
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
-                                }
-                            })
+                                })
+                            }
                         }
                     }
                 }
+                else -> {}
             }
+
         }
     }
 

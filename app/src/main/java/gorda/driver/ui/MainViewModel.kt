@@ -14,6 +14,7 @@ import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
 import gorda.driver.services.firebase.Auth
+import gorda.driver.ui.service.dataclasses.ServiceUpdates
 
 class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     companion object {
@@ -22,17 +23,25 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _lastLocation = MutableLiveData<LocationUpdates>()
     private val _driverState = MutableLiveData<DriverUpdates>()
     private val _driver = MutableLiveData<Driver>()
-    private val _currentServiceStartLocation = MutableLiveData<LocType>()
+    private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
     private val _currentService = MutableLiveData<Service?>()
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driverStatus: LiveData<DriverUpdates> = _driverState
     var driver: LiveData<Driver> = savedStateHandle.getLiveData(Driver.TAG)
-    var currentServiceStartLocation: LiveData<LocType> = _currentServiceStartLocation
+    var serviceUpdates: LiveData<ServiceUpdates> = _serviceUpdates
     var currentService: LiveData<Service?> = savedStateHandle.getLiveData(Service.TAG)
 
-    fun setCurrentServiceStartLocation(locType: LocType) {
-        _currentServiceStartLocation.postValue(locType)
+    fun setServiceUpdateStartLocation(starLoc: LocType) {
+        _serviceUpdates.postValue(ServiceUpdates.setStarLoc(starLoc))
+    }
+
+    fun setServiceUpdateDistTime(distance: String, time: String) {
+        _serviceUpdates.postValue(ServiceUpdates.distanceTime(distance, time))
+    }
+
+    fun setServiceUpdateApply(serviceId: String) {
+        _serviceUpdates.postValue(ServiceUpdates.setServiceApply(serviceId))
     }
 
     fun updateLocation(location: Location) {

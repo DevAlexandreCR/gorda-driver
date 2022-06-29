@@ -39,12 +39,12 @@ class HomeFragment : Fragment() {
         val textView: TextView = binding.textHome
         val recyclerView: RecyclerView = binding.listServices
         val showMapFromService: (location: LocType) -> Unit = { location ->
-            mainViewModel.setCurrentServiceStartLocation(location)
+            mainViewModel.setServiceUpdateStartLocation(location)
             findNavController().navigate(R.id.nav_map)
         }
         val apply: (serviceId: String, location: LocType) -> Unit = { serviceId, location ->
-            println(serviceId)
-            mainViewModel.setCurrentServiceStartLocation(location)
+            mainViewModel.setServiceUpdateApply(serviceId)
+            mainViewModel.setServiceUpdateStartLocation(location)
             findNavController().navigate(R.id.nav_apply)
         }
         val serviceAdapter = ServiceAdapter(requireContext(), showMapFromService, apply)
@@ -61,6 +61,7 @@ class HomeFragment : Fragment() {
                 is ServiceUpdates.StopListen -> {
                     serviceAdapter.submitList(mutableListOf())
                 }
+                else -> {}
             }
         }
 
