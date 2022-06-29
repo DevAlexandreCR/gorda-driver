@@ -41,4 +41,6 @@
     <string name="service_start_trip">Start Trip</string>
     <string name="service_end_trip">End Trip</string>
     <string name="service_updated">Service successfully updated</string>
+    <string name="distance">Distance: </string>
+    <string name="time">Time: </string>
 </resources>

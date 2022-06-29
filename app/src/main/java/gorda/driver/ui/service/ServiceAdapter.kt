@@ -19,7 +19,8 @@ import java.util.*
 
 class ServiceAdapter(
     private val context: Context,
-    private val showMap: (location: LocType) -> Unit
+    private val showMap: (location: LocType) -> Unit,
+    private val apply: (serviceId: String, location: LocType) -> Unit
 ) :
     ListAdapter<Service, ServiceAdapter.ViewHolder>(ServiceDiffCallback) {
 
@@ -31,6 +32,7 @@ class ServiceAdapter(
         val textComment: TextView
         val serviceTimer: Chronometer
         val btnShowMap: Button
+        val btnApply: Button
 
         init {
             textAddress = view.findViewById(R.id.service_address)
@@ -38,6 +40,7 @@ class ServiceAdapter(
             textComment = view.findViewById(R.id.text_comment)
             serviceTimer = view.findViewById(R.id.service_timer)
             btnShowMap = view.findViewById(R.id.btn_show_map)
+            btnApply = view.findViewById(R.id.btn_apply)
         }
     }
 
@@ -51,6 +54,9 @@ class ServiceAdapter(
         holder.textAddress.text = getItem(position).start_loc.name
         holder.btnShowMap.setOnClickListener {
             showMap(getItem(position).start_loc)
+        }
+        holder.btnApply.setOnClickListener {
+            apply(getItem(position).id!!, getItem(position).start_loc)
         }
         val service = getItem(position)
         val time = Date().toInstant().minusMillis(service.created_at * 1000).toEpochMilli()

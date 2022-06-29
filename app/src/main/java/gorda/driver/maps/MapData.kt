@@ -38,12 +38,28 @@ data class Steps (
 data class Duration (
     @SerializedName("text") var text: String = "",
     @SerializedName("value") var value: Int = 0
-)
+) {
+    fun getDurationString(): String {
+        return if (value < 60) {
+            value.toString() + "s"
+        } else {
+            (value / 60).toString() + "m"
+        }
+    }
+}
 
 data class Distance (
     @SerializedName("text") var text: String = "",
     @SerializedName("value") var value: Int = 0
-)
+) {
+    fun getDistanceString(): String {
+        return if (value < 1000) {
+            value.toString() + "m"
+        } else {
+            (value / 1000).toString() + "km"
+        }
+    }
+}
 
 data class PolyLine (
     @SerializedName("points") var points: String = ""

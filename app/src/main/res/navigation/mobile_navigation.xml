@@ -29,4 +29,10 @@
         android:label="@string/map"
         tools:layout="@layout/fragment_map"
         />
+    <fragment
+        android:id="@+id/nav_apply"
+        android:name="gorda.driver.ui.service.apply.ApplyFragment"
+        android:label="@string/apply"
+        tools:layout="@layout/fragment_apply"
+        />
 </navigation>

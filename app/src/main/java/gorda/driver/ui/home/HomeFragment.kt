@@ -42,7 +42,12 @@ class HomeFragment : Fragment() {
             mainViewModel.setCurrentServiceStartLocation(location)
             findNavController().navigate(R.id.nav_map)
         }
-        val serviceAdapter = ServiceAdapter(requireContext(), showMapFromService)
+        val apply: (serviceId: String, location: LocType) -> Unit = { serviceId, location ->
+            println(serviceId)
+            mainViewModel.setCurrentServiceStartLocation(location)
+            findNavController().navigate(R.id.nav_apply)
+        }
+        val serviceAdapter = ServiceAdapter(requireContext(), showMapFromService, apply)
         recyclerView.adapter = serviceAdapter
         homeViewModel.text.observe(viewLifecycleOwner) {
             textView.text = getString(it)

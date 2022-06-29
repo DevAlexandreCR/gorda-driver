@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -16,6 +17,8 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import gorda.driver.BuildConfig
 import gorda.driver.R
+import gorda.driver.databinding.FragmentHomeBinding
+import gorda.driver.databinding.FragmentMapBinding
 import gorda.driver.maps.*
 import gorda.driver.maps.Map
 import gorda.driver.services.retrofit.RetrofitBase
@@ -32,19 +35,25 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private val mainViewModel: MainViewModel by activityViewModels()
+    private lateinit var binding: FragmentMapBinding
+    private lateinit var textTime: TextView
+    private lateinit var textDistance: TextView
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_map, container, false)
+        binding = FragmentMapBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
         mapFragment?.getMapAsync(this)
+        textTime = binding.textTime
+        textDistance = binding.textDistance
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
@@ -101,13 +110,17 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                             getDirections(url, object : OnDirectionCompleteListener {
                                 override fun onSuccess(routes: ArrayList<Routes>) {
                                     val lineOptions = mapService.makePolylineOptions(routes)
-                                    googleMap.addPolyline(lineOptions)
                                     requireActivity().runOnUiThread {
+                                        googleMap.addPolyline(lineOptions)
                                         if (markerStartAddress != null) {
+                                            val distance = routes[0].legs[0].distance.getDistanceString()
+                                            val time = routes[0].legs[0].duration.getDurationString()
+                                            textTime.text = time
+                                            textDistance.text = distance
                                             markerStartAddress.tag = makeInfoWindowData(
                                                 loc.name,
-                                                routes[0].legs[0].distance.value.toString(),
-                                                routes[0].legs[0].duration.value.toString()
+                                                distance,
+                                                time
                                             )
                                             markerStartAddress.showInfoWindow()
                                         }
