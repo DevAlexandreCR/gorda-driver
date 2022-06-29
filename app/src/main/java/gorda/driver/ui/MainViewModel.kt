@@ -8,7 +8,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import gorda.driver.interfaces.LocType
 import gorda.driver.ui.driver.DriverUpdates
-import gorda.driver.ui.service.LocationUpdates
+import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository

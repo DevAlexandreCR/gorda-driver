@@ -1,4 +1,4 @@
-package gorda.driver.ui.service
+package gorda.driver.ui.service.dataclasses
 
 import gorda.driver.models.Service
 

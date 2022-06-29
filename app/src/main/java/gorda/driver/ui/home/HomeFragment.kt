@@ -15,9 +15,9 @@ import gorda.driver.databinding.FragmentHomeBinding
 import gorda.driver.interfaces.LocType
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.driver.DriverUpdates
-import gorda.driver.ui.service.LocationUpdates
+import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.ServiceAdapter
-import gorda.driver.ui.service.ServiceUpdates
+import gorda.driver.ui.service.dataclasses.ServiceUpdates
 
 class HomeFragment : Fragment() {
 

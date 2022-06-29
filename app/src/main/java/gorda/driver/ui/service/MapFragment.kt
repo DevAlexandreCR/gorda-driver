@@ -17,12 +17,12 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import gorda.driver.BuildConfig
 import gorda.driver.R
-import gorda.driver.databinding.FragmentHomeBinding
 import gorda.driver.databinding.FragmentMapBinding
 import gorda.driver.maps.*
 import gorda.driver.maps.Map
 import gorda.driver.services.retrofit.RetrofitBase
 import gorda.driver.ui.MainViewModel
+import gorda.driver.ui.service.dataclasses.LocationUpdates
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
