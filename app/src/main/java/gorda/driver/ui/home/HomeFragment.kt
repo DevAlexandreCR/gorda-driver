@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import gorda.driver.R
 import gorda.driver.databinding.FragmentHomeBinding
 import gorda.driver.interfaces.LocType
+import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.dataclasses.LocationUpdates
@@ -42,10 +44,11 @@ class HomeFragment : Fragment() {
             mainViewModel.setServiceUpdateStartLocation(location)
             findNavController().navigate(R.id.nav_map)
         }
-        val apply: (serviceId: String, location: LocType) -> Unit = { serviceId, location ->
-            mainViewModel.setServiceUpdateApply(serviceId)
+        val apply: (service: Service, location: LocType) -> Unit = { service, location ->
+            mainViewModel.setServiceUpdateApply(service)
             mainViewModel.setServiceUpdateStartLocation(location)
-            findNavController().navigate(R.id.nav_apply)
+            val bundle = bundleOf("service" to service)
+            findNavController().navigate(R.id.nav_apply, bundle)
         }
         val serviceAdapter = ServiceAdapter(requireContext(), showMapFromService, apply)
         recyclerView.adapter = serviceAdapter

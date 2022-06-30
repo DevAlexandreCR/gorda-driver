@@ -43,4 +43,7 @@
     <string name="service_updated">Service successfully updated</string>
     <string name="distance">Distance: </string>
     <string name="time">Time: </string>
+    <string name="cancel">Cancel</string>
+    <string name="applying">Applying …</string>
+    <string name="applied">You have been applied successfully  to service</string>
 </resources>

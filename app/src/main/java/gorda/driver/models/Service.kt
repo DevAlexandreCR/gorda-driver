@@ -31,4 +31,8 @@ class Service : ServiceInterface, Serializable {
     fun update(): Task<Void> {
         return ServiceRepository.update(this)
     }
+
+    fun addApplicant(driver: Driver, distance: String, time: String): Task<Void> {
+        return ServiceRepository.addApplicant(this.id!!, driver.id!!, distance, time)
+    }
 }

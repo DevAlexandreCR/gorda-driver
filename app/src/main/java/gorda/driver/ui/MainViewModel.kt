@@ -40,8 +40,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         _serviceUpdates.postValue(ServiceUpdates.distanceTime(distance, time))
     }
 
-    fun setServiceUpdateApply(serviceId: String) {
-        _serviceUpdates.postValue(ServiceUpdates.setServiceApply(serviceId))
+    fun setServiceUpdateApply(service: Service) {
+        driver.value?.let {
+            _serviceUpdates.postValue(ServiceUpdates.setServiceApply(service, it))
+        }
     }
 
     fun updateLocation(location: Location) {

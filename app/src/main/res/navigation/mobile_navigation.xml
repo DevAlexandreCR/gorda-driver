@@ -34,5 +34,9 @@
         android:name="gorda.driver.ui.service.apply.ApplyFragment"
         android:label="@string/apply"
         tools:layout="@layout/fragment_apply"
-        />
+        >
+        <argument
+            android:name="service"
+            app:argType="gorda.driver.models.Service" />
+    </fragment>
 </navigation>

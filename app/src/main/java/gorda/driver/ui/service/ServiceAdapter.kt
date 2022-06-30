@@ -20,7 +20,7 @@ import java.util.*
 class ServiceAdapter(
     private val context: Context,
     private val showMap: (location: LocType) -> Unit,
-    private val apply: (serviceId: String, location: LocType) -> Unit
+    private val apply: (service: Service, location: LocType) -> Unit
 ) :
     ListAdapter<Service, ServiceAdapter.ViewHolder>(ServiceDiffCallback) {
 
@@ -56,7 +56,7 @@ class ServiceAdapter(
             showMap(getItem(position).start_loc)
         }
         holder.btnApply.setOnClickListener {
-            apply(getItem(position).id!!, getItem(position).start_loc)
+            apply(getItem(position), getItem(position).start_loc)
         }
         val service = getItem(position)
         val time = Date().toInstant().minusMillis(service.created_at * 1000).toEpochMilli()
