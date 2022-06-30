@@ -22,7 +22,6 @@ class ApplyFragment : Fragment() {
         fun newInstance() = ApplyFragment()
     }
 
-    private val viewModel: ApplyViewModel by viewModels()
     private val mainViewModel: MainViewModel by activityViewModels()
     private lateinit var binding: FragmentApplyBinding
     private lateinit var btnCancel: Button

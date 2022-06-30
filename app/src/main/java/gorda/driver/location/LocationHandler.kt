@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.LocationManager
 import android.os.Looper
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.*
@@ -15,7 +14,6 @@ object LocationHandler {
     private var locationCallback: LocationCallback? = null
 
     const val PERMISSION_REQUEST_ACCESS_LOCATION = 100
-    private const val TAG = "LocationHandler"
     private const val LOCATION_REFRESH_TIME = 5000
 
     fun checkPermissions(context: Context): Boolean {

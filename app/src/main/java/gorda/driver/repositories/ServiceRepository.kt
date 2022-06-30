@@ -1,7 +1,6 @@
 package gorda.driver.repositories
 
 import com.google.android.gms.tasks.Task
-import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.ui.service.ServicesEventListener
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Database

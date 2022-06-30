@@ -13,8 +13,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import com.google.android.gms.tasks.OnFailureListener
-import com.google.android.gms.tasks.OnSuccessListener
 import gorda.driver.R
 import gorda.driver.databinding.FragmentCurrentServiceBinding
 import gorda.driver.models.Service
@@ -28,7 +26,6 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private var _binding: FragmentCurrentServiceBinding? = null
-    private val currentServiceViewModel: CurrentServiceViewModel by viewModels()
     private val mainViewModel: MainViewModel by activityViewModels()
     private lateinit var btnStatus: Button
     private lateinit var textName: TextView

@@ -3,7 +3,6 @@ package gorda.driver.services.firebase
 import android.content.Intent
 import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import gorda.driver.R
 
 object Auth {

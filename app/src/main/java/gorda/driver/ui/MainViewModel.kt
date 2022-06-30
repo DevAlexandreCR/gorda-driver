@@ -91,10 +91,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }
     }
 
-    fun connecting(connecting: Boolean) {
-        _driverState.postValue(DriverUpdates.connecting(connecting))
-    }
-
     fun thereIsACurrentService(driverID: String) {
         ServiceRepository.getCurrentServices { services ->
             val service = services.find { it.driver_id == driverID }
