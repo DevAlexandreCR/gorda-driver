@@ -12,7 +12,7 @@ object ServiceRepository {
 
     fun getPending(listener: (serviceList: MutableList<Service>) -> Unit) {
         serviceEventListener = ServicesEventListener(listener)
-        Database.dbServices().orderByChild("status").equalTo(Service.STATUS_PENDING).limitToLast(100)
+        Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING).limitToLast(100)
             .addValueEventListener(serviceEventListener!!)
     }
 
@@ -24,7 +24,7 @@ object ServiceRepository {
 
     fun getCurrentServices(listener: (serviceList: MutableList<Service>) -> Unit) {
         serviceEventListener = ServicesEventListener(listener)
-        Database.dbServices().orderByChild("status").equalTo(Service.STATUS_IN_PROGRESS).limitToLast(100)
+        Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_IN_PROGRESS).limitToLast(100)
             .addValueEventListener(serviceEventListener!!)
     }
 
@@ -33,7 +33,7 @@ object ServiceRepository {
     }
 
     fun addApplicant(id: String, driverId: String, distance: String, time: String): Task<Void> {
-        return Database.dbServices().child(id).child("applicants").child(driverId).setValue(object: Serializable {
+        return Database.dbServices().child(id).child(Service.APPLICANTS).child(driverId).setValue(object: Serializable {
             val distance = distance
             val time = time
         })

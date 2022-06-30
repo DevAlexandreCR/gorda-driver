@@ -13,6 +13,8 @@ class Service : ServiceInterface, Serializable {
         const val TAG = "gorda.driver.models.Service"
         const val STATUS_IN_PROGRESS = "in_progress"
         const val STATUS_PENDING = "pending"
+        const val STATUS = "status"
+        const val APPLICANTS = "applicants"
     }
 
     override var id: String? = null
