@@ -15,6 +15,8 @@ sealed class ServiceUpdates {
 
     data class DistanceTime(var distance: String, val time: String): ServiceUpdates()
 
+    data class Status(var status: String): ServiceUpdates()
+
     companion object {
         fun setList(services: MutableList<Service>): SetList = SetList(services)
 
@@ -25,5 +27,7 @@ sealed class ServiceUpdates {
         fun setStarLoc(starLoc: LocType): StarLoc = StarLoc(starLoc)
 
         fun distanceTime(distance: String, time: String): DistanceTime = DistanceTime(distance, time)
+
+        fun status(status: String): Status = Status(status)
     }
 }

@@ -21,7 +21,7 @@
 
     <string name="menu_home">Services</string>
     <string name="menu_profile">Profile</string>
-    <string name="menu_slideshow">Slideshow</string>
+    <string name="menu_current_service">Current Service</string>
     <string name="services_list">Service list</string>
     <string name="apply">Apply at</string>
     <string name="map">Map</string>
@@ -46,4 +46,7 @@
     <string name="cancel">Cancel</string>
     <string name="applying">Applying …</string>
     <string name="applied">You have been applied successfully  to service</string>
+    <string name="wait_for_assign">Applied success, please wait…</string>
+    <string name="cancelApply">The Request has been cancelled</string>
+    <string name="service_canceled">Service has been canceled</string>
 </resources>

@@ -131,10 +131,6 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.setAuth()
         observeDriver(navView)
-
-        if (!LocationHandler.checkPermissions(this)) {
-            requestPermissions()
-        }
     }
 
     override fun onStart() {
@@ -157,6 +153,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!LocationHandler.checkPermissions(this)) {
+            requestPermissions()
+        }
         if (!isLocationEnabled()) {
             val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(intent)

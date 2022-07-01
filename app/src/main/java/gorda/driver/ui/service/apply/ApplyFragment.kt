@@ -6,9 +6,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import gorda.driver.R
 import gorda.driver.databinding.FragmentApplyBinding
 import gorda.driver.models.Driver
@@ -25,6 +28,8 @@ class ApplyFragment : Fragment() {
     private val mainViewModel: MainViewModel by activityViewModels()
     private lateinit var binding: FragmentApplyBinding
     private lateinit var btnCancel: Button
+    private lateinit var progressBar: ProgressBar
+    private lateinit var textView: TextView
     private lateinit var distance: String
     private lateinit var driver: Driver
     private lateinit var service: Service
@@ -41,6 +46,17 @@ class ApplyFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         btnCancel = binding.btnCancel
+        progressBar = binding.progressBar
+        textView = binding.textView
+
+        btnCancel.setOnClickListener {
+            service.cancelApplicant(driver).addOnSuccessListener {
+                findNavController().navigate(R.id.nav_home)
+                Toast.makeText(requireContext(), R.string.cancelApply, Toast.LENGTH_LONG).show()
+            }. addOnFailureListener {
+                Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
+            }
+        }
 
         mainViewModel.driver.value?.let {
             driver = it
@@ -58,9 +74,20 @@ class ApplyFragment : Fragment() {
                     time = it.time
                     distance = it.distance
                     service.addApplicant(driver, distance, time).addOnSuccessListener {
-                        Toast.makeText(requireContext(), R.string.applied, Toast.LENGTH_LONG).show()
+                        textView.text = requireActivity().resources.getString(R.string.wait_for_assign)
+                        btnCancel.isEnabled = true
                     }.addOnFailureListener {
                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
+                    }
+                }
+                is ServiceUpdates.Status -> {
+                    when (it.status) {
+                        Service.STATUS_CANCELED -> {
+                            Toast.makeText(requireContext(), R.string.service_canceled, Toast.LENGTH_LONG).show()
+                        }
+                        Service.STATUS_IN_PROGRESS -> {
+                            findNavController().navigate(R.id.nav_home)
+                        }
                     }
                 }
                 else -> {}

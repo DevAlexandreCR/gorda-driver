@@ -2,11 +2,14 @@ package gorda.driver.ui
 
 import android.location.Location
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import com.google.firebase.database.DatabaseError
 import gorda.driver.interfaces.LocType
+import gorda.driver.interfaces.OnStatusChangeListener
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.models.Driver
@@ -43,6 +46,15 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     fun setServiceUpdateApply(service: Service) {
         driver.value?.let {
             _serviceUpdates.postValue(ServiceUpdates.setServiceApply(service, it))
+            service.onStatusChange(object : OnStatusChangeListener {
+                override fun onChange(status: String) {
+                    _serviceUpdates.postValue(ServiceUpdates.Status(status))
+                }
+
+                override fun onFailure(error: DatabaseError) {
+                    Log.e(TAG, error.message)
+                }
+            })
         }
     }
 
