@@ -1,7 +1,6 @@
 package gorda.driver.ui.service.apply
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,8 +8,8 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import gorda.driver.R
 import gorda.driver.databinding.FragmentApplyBinding
@@ -22,7 +21,6 @@ import gorda.driver.ui.service.dataclasses.ServiceUpdates
 class ApplyFragment : Fragment() {
 
     companion object {
-        fun newInstance() = ApplyFragment()
     }
 
     private val mainViewModel: MainViewModel by activityViewModels()

@@ -1,15 +1,11 @@
 package gorda.driver.repositories
 
 import com.google.android.gms.tasks.Task
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.getValue
-import gorda.driver.interfaces.OnStatusChangeListener
-import gorda.driver.ui.service.ServicesEventListener
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Database
+import gorda.driver.ui.service.ServicesEventListener
 import java.io.Serializable
 
 object ServiceRepository {
