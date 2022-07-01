@@ -30,10 +30,10 @@ class ApplyFragment : Fragment() {
     private lateinit var btnCancel: Button
     private lateinit var progressBar: ProgressBar
     private lateinit var textView: TextView
-    private lateinit var distance: String
+    private var distance: Int = 0
     private lateinit var driver: Driver
     private lateinit var service: Service
-    private lateinit var time: String
+    private var time: Int = 0
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -71,8 +71,8 @@ class ApplyFragment : Fragment() {
         mainViewModel.serviceUpdates.observe(viewLifecycleOwner) {
             when(it) {
                 is ServiceUpdates.DistanceTime -> {
-                    time = it.time
-                    distance = it.distance
+                    time = it.time.value
+                    distance = it.distance.value
                     service.addApplicant(driver, distance, time).addOnSuccessListener {
                         textView.text = requireActivity().resources.getString(R.string.wait_for_assign)
                         btnCancel.isEnabled = true
@@ -84,6 +84,7 @@ class ApplyFragment : Fragment() {
                     when (it.status) {
                         Service.STATUS_CANCELED -> {
                             Toast.makeText(requireContext(), R.string.service_canceled, Toast.LENGTH_LONG).show()
+                            findNavController().navigate(R.id.nav_home)
                         }
                         Service.STATUS_IN_PROGRESS -> {
                             findNavController().navigate(R.id.nav_home)

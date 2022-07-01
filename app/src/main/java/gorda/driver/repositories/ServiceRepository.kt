@@ -3,6 +3,7 @@ package gorda.driver.repositories
 import com.google.android.gms.tasks.Task
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.interfaces.OnStatusChangeListener
@@ -37,7 +38,7 @@ object ServiceRepository {
         return Database.dbServices().child(service.id!!).setValue(service)
     }
 
-    fun addApplicant(id: String, driverId: String, distance: String, time: String): Task<Void> {
+    fun addApplicant(id: String, driverId: String, distance: Int, time: Int): Task<Void> {
         return Database.dbServices().child(id).child(Service.APPLICANTS).child(driverId).setValue(object: Serializable {
             val distance = distance
             val time = time
@@ -49,20 +50,11 @@ object ServiceRepository {
             .removeValue()
     }
 
-    fun onStatusChange(serviceId: String, listener: OnStatusChangeListener) {
-        Database.dbServices().child(serviceId).child(Service.STATUS)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val status = snapshot.getValue<String>()
-                    status?.let {
-                        listener.onChange(it)
-                    }
-                }
+    fun onStatusChange(serviceId: String, listener: ValueEventListener) {
+        getStatusReference(serviceId).addValueEventListener(listener)
+    }
 
-                override fun onCancelled(error: DatabaseError) {
-                    listener.onFailure(error)
-                }
-
-            })
+    fun getStatusReference(serviceId: String): DatabaseReference {
+        return Database.dbServices().child(serviceId).child(Service.STATUS)
     }
 }

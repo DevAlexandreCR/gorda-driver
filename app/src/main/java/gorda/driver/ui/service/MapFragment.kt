@@ -116,15 +116,15 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                                         requireActivity().runOnUiThread {
                                             googleMap.addPolyline(lineOptions)
                                             if (markerStartAddress != null) {
-                                                val distance = routes[0].legs[0].distance.getDistanceString()
-                                                val time = routes[0].legs[0].duration.getDurationString()
-                                                textTime.text = time
-                                                textDistance.text = distance
+                                                val distance = routes[0].legs[0].distance
+                                                val time = routes[0].legs[0].duration
+                                                textTime.text = time.getDurationString()
+                                                textDistance.text = distance.getDistanceString()
                                                 mainViewModel.setServiceUpdateDistTime(distance, time)
                                                 markerStartAddress.tag = makeInfoWindowData(
                                                     loc.name,
-                                                    distance,
-                                                    time
+                                                    distance.getDistanceString(),
+                                                    time.getDurationString()
                                                 )
                                                 markerStartAddress.showInfoWindow()
                                             }

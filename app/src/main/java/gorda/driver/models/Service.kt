@@ -2,6 +2,8 @@ package gorda.driver.models
 
 import com.google.android.gms.tasks.Task
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.ValueEventListener
 import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.OnStatusChangeListener
 import gorda.driver.interfaces.ServiceInterface
@@ -38,7 +40,7 @@ class Service : ServiceInterface, Serializable {
         return ServiceRepository.update(this)
     }
 
-    fun addApplicant(driver: Driver, distance: String, time: String): Task<Void> {
+    fun addApplicant(driver: Driver, distance: Int, time: Int): Task<Void> {
         return ServiceRepository.addApplicant(this.id!!, driver.id!!, distance, time)
     }
 
@@ -46,7 +48,11 @@ class Service : ServiceInterface, Serializable {
         return ServiceRepository.cancelApply(this.id!!, driver.id!!)
     }
 
-    fun onStatusChange(listener: OnStatusChangeListener) {
+    fun onStatusChange(listener: ValueEventListener) {
         ServiceRepository.onStatusChange(this.id!!, listener)
+    }
+
+    fun getStatusReference(): DatabaseReference {
+        return ServiceRepository.getStatusReference(this.id!!)
     }
 }
