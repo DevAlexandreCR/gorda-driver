@@ -1,6 +1,8 @@
 package gorda.driver.ui.service.current
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -17,6 +19,7 @@ import gorda.driver.databinding.FragmentCurrentServiceBinding
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import java.util.*
+
 
 class CurrentServiceFragment : Fragment() {
 
@@ -66,6 +69,10 @@ class CurrentServiceFragment : Fragment() {
             } else {
                 findNavController().navigate(R.id.nav_home)
             }
+        }
+        textPhone.setOnClickListener {
+            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + textPhone.text))
+            startActivity(intent)
         }
         return root
     }
