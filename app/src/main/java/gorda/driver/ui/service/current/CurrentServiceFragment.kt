@@ -89,7 +89,7 @@ class CurrentServiceFragment : Fragment() {
                 }
                 else -> {
                     service.metadata.endTripAt = now
-                    service.status = Service.STATUS_COMPLETED
+                    service.status = Service.STATUS_TERMINATED
                 }
             }
             service.updateMetadata()

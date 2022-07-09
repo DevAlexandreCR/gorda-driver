@@ -27,7 +27,7 @@ data class Service(
 ) : Serializable {
     companion object {
         const val STATUS_CANCELED = "canceled"
-        const val STATUS_COMPLETED = "completed"
+        const val STATUS_TERMINATED = "terminated"
         const val TAG = "gorda.driver.models.Service"
         const val STATUS_IN_PROGRESS = "in_progress"
         const val STATUS_PENDING = "pending"
