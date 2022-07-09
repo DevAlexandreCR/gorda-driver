@@ -25,18 +25,15 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="16dp"
-        android:clickable="true"
-        android:drawableEnd="@drawable/ic_call_24"
         android:drawablePadding="@dimen/min_margin"
-        android:inputType="phone"
         android:linksClickable="false"
-        android:phoneNumber="false"
         android:singleLine="false"
         android:textColor="@android:color/holo_blue_light"
         android:textSize="16sp"
         android:textStyle="bold|italic"
         app:layout_constraintStart_toEndOf="@+id/textView3"
-        app:layout_constraintTop_toBottomOf="@+id/current_service_name" />
+        app:layout_constraintTop_toBottomOf="@+id/current_service_name"
+        app:drawableEndCompat="@drawable/ic_call_24" />
 
     <TextView
         android:id="@+id/current_address"
@@ -64,7 +61,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:clickable="true"
         android:text="@string/service_address"
         android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -95,7 +91,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:text="@string/service_have_arrived"
         app:layout_constraintEnd_toEndOf="parent"
