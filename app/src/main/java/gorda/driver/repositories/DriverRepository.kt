@@ -10,13 +10,16 @@ import gorda.driver.interfaces.DriverInterface
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.models.Driver
 import gorda.driver.services.firebase.Database
+import java.io.Serializable
 
 object DriverRepository {
 
     val TAG = DriverRepository::class.java.toString()
 
     fun connect(driver: DriverInterface): Task<Void> {
-        return Database.dbOnlineDrivers().child(driver.id!!).setValue(driver)
+        return Database.dbOnlineDrivers().child(driver.id!!).setValue(object : Serializable {
+            val id = driver.id
+        })
     }
 
     fun disconnect(driver: DriverInterface): Task<Void> {
