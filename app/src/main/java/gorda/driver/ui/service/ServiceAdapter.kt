@@ -67,7 +67,7 @@ class ServiceAdapter(
         holder.serviceTimer.format = context.resources.getString(R.string.ago) + " %s"
         holder.textName.text = service.name
         holder.textComment.text = service.comment
-        holder.textDis.text = calculateDistance(service.start_loc).toString()
+        holder.textDis.text = distanceToString(calculateDistance(service.start_loc))
     }
 
     object ServiceDiffCallback : DiffUtil.ItemCallback<Service>() {
@@ -85,12 +85,15 @@ class ServiceAdapter(
         location.latitude = starLoc.lat
         location.longitude = starLoc.lng
         var distance = 0
-        println(lastLocation)
-        lastLocation?.let { last -> {
-                distance = last.distanceTo(location).toInt()
-            }
+        if (null != lastLocation) {
+            distance = lastLocation!!.distanceTo(location).toInt()
         }
 
         return distance
+    }
+
+    private fun distanceToString(distance: Int): String {
+        return if (distance > 1000) (distance / 1000).toString() + "km"
+        else distance.toString() + "m"
     }
 }
