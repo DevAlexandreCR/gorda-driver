@@ -85,6 +85,7 @@ class ServiceAdapter(
         location.latitude = starLoc.lat
         location.longitude = starLoc.lng
         var distance = 0
+        println(lastLocation)
         lastLocation?.let { last -> {
                 distance = last.distanceTo(location).toInt()
             }

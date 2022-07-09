@@ -54,7 +54,7 @@ class ApplyFragment : Fragment() {
             service.cancelApplicant(driver).addOnSuccessListener {
                 button.isEnabled = true
                 findNavController().navigate(R.id.nav_home)
-                Toast.makeText(requireContext(), R.string.cancelApply, Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), R.string.cancelApply, Toast.LENGTH_SHORT).show()
             }. addOnFailureListener { e ->
                 button.isEnabled = true
                 e.message?.let { message -> Log.e(TAG, message) }
@@ -88,7 +88,7 @@ class ApplyFragment : Fragment() {
                 is ServiceUpdates.Status -> {
                     when (it.status) {
                         Service.STATUS_CANCELED -> {
-                            Toast.makeText(requireContext(), R.string.service_canceled, Toast.LENGTH_LONG).show()
+                            Toast.makeText(requireContext(), R.string.service_canceled, Toast.LENGTH_SHORT).show()
                             findNavController().navigate(R.id.nav_home)
                         }
                         Service.STATUS_IN_PROGRESS -> {

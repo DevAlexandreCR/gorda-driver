@@ -4,9 +4,11 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Looper
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.*
+import com.google.android.gms.tasks.Task
 import gorda.driver.interfaces.CustomLocationListener
 
 object LocationHandler {
@@ -52,6 +54,10 @@ object LocationHandler {
             locationCallback as LocationCallback,
             Looper.getMainLooper()
         )
+    }
+
+    fun getLastLocation(): Task<Location>? {
+        return fusedLocationClient?.lastLocation
     }
 
     fun stopLocationUpdates() {

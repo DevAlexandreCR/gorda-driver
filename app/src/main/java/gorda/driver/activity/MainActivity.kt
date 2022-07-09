@@ -140,6 +140,11 @@ class MainActivity : AppCompatActivity() {
                 locationBroadcastReceiver,
                 IntentFilter(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
             )
+        LocationHandler.getLastLocation()?.let {
+            it.addOnSuccessListener { loc ->
+                viewModel.updateLocation(loc)
+            }
+        }
     }
 
     override fun onStop() {
