@@ -42,4 +42,5 @@
     <string name="wait_for_assign">Has aplicado al servicio, por favor espera…</string>
     <string name="cancelApply">La solicitud ha sido cancelada</string>
     <string name="service_canceled">El servicio ha sido cancelado</string>
+    <string name="text_connected">Estás disponible para recibir servicios</string>
 </resources>
