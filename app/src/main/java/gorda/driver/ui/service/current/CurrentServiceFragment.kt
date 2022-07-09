@@ -92,7 +92,7 @@ class CurrentServiceFragment : Fragment() {
                     service.status = Service.STATUS_COMPLETED
                 }
             }
-            service.update()
+            service.updateMetadata()
                 .addOnSuccessListener {
                     Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
                 }

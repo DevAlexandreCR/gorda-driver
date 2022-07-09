@@ -69,7 +69,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                         when (it) {
                             is LocationUpdates.LastLocation -> {
                                 val driverLatLng = LatLng(it.location.latitude, it.location.longitude)
-                                val startLatLng = LatLng(loc.lat, loc.long)
+                                val startLatLng = LatLng(loc.lat, loc.lng)
                                 val driverMarker = googleMap.addMarker(
                                     MarkerOptions()
                                         .position(driverLatLng)

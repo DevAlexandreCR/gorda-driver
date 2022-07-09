@@ -1,6 +1,7 @@
 package gorda.driver.ui.service.apply
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +22,7 @@ import gorda.driver.ui.service.dataclasses.ServiceUpdates
 class ApplyFragment : Fragment() {
 
     companion object {
+        const val TAG = "gorda.driver.ui.service.apply.ApplyFragment"
     }
 
     private val mainViewModel: MainViewModel by activityViewModels()
@@ -51,7 +53,8 @@ class ApplyFragment : Fragment() {
             service.cancelApplicant(driver).addOnSuccessListener {
                 findNavController().navigate(R.id.nav_home)
                 Toast.makeText(requireContext(), R.string.cancelApply, Toast.LENGTH_LONG).show()
-            }. addOnFailureListener {
+            }. addOnFailureListener { e ->
+                e.message?.let { message -> Log.e(TAG, message) }
                 Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
             }
         }
@@ -60,6 +63,7 @@ class ApplyFragment : Fragment() {
             driver = it
             arguments?.let { bundle ->
                 service = bundle.getSerializable("service") as Service
+                println("***" + service.start_loc.toString())
                 apply()
             }
         }
@@ -74,7 +78,8 @@ class ApplyFragment : Fragment() {
                     service.addApplicant(driver, distance, time).addOnSuccessListener {
                         textView.text = requireActivity().resources.getString(R.string.wait_for_assign)
                         btnCancel.isEnabled = true
-                    }.addOnFailureListener {
+                    }.addOnFailureListener { e ->
+                        e.message?.let { message -> Log.e(TAG, message) }
                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
                     }
                 }

@@ -1,8 +1,10 @@
 package gorda.driver.repositories
 
 import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
+import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Database
 import gorda.driver.ui.service.ServicesEventListener
@@ -30,8 +32,11 @@ object ServiceRepository {
             .addValueEventListener(serviceEventListener!!)
     }
 
-    fun update(service: Service): Task<Void> {
-        return Database.dbServices().child(service.id!!).setValue(service)
+    fun updateMetadata(serviceId: String, metadata: ServiceMetadata, status: String): Task<Void> {
+        val taskMetadata = Database.dbServices().child(serviceId).child("metadata").setValue(metadata)
+        val taskStatus = Database.dbServices().child(serviceId).child("status").setValue(status)
+
+        return Tasks.whenAll(taskMetadata, taskStatus)
     }
 
     fun addApplicant(id: String, driverId: String, distance: Int, time: Int): Task<Void> {
