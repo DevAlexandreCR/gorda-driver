@@ -28,13 +28,15 @@ class LocationService: Service() {
 
     lateinit var lastLocation: Location
     private lateinit var messenger: Messenger
+    private var stoped = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
+            stoped = false
             val driverId = intent.getStringExtra(Driver.DRIVER_KEY)
             LocationHandler.startListeningUserLocation(this, object : CustomLocationListener {
                 override fun onLocationChanged(location: Location?) {
-                    if (location !== null && driverId != null) {
+                    if (location !== null && driverId != null && !stoped) {
                         lastLocation = location
                         DriverRepository.updateLocation(driverId, object: LocInterface {
                             override var lat: Double = location.latitude
@@ -77,6 +79,7 @@ class LocationService: Service() {
 
     fun stop() {
         LocationHandler.stopLocationUpdates()
+        stoped = true
         stopSelf()
     }
 
