@@ -76,4 +76,13 @@
         app:layout_constraintTop_toBottomOf="@+id/text_user_name"
         tools:ignore="SmallSp" />
 
+    <TextView
+        android:id="@+id/textDis"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintStart_toEndOf="@+id/service_timer"
+        app:layout_constraintTop_toBottomOf="@+id/service_address" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,5 +1,6 @@
 package gorda.driver.ui.home
 
+import android.location.Location
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -26,6 +27,7 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private val mainViewModel: MainViewModel by activityViewModels()
+    private var location: Location? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -58,6 +60,15 @@ class HomeFragment : Fragment() {
         homeViewModel.serviceList.observe(viewLifecycleOwner) {
             when (it) {
                 is ServiceUpdates.SetList -> {
+                    location?.let { loc ->
+                        it.services.sortWith(compareBy {
+                            val location = Location("last")
+                            location.latitude = it.start_loc.lat
+                            location.longitude = it.start_loc.lng
+
+                            loc.distanceTo(location).toInt()
+                        })
+                    }
                     serviceAdapter.submitList(it.services)
                 }
                 is ServiceUpdates.StopListen -> {
@@ -70,7 +81,7 @@ class HomeFragment : Fragment() {
         mainViewModel.lastLocation.observe(viewLifecycleOwner) {
             when (it) {
                 is LocationUpdates.LastLocation -> {
-                    it.location
+                    location = it.location
                     serviceAdapter.lastLocation = it.location
                     serviceAdapter.notifyDataSetChanged()
                 }

@@ -29,6 +29,7 @@ class ServiceAdapter(
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textAddress: TextView
         val textName: TextView
+        val textDis: TextView
         val textComment: TextView
         val serviceTimer: Chronometer
         val btnShowMap: Button
@@ -36,6 +37,7 @@ class ServiceAdapter(
 
         init {
             textAddress = view.findViewById(R.id.service_address)
+            textDis = view.findViewById(R.id.textDis)
             textName = view.findViewById(R.id.text_user_name)
             textComment = view.findViewById(R.id.text_comment)
             serviceTimer = view.findViewById(R.id.service_timer)
@@ -65,6 +67,7 @@ class ServiceAdapter(
         holder.serviceTimer.format = context.resources.getString(R.string.ago) + " %s"
         holder.textName.text = service.name
         holder.textComment.text = service.comment
+        holder.textDis.text = calculateDistance(service.start_loc).toString()
     }
 
     object ServiceDiffCallback : DiffUtil.ItemCallback<Service>() {
@@ -75,5 +78,18 @@ class ServiceAdapter(
         override fun areContentsTheSame(oldItem: Service, newItem: Service): Boolean {
             return oldItem.id == newItem.id
         }
+    }
+
+    private fun calculateDistance(starLoc: LocType): Int {
+        val location = Location("last")
+        location.latitude = starLoc.lat
+        location.longitude = starLoc.lng
+        var distance = 0
+        lastLocation?.let { last -> {
+                distance = last.distanceTo(location).toInt()
+            }
+        }
+
+        return distance
     }
 }
