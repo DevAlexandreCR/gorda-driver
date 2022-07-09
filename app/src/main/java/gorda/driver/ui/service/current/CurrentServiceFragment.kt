@@ -59,6 +59,17 @@ class CurrentServiceFragment : Fragment() {
                 textPhone.text = service.phone
                 textAddress.text = service.start_loc.name
                 textComment.text = service.comment
+                textPhone.setOnClickListener {
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + service.phone))
+                    startActivity(intent)
+                }
+                val uri: String = String.format(Locale.ENGLISH, "google.navigation:q=%f,%f",
+                    service.start_loc.lat, service.start_loc.lng)
+                textAddress.setOnClickListener {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+                    intent.setPackage("com.google.android.apps.maps")
+                    startActivity(intent)
+                }
                 if (service.metadata.arrivedAt == null) {
                     btnStatus.text = haveArrived
                 } else if (service.metadata.startTripAt == null){
@@ -69,10 +80,6 @@ class CurrentServiceFragment : Fragment() {
             } else {
                 findNavController().navigate(R.id.nav_home)
             }
-        }
-        textPhone.setOnClickListener {
-            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + textPhone.text))
-            startActivity(intent)
         }
         return root
     }
