@@ -61,14 +61,14 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         setMapStyle(googleMap)
         val infoWindow = WindowAdapter(requireContext())
         googleMap.setInfoWindowAdapter(infoWindow)
-        mainViewModel.serviceUpdates.observe(viewLifecycleOwner) { serviceUpdates ->
+        mainViewModel.serviceUpdates.value.let { serviceUpdates ->
             when (serviceUpdates) {
                 is ServiceUpdates.StarLoc -> {
                     val loc = serviceUpdates.starLoc
-                    mainViewModel.lastLocation.observe(viewLifecycleOwner) {
-                        when (it) {
+                    mainViewModel.lastLocation.value.let { locationUpdates ->
+                        when (locationUpdates) {
                             is LocationUpdates.LastLocation -> {
-                                val driverLatLng = LatLng(it.location.latitude, it.location.longitude)
+                                val driverLatLng = LatLng(locationUpdates.location.latitude, locationUpdates.location.longitude)
                                 val startLatLng = LatLng(loc.lat, loc.lng)
                                 val driverMarker = googleMap.addMarker(
                                     MarkerOptions()
@@ -102,7 +102,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                                         300
                                     )
                                 )
-                                mainViewModel.lastLocation.removeObservers(viewLifecycleOwner)
 
                                 val mapService = Map()
                                 val url = mapService.getDirectionURL(
@@ -146,6 +145,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                                     }
                                 })
                             }
+                            else -> {}
                         }
                     }
                 }

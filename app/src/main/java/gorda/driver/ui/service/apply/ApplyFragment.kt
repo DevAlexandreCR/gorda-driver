@@ -49,11 +49,14 @@ class ApplyFragment : Fragment() {
         progressBar = binding.progressBar
         textView = binding.textView
 
-        btnCancel.setOnClickListener {
+        btnCancel.setOnClickListener { button ->
+            button.isEnabled = false
             service.cancelApplicant(driver).addOnSuccessListener {
+                button.isEnabled = true
                 findNavController().navigate(R.id.nav_home)
                 Toast.makeText(requireContext(), R.string.cancelApply, Toast.LENGTH_LONG).show()
             }. addOnFailureListener { e ->
+                button.isEnabled = true
                 e.message?.let { message -> Log.e(TAG, message) }
                 Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
             }
@@ -63,7 +66,6 @@ class ApplyFragment : Fragment() {
             driver = it
             arguments?.let { bundle ->
                 service = bundle.getSerializable("service") as Service
-                println("***" + service.start_loc.toString())
                 apply()
             }
         }
