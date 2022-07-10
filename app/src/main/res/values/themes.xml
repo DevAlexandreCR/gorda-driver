@@ -20,6 +20,23 @@
         <item name="windowNoTitle">true</item>
     </style>
 
+    <style name="AuthUI" parent="FirebaseUI.DefaultMaterialTheme">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+    </style>
+
+    <style name="FirebaseUI.Text">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/primary_dark</item>
+    </style>
+
+    <style name="FirebaseUI.Button">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:backgroundTint">@color/secondary_dark</item>
+    </style>
+
     <style name="Theme.GordaDriver.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="Theme.GordaDriver.PopupOverlay" parent="ThemeOverlay.AppCompat.Light">
