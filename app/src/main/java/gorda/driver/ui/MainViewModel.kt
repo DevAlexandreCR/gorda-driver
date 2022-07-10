@@ -6,29 +6,69 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.getValue
 import gorda.driver.interfaces.LocType
-import gorda.driver.ui.driver.DriverUpdates
-import gorda.driver.ui.service.LocationUpdates
+import gorda.driver.maps.Distance
+import gorda.driver.maps.Duration
 import gorda.driver.models.Driver
+import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
+import gorda.driver.repositories.ServiceRepository
 import gorda.driver.services.firebase.Auth
+import gorda.driver.ui.driver.DriverUpdates
+import gorda.driver.ui.service.dataclasses.LocationUpdates
+import gorda.driver.ui.service.dataclasses.ServiceUpdates
 
 class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     companion object {
         private val TAG: String = MainViewModel::class.java.toString()
     }
+
     private val _lastLocation = MutableLiveData<LocationUpdates>()
     private val _driverState = MutableLiveData<DriverUpdates>()
     private val _driver = MutableLiveData<Driver>()
-    private val _currentServiceStartLocation = MutableLiveData<LocType>()
+    private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
+    private val _currentService = MutableLiveData<Service?>()
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driverStatus: LiveData<DriverUpdates> = _driverState
-    var driver: LiveData<Driver> = savedStateHandle.getLiveData(Driver::class.java.toString())
-    var currentServiceStartLocation: LiveData<LocType> = _currentServiceStartLocation
+    var driver: LiveData<Driver> = savedStateHandle.getLiveData(Driver.TAG)
+    var serviceUpdates: LiveData<ServiceUpdates> = _serviceUpdates
+    var currentService: LiveData<Service?> = savedStateHandle.getLiveData(Service.TAG)
 
-    fun setCurrentServiceStartLocation(locType: LocType) {
-        _currentServiceStartLocation.postValue(locType)
+    fun setServiceUpdateStartLocation(starLoc: LocType) {
+        _serviceUpdates.postValue(ServiceUpdates.setStarLoc(starLoc))
+    }
+
+    fun setServiceUpdateDistTime(distance: Distance, time: Duration) {
+        _serviceUpdates.postValue(ServiceUpdates.distanceTime(distance, time))
+    }
+
+    fun setServiceUpdateApply(service: Service) {
+        driver.value?.let {
+            _serviceUpdates.postValue(ServiceUpdates.setServiceApply(service, it))
+            service.onStatusChange(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val status = snapshot.getValue<String>()
+                    status?.let {
+                        _serviceUpdates.postValue(ServiceUpdates.Status(status))
+                        when (status) {
+                            Service.STATUS_CANCELED,
+                            Service.STATUS_IN_PROGRESS -> {
+                                service.getStatusReference().removeEventListener(this)
+                            }
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(TAG, error.message)
+                }
+            })
+        }
     }
 
     fun updateLocation(location: Location) {
@@ -38,7 +78,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     fun getDriver(driverId: String) {
         DriverRepository.getDriver(driverId) { driver ->
             _driver.postValue(driver)
-            savedStateHandle[Driver::class.java.toString()] = driver
+            savedStateHandle[Driver.TAG] = driver
         }
     }
 
@@ -76,7 +116,11 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }
     }
 
-    fun connecting(connecting: Boolean) {
-        _driverState.postValue(DriverUpdates.connecting(connecting))
+    fun thereIsACurrentService(driverID: String) {
+        ServiceRepository.getCurrentServices { services ->
+            val service = services.find { it.driver_id == driverID }
+            _currentService.postValue(service)
+            savedStateHandle[Service.TAG] = service
+        }
     }
 }

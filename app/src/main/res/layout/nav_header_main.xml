@@ -14,7 +14,7 @@
     android:theme="@style/Theme.GordaDriver.AppBarOverlay">
 
     <ImageView
-        android:id="@+id/imageView"
+        android:id="@+id/drawer_image"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@string/nav_header_desc"
@@ -23,18 +23,17 @@
         tools:ignore="ImageContrastCheck" />
 
     <TextView
+        android:id="@+id/drawer_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="@dimen/nav_header_vertical_spacing"
         android:text="@string/nav_header_title"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-        android:textColor="#A7FFEB"
         tools:ignore="TextContrastCheck" />
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/drawer_email"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/nav_header_subtitle"
-        android:textColor="#000000" />
+        android:text="@string/nav_header_subtitle" />
 </LinearLayout>

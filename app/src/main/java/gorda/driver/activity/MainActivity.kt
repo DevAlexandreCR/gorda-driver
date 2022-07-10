@@ -9,22 +9,20 @@ import android.location.LocationManager
 import android.os.*
 import android.provider.Settings
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
+import android.widget.ImageView
 import android.widget.Switch
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.view.menu.MenuView
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
-import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.*
+import com.bumptech.glide.Glide
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.navigation.NavigationView
@@ -32,9 +30,8 @@ import gorda.driver.R
 import gorda.driver.background.LocationService
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.LocationBroadcastReceiver
-import gorda.driver.ui.service.LocationUpdates
+import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.databinding.ActivityMainBinding
-import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
@@ -48,6 +45,7 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
     }
 
+    private var sendLogin = false
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
@@ -93,11 +91,9 @@ class MainActivity : AppCompatActivity() {
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         navController = findNavController(R.id.nav_host_fragment_content_main)
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.nav_home, R.id.nav_profile, R.id.nav_slideshow
+                R.id.nav_home, R.id.nav_profile
             ), drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
@@ -105,9 +101,9 @@ class MainActivity : AppCompatActivity() {
 
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
-                stopLocationService()
                 if (driver.id != null) viewModel.disconnect(driver)
                 Auth.logOut()
+                sendLogin = false
             }
             NavigationUI.onNavDestinationSelected(item, navController)
             drawerLayout.closeDrawer(GravityCompat.START)
@@ -120,7 +116,6 @@ class MainActivity : AppCompatActivity() {
             if (switchConnect.isChecked) {
                 viewModel.connect(driver)
             } else {
-                stopLocationService()
                 viewModel.disconnect(driver)
             }
         }
@@ -130,15 +125,12 @@ class MainActivity : AppCompatActivity() {
                 is LocationUpdates.LastLocation -> {
                     lastLocation = locationUpdate.location
                 }
+                else -> {}
             }
         }
 
         viewModel.setAuth()
-        observeDriver()
-
-        if (!LocationHandler.checkPermissions(this)) {
-            requestPermissions()
-        }
+        observeDriver(navView)
     }
 
     override fun onStart() {
@@ -148,6 +140,11 @@ class MainActivity : AppCompatActivity() {
                 locationBroadcastReceiver,
                 IntentFilter(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
             )
+        LocationHandler.getLastLocation()?.let {
+            it.addOnSuccessListener { loc ->
+                viewModel.updateLocation(loc)
+            }
+        }
     }
 
     override fun onStop() {
@@ -161,6 +158,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!LocationHandler.checkPermissions(this)) {
+            requestPermissions()
+        }
         if (!isLocationEnabled()) {
             val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(intent)
@@ -170,7 +170,8 @@ class MainActivity : AppCompatActivity() {
     private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
         if (result.resultCode != RESULT_OK) {
             Log.e(TAG, "error ${result.resultCode}")
-            Toast.makeText(this, R.string.common_error, Toast.LENGTH_SHORT).show()
+            val intent = Auth.launchLogin()
+            this.signInLauncher.launch(intent)
         }
     }
 
@@ -179,7 +180,24 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
-    private fun observeDriver() {
+    private fun setDrawerHeader(navView: NavigationView) {
+        val header = navView.getHeaderView(0)
+        val imageDrawer = header.findViewById<ImageView>(R.id.drawer_image)
+        val nameDrawer = header.findViewById<TextView>(R.id.drawer_name)
+        val emailDrawer = header.findViewById<TextView>(R.id.drawer_email)
+
+        nameDrawer.text = driver.name
+        emailDrawer.text = driver.email
+        driver.photoUrl?.let { url ->
+            Glide
+                .with(this)
+                .load(url)
+                .placeholder(R.mipmap.ic_profile)
+                .into(imageDrawer)
+        }
+    }
+
+    private fun observeDriver(navView: NavigationView) {
         viewModel.driverStatus.observe(this) {
             when (it) {
                 is DriverUpdates.IsConnected -> {
@@ -202,13 +220,17 @@ class MainActivity : AppCompatActivity() {
                     if (it.uuid == null) {
                         if (driver.id != null) viewModel.disconnect(driver)
                         switchConnect.isEnabled = false
-                        val intent = Auth.launchLogin()
-                        this.signInLauncher.launch(intent)
+                        if (!sendLogin) {
+                            val intent = Auth.launchLogin()
+                            this.signInLauncher.launch(intent)
+                            sendLogin = true
+                        }
                     } else {
                         viewModel.getDriver(it.uuid!!)
                     }
 
                 }
+                else -> {}
             }
         }
 
@@ -217,7 +239,9 @@ class MainActivity : AppCompatActivity() {
                 is Driver -> {
                     this.driver = it
                     switchConnect.isEnabled = true
+                    setDrawerHeader(navView)
                     viewModel.isConnected(it.id!!)
+                    viewModel.thereIsACurrentService(it.id!!)
                 }
             }
         }

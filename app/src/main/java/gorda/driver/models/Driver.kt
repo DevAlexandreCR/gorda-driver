@@ -8,6 +8,7 @@ import java.io.Serializable
 
 class Driver : DriverInterface, Serializable {
     companion object {
+        const val TAG = "gorda.driver.models.Driver"
         const val DRIVER_KEY = "driver_id"
     }
 

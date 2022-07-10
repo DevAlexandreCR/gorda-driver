@@ -4,10 +4,11 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.LocationManager
+import android.location.Location
 import android.os.Looper
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.*
+import com.google.android.gms.tasks.Task
 import gorda.driver.interfaces.CustomLocationListener
 
 object LocationHandler {
@@ -15,7 +16,6 @@ object LocationHandler {
     private var locationCallback: LocationCallback? = null
 
     const val PERMISSION_REQUEST_ACCESS_LOCATION = 100
-    private const val TAG = "LocationHandler"
     private const val LOCATION_REFRESH_TIME = 5000
 
     fun checkPermissions(context: Context): Boolean {
@@ -54,6 +54,10 @@ object LocationHandler {
             locationCallback as LocationCallback,
             Looper.getMainLooper()
         )
+    }
+
+    fun getLastLocation(): Task<Location>? {
+        return fusedLocationClient?.lastLocation
     }
 
     fun stopLocationUpdates() {

@@ -14,7 +14,6 @@ import gorda.driver.R
 import gorda.driver.databinding.FragmentProfileBinding
 import gorda.driver.models.Driver
 import gorda.driver.ui.MainViewModel
-import gorda.driver.ui.driver.DriverUpdates
 
 class ProfileFragment : Fragment() {
 
@@ -26,7 +25,6 @@ class ProfileFragment : Fragment() {
     private lateinit var image: ImageView
     private val mainViewModel: MainViewModel by activityViewModels()
     private val viewModel: ProfileViewModel by viewModels()
-    private lateinit var driver: Driver
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -72,7 +70,7 @@ class ProfileFragment : Fragment() {
             Glide
                 .with(this)
                 .load(url)
-                .placeholder(R.drawable.ic_launcher_background)
+                .placeholder(R.mipmap.ic_profile)
                 .into(image)
         }
     }

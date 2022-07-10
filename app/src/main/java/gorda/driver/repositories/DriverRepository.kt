@@ -4,20 +4,22 @@ import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference.CompletionListener
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.interfaces.DriverInterface
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.models.Driver
 import gorda.driver.services.firebase.Database
+import java.io.Serializable
 
 object DriverRepository {
 
     val TAG = DriverRepository::class.java.toString()
 
     fun connect(driver: DriverInterface): Task<Void> {
-        return Database.dbOnlineDrivers().child(driver.id!!).setValue(driver)
+        return Database.dbOnlineDrivers().child(driver.id!!).setValue(object : Serializable {
+            val id = driver.id
+        })
     }
 
     fun disconnect(driver: DriverInterface): Task<Void> {

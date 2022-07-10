@@ -1,7 +1,6 @@
 package gorda.driver.services.firebase
 
 import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
 
 object Database {
     private val reference: DatabaseReference = FirebaseInitializeApp.database.getReference("/")
