@@ -9,9 +9,14 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination
 import androidx.navigation.fragment.findNavController
+import com.google.android.gms.tasks.Task
 import gorda.driver.R
 import gorda.driver.databinding.FragmentApplyBinding
 import gorda.driver.models.Driver
@@ -49,9 +54,11 @@ class ApplyFragment : Fragment() {
         progressBar = binding.progressBar
         textView = binding.textView
 
+        requireActivity().onBackPressedDispatcher.addCallback(this) {}
+
         btnCancel.setOnClickListener { button ->
             button.isEnabled = false
-            service.cancelApplicant(driver).addOnSuccessListener {
+            cancelApply().addOnSuccessListener {
                 button.isEnabled = true
                 findNavController().navigate(R.id.nav_home)
                 Toast.makeText(requireContext(), R.string.cancelApply, Toast.LENGTH_SHORT).show()
@@ -67,8 +74,15 @@ class ApplyFragment : Fragment() {
             arguments?.let { bundle ->
                 service = bundle.getSerializable("service") as Service
                 apply()
+                findNavController().addOnDestinationChangedListener { _, _, _ ->
+                    cancelApply()
+                }
             }
         }
+    }
+
+    private fun cancelApply(): Task<Void> {
+        return service.cancelApplicant(driver)
     }
 
     private fun apply() {
