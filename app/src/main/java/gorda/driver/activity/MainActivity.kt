@@ -45,6 +45,7 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
     }
 
+    private var sendLogin = false
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
@@ -100,9 +101,9 @@ class MainActivity : AppCompatActivity() {
 
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
-                stopLocationService()
                 if (driver.id != null) viewModel.disconnect(driver)
                 Auth.logOut()
+                sendLogin = false
             }
             NavigationUI.onNavDestinationSelected(item, navController)
             drawerLayout.closeDrawer(GravityCompat.START)
@@ -115,7 +116,6 @@ class MainActivity : AppCompatActivity() {
             if (switchConnect.isChecked) {
                 viewModel.connect(driver)
             } else {
-                stopLocationService()
                 viewModel.disconnect(driver)
             }
         }
@@ -170,7 +170,8 @@ class MainActivity : AppCompatActivity() {
     private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
         if (result.resultCode != RESULT_OK) {
             Log.e(TAG, "error ${result.resultCode}")
-            Toast.makeText(this, R.string.common_error, Toast.LENGTH_SHORT).show()
+            val intent = Auth.launchLogin()
+            this.signInLauncher.launch(intent)
         }
     }
 
@@ -219,8 +220,11 @@ class MainActivity : AppCompatActivity() {
                     if (it.uuid == null) {
                         if (driver.id != null) viewModel.disconnect(driver)
                         switchConnect.isEnabled = false
-                        val intent = Auth.launchLogin()
-                        this.signInLauncher.launch(intent)
+                        if (!sendLogin) {
+                            val intent = Auth.launchLogin()
+                            this.signInLauncher.launch(intent)
+                            sendLogin = true
+                        }
                     } else {
                         viewModel.getDriver(it.uuid!!)
                     }
