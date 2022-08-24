@@ -1,0 +1,16 @@
+## This file must *NOT* be checked into Version Control Systems,
+# as it contains information specific to your local configuration.
+#
+# Location of the SDK. This is only used by Gradle.
+# For customization when using a Version Control System, please read the
+# header note.
+#Tue Aug 23 20:32:00 COT 2022
+sdk.dir=C\:\\Users\\alexandrecr\\AppData\\Local\\Android\\Sdk
+MAPS_API_KEY=
+FIREBASE_USE_EMULATORS=true
+FIREBASE_AUTH_HOST=10.0.2.2
+FIREBASE_DATABASE_HOST=10.0.2.2
+FIREBASE_STORAGE_HOST=10.0.2.2
+FIREBASE_AUTH_PORT=9099
+FIREBASE_DATABASE_PORT=9000
+FIREBASE_STORAGE_PORT=9199
