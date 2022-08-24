@@ -7,6 +7,7 @@
 #Tue Aug 23 20:32:00 COT 2022
 sdk.dir=C\:\\Users\\alexandrecr\\AppData\\Local\\Android\\Sdk
 MAPS_API_KEY=
+MAPS_BASE_URL=https://www.google.com/maps/dir
 FIREBASE_USE_EMULATORS=true
 FIREBASE_AUTH_HOST=10.0.2.2
 FIREBASE_DATABASE_HOST=10.0.2.2
