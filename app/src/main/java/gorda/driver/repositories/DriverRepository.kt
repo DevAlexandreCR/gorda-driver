@@ -16,9 +16,10 @@ object DriverRepository {
 
     val TAG = DriverRepository::class.java.toString()
 
-    fun connect(driver: DriverInterface): Task<Void> {
+    fun connect(driver: DriverInterface, location: LocInterface): Task<Void> {
         return Database.dbOnlineDrivers().child(driver.id!!).setValue(object : Serializable {
             val id = driver.id
+            val location = location
         })
     }
 

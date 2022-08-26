@@ -114,7 +114,7 @@ class MainActivity : AppCompatActivity() {
 
         switchConnect.setOnClickListener {
             if (switchConnect.isChecked) {
-                viewModel.connect(driver)
+                if (lastLocation != null) viewModel.connect(driver)
             } else {
                 viewModel.disconnect(driver)
             }

@@ -10,6 +10,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
+import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
 import gorda.driver.maps.Distance
 import gorda.driver.maps.Duration
@@ -97,13 +98,20 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun connect(driver: Driver) {
         _driverState.postValue(DriverUpdates.connecting(true))
-        driver.connect().addOnSuccessListener {
-            _driverState.postValue(DriverUpdates.connecting(false))
-            _driverState.postValue(DriverUpdates.setConnected(true))
-        }.addOnFailureListener { e ->
-            _driverState.postValue(DriverUpdates.setConnected(false))
-            _driverState.postValue(DriverUpdates.connecting(false))
-            e.message?.let { message -> Log.e(TAG, message) }
+        lastLocation.value.let {
+            if (it is LocationUpdates.LastLocation) {
+                driver.connect(object: LocInterface {
+                    override var lat: Double = it.location.latitude
+                    override var lng: Double = it.location.longitude
+                }).addOnSuccessListener {
+                    _driverState.postValue(DriverUpdates.connecting(false))
+                    _driverState.postValue(DriverUpdates.setConnected(true))
+                }.addOnFailureListener { e ->
+                    _driverState.postValue(DriverUpdates.setConnected(false))
+                    _driverState.postValue(DriverUpdates.connecting(false))
+                    e.message?.let { message -> Log.e(TAG, message) }
+                }
+            }
         }
     }
 
