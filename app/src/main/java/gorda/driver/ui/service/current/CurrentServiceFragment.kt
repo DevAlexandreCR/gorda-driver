@@ -70,9 +70,9 @@ class CurrentServiceFragment : Fragment() {
                     intent.setPackage("com.google.android.apps.maps")
                     startActivity(intent)
                 }
-                if (service.metadata.arrivedAt == null) {
+                if (service.metadata.arrived_at == null) {
                     btnStatus.text = haveArrived
-                } else if (service.metadata.startTripAt == null){
+                } else if (service.metadata.start_trip_at == null){
                     btnStatus.text = startTrip
                 } else {
                     btnStatus.text = endTrip
@@ -96,13 +96,13 @@ class CurrentServiceFragment : Fragment() {
             val now = Date().time / 1000
             when (btnStatus.text) {
                 haveArrived -> {
-                    service.metadata.arrivedAt = now
+                    service.metadata.arrived_at = now
                 }
                 startTrip -> {
-                    service.metadata.startTripAt = now
+                    service.metadata.start_trip_at = now
                 }
                 else -> {
-                    service.metadata.endTripAt = now
+                    service.metadata.end_trip_at = now
                     service.status = Service.STATUS_TERMINATED
                 }
             }
