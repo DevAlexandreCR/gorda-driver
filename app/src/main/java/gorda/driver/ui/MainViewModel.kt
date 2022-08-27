@@ -98,20 +98,17 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun connect(driver: Driver) {
         _driverState.postValue(DriverUpdates.connecting(true))
-        lastLocation.value.let {
-            if (it is LocationUpdates.LastLocation) {
-                driver.connect(object: LocInterface {
-                    override var lat: Double = it.location.latitude
-                    override var lng: Double = it.location.longitude
-                }).addOnSuccessListener {
-                    _driverState.postValue(DriverUpdates.connecting(false))
-                    _driverState.postValue(DriverUpdates.setConnected(true))
-                }.addOnFailureListener { e ->
-                    _driverState.postValue(DriverUpdates.setConnected(false))
-                    _driverState.postValue(DriverUpdates.connecting(false))
-                    e.message?.let { message -> Log.e(TAG, message) }
-                }
-            }
+
+        driver.connect(object: LocInterface {
+            override var lat: Double = 2.4448143
+            override var lng: Double = -76.6147395
+        }).addOnSuccessListener {
+            _driverState.postValue(DriverUpdates.connecting(false))
+            _driverState.postValue(DriverUpdates.setConnected(true))
+        }.addOnFailureListener { e ->
+            _driverState.postValue(DriverUpdates.setConnected(false))
+            _driverState.postValue(DriverUpdates.connecting(false))
+            e.message?.let { message -> Log.e(TAG, message) }
         }
     }
 
