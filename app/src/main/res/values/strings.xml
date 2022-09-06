@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Gorda Driver</string>
+    <string name="app_name">Red Blanca Conductor</string>
     <string name="action_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
@@ -49,5 +49,5 @@
     <string name="wait_for_assign">Applied success, please wait…</string>
     <string name="cancelApply">The Request has been cancelled</string>
     <string name="service_canceled">Service has been canceled</string>
-    <string name="text_connected">You are availabe to receive services</string>
+    <string name="text_connected">You are available to receive services</string>
 </resources>
