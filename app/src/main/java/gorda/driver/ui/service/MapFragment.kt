@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 class MapFragment : Fragment(), OnMapReadyCallback {
 
     companion object {
-        const val TAG = "gorda.driver.ui.service.mapFragment"
+        const val TAG = "ui.service.mapFragment"
     }
 
     private val mainViewModel: MainViewModel by activityViewModels()
