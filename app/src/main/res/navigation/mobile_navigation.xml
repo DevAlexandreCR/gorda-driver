@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="gorda.driver.ui.home.HomeFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/nav_profile"
+        android:name="gorda.driver.ui.profile.ProfileFragment"
+        android:label="@string/menu_profile"
+        tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/nav_current_service"
+        android:name="gorda.driver.ui.service.current.CurrentServiceFragment"
+        android:label="@string/menu_current_service"
+        tools:layout="@layout/fragment_current_service" />
+
+    <fragment
+        android:id="@+id/nav_map"
+        android:name="gorda.driver.ui.service.MapFragment"
+        android:label="@string/map"
+        tools:layout="@layout/fragment_map"
+        />
+    <fragment
+        android:id="@+id/nav_apply"
+        android:name="gorda.driver.ui.service.apply.ApplyFragment"
+        android:label="@string/apply"
+        tools:layout="@layout/fragment_apply"
+        >
+        <argument
+            android:name="service"
+            app:argType="gorda.driver.models.Service" />
+    </fragment>
+</navigation>

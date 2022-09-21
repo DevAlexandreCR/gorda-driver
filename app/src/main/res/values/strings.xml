@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Gorda Driver</string>
+    <string name="app_name">Red Blanca Conductor</string>
     <string name="action_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
@@ -9,4 +9,45 @@
 
     <string name="hello_first_fragment">Hello first fragment</string>
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+
+    <string name="status_connected">Connected</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+
+    <string name="menu_home">Services</string>
+    <string name="menu_profile">Profile</string>
+    <string name="menu_current_service">Current Service</string>
+    <string name="services_list">Service list</string>
+    <string name="apply">Apply at</string>
+    <string name="map">Map</string>
+    <string name="common_error">"Something went wrong, try late "</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="fields_name">Name</string>
+    <string name="fields_email">E-mail</string>
+    <string name="fields_phone">Phone</string>
+    <string name="fields_plate">Plate</string>
+    <string name="logout">Logout</string>
+    <string name="no_routes_available">No routes available</string>
+    <string name="ago">After</string>
+    <string name="service_address">Address: </string>
+    <string name="service_comment">Comment: </string>
+    <string name="service_phone">Phone: </string>
+    <string name="service_have_arrived">I have arrived</string>
+    <string name="service_start_trip">Start Trip</string>
+    <string name="service_end_trip">End Trip</string>
+    <string name="service_updated">Service successfully updated</string>
+    <string name="distance">Distance: </string>
+    <string name="time">Time: </string>
+    <string name="cancel">Cancel</string>
+    <string name="applying">Applying …</string>
+    <string name="applied">You have been applied successfully  to service</string>
+    <string name="wait_for_assign">Applied success, please wait…</string>
+    <string name="cancelApply">The Request has been cancelled</string>
+    <string name="service_canceled">Service has been canceled</string>
+    <string name="text_connected">You are available to receive services</string>
 </resources>
