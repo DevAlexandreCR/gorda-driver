@@ -2,6 +2,7 @@ package gorda.driver.models
 
 import com.google.android.gms.tasks.Task
 import gorda.driver.interfaces.DriverInterface
+import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.VehicleInterface
 import gorda.driver.repositories.DriverRepository
 import java.io.Serializable
@@ -23,8 +24,8 @@ class Driver : DriverInterface, Serializable {
     override var enabled_at: Int? = null
     override var created_at: Int = 0
 
-    fun connect(): Task<Void> {
-        return DriverRepository.connect(this)
+    fun connect(location: LocInterface): Task<Void> {
+        return DriverRepository.connect(this, location)
     }
 
     fun disconnect(): Task<Void> {

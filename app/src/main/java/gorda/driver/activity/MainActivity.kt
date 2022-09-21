@@ -12,7 +12,6 @@ import android.util.Log
 import android.widget.ImageView
 import android.widget.Switch
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -145,6 +144,9 @@ class MainActivity : AppCompatActivity() {
                 viewModel.updateLocation(loc)
             }
         }
+        Intent(this, LocationService::class.java).also { intent ->
+            bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
+        }
     }
 
     override fun onStop() {
@@ -264,8 +266,8 @@ class MainActivity : AppCompatActivity() {
     private fun startLocationService() {
         Intent(this, LocationService::class.java).also { intent ->
             intent.putExtra(Driver.DRIVER_KEY, this.driver.id)
-            applicationContext.startForegroundService(intent)
-            this.bindService(intent, connection, BIND_AUTO_CREATE)
+            applicationContext.startService(intent)
+            this.bindService(intent, connection, BIND_NOT_FOREGROUND)
             mBound = true
         }
     }

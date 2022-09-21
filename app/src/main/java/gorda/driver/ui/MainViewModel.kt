@@ -10,6 +10,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
+import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
 import gorda.driver.maps.Distance
 import gorda.driver.maps.Duration
@@ -97,7 +98,11 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun connect(driver: Driver) {
         _driverState.postValue(DriverUpdates.connecting(true))
-        driver.connect().addOnSuccessListener {
+
+        driver.connect(object: LocInterface {
+            override var lat: Double = 2.4448143
+            override var lng: Double = -76.6147395
+        }).addOnSuccessListener {
             _driverState.postValue(DriverUpdates.connecting(false))
             _driverState.postValue(DriverUpdates.setConnected(true))
         }.addOnFailureListener { e ->
