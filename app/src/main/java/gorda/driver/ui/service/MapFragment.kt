@@ -1,5 +1,6 @@
 package gorda.driver.ui.service
 
+import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.location.Location
 import android.os.Bundle
@@ -16,7 +17,6 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import gorda.driver.BuildConfig
 import gorda.driver.R
 import gorda.driver.databinding.FragmentMapBinding
 import gorda.driver.interfaces.LocType
@@ -114,7 +114,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             val url = mapService.getDirectionURL(
                 driverLatLng,
                 startLatLng,
-                BuildConfig.MAPS_API_KEY
+                getApiKey()
             )
             getDirections(url, object : OnDirectionCompleteListener {
                 override fun onSuccess(routes: ArrayList<Routes>) {
@@ -168,10 +168,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     if (it.routes.size > 0) {
                         listener.onSuccess(it.routes)
                     } else {
+                        Log.e("Error No routes", it.error_message)
                         listener.onFailure()
                     }
                 }
             } else {
+                Log.e(TAG, cal.message())
                 listener.onFailure()
             }
         }
@@ -198,5 +200,14 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         } catch (e: Resources.NotFoundException) {
             Log.e(TAG, "Can't find style. Error: ", e)
         }
+    }
+
+    private fun getApiKey(): String {
+        val app = requireContext().packageManager.getApplicationInfo(
+            requireContext().packageName,
+            PackageManager.GET_META_DATA
+        )
+        val bundle = app.metaData
+        return bundle.getString("com.google.android.geo.API_KEY", "")
     }
 }
