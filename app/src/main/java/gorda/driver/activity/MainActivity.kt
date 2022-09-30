@@ -9,10 +9,13 @@ import android.location.LocationManager
 import android.os.*
 import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.widget.ImageView
 import android.widget.Switch
 import android.widget.TextView
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.view.GravityCompat
@@ -161,7 +164,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (!LocationHandler.checkPermissions(this)) {
-            requestPermissions()
+            showDisClosure()
         }
         if (!isLocationEnabled()) {
             val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
@@ -175,6 +178,30 @@ class MainActivity : AppCompatActivity() {
             val intent = Auth.launchLogin()
             this.signInLauncher.launch(intent)
         }
+    }
+
+    private fun showDisClosure(): Unit {
+        val builder = AlertDialog.Builder(this)
+        builder.setIcon(R.drawable.ic_location_24)
+        val layout: View = layoutInflater.inflate(R.layout.disclosure_layout, null)
+        builder.setView(layout)
+        builder.setPositiveButton(R.string.allow) { _, _ ->
+            requestPermissions()
+        }
+        builder.setNegativeButton(R.string.disallow) { _, _ ->
+            finish()
+        }
+        val alertDialog: AlertDialog = builder.create()
+        alertDialog.setCancelable(false)
+        alertDialog.setOnShowListener {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                    .setTextColor(resources.getColor(R.color.primary_light, null))
+                alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                    .setTextColor(resources.getColor(R.color.primary_light, null))
+            }
+        }
+        alertDialog.show()
     }
 
     override fun onSupportNavigateUp(): Boolean {

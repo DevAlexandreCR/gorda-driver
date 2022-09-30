@@ -50,4 +50,8 @@
     <string name="cancelApply">The Request has been cancelled</string>
     <string name="service_canceled">Service has been canceled</string>
     <string name="text_connected">You are available to receive services</string>
+    <string name="text_disclosure">In order to apply to services nearly you, we need to know your location, allow Red Blanca Conductor to use your location</string>
+    <string name="allow">Allow</string>
+    <string name="disallow">Denny</string>
+    <string name="disclosure_title">Use your location</string>
 </resources>

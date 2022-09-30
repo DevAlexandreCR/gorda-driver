@@ -43,4 +43,8 @@
     <string name="cancelApply">La solicitud ha sido cancelada</string>
     <string name="service_canceled">El servicio ha sido cancelado</string>
     <string name="text_connected">Estás disponible para recibir servicios</string>
+    <string name="text_disclosure">Para mostrarte servicio cercanos, necesitamos conocer tu ubicación, Permite Red Blanca Conductor usar tu ubicación en tiempo real</string>
+    <string name="allow">Permitir</string>
+    <string name="disallow">Denegar</string>
+    <string name="disclosure_title">Usa tu ubicación</string>
 </resources>
