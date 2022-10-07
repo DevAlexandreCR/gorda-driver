@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Gorda Driver</string>
+    <string name="app_name">Red Blanca Conductor</string>
     <string name="action_settings">Configuraciones</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">Primer Fragmento</string>
