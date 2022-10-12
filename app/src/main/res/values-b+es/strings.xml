@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Gorda Driver</string>
+    <string name="app_name">Red Blanca Conductor</string>
     <string name="action_settings">Configuraciones</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">Primer Fragmento</string>
@@ -43,4 +43,8 @@
     <string name="cancelApply">La solicitud ha sido cancelada</string>
     <string name="service_canceled">El servicio ha sido cancelado</string>
     <string name="text_connected">Estás disponible para recibir servicios</string>
+    <string name="text_disclosure">Red Blanca Conductor necesita conocer tu ubicación para habilitar la función de "Conectado" y asignarte servicios cercanos incluso cuando la app está cerrada o no está en uso. \nPermite Red Blanca Conductor usar tu ubicación en tiempo real</string>
+    <string name="allow">Permitir</string>
+    <string name="disallow">Denegar</string>
+    <string name="disclosure_title">Usa tu ubicación</string>
 </resources>
