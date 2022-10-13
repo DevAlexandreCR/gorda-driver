@@ -47,4 +47,5 @@
     <string name="allow">Permitir</string>
     <string name="disallow">Denegar</string>
     <string name="disclosure_title">Usa tu ubicación</string>
+    <string name="firebase_notification">FIREBASE_NOTIFICATION_CHANNEL</string>
 </resources>
