@@ -13,6 +13,10 @@ object Database {
         return reference.child("drivers").ref
     }
 
+    fun dbTokens(): DatabaseReference {
+        return reference.child("tokens").ref
+    }
+
     fun dbOnlineDrivers(): DatabaseReference {
         return reference.child("online_drivers").ref
     }
