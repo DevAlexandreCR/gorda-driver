@@ -27,9 +27,12 @@ import androidx.navigation.ui.*
 import com.bumptech.glide.Glide
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
+import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.messaging.FirebaseMessaging
 import gorda.driver.R
 import gorda.driver.background.LocationService
+import gorda.driver.background.NotificationService
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.dataclasses.LocationUpdates
@@ -37,6 +40,7 @@ import gorda.driver.databinding.ActivityMainBinding
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
+import gorda.driver.repositories.TokenRepository
 import gorda.driver.services.firebase.Auth
 import gorda.driver.ui.driver.DriverUpdates
 
@@ -227,11 +231,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeDriver(navView: NavigationView) {
-        viewModel.driverStatus.observe(this) {
-            when (it) {
+        viewModel.driverStatus.observe(this) { driverUpdates ->
+            when (driverUpdates) {
                 is DriverUpdates.IsConnected -> {
-                    switchConnect.isChecked = it.connected
-                    if (it.connected) {
+                    switchConnect.isChecked = driverUpdates.connected
+                    if (driverUpdates.connected) {
                         startLocationService()
                         switchConnect.setText(R.string.status_connected)
                     } else {
@@ -240,13 +244,13 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 is DriverUpdates.Connecting -> {
-                    if (it.connecting) {
+                    if (driverUpdates.connecting) {
                         switchConnect.setText(R.string.status_connecting)
                     }
                 }
 
                 is DriverUpdates.AuthDriver -> {
-                    if (it.uuid == null) {
+                    if (driverUpdates.uuid == null) {
                         if (driver.id != null) viewModel.disconnect(driver)
                         switchConnect.isEnabled = false
                         if (!sendLogin) {
@@ -255,7 +259,7 @@ class MainActivity : AppCompatActivity() {
                             sendLogin = true
                         }
                     } else {
-                        viewModel.getDriver(it.uuid!!)
+                        viewModel.getDriver(driverUpdates.uuid!!)
                     }
 
                 }

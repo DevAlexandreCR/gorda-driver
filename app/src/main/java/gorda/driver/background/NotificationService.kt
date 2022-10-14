@@ -35,7 +35,7 @@ class NotificationService: FirebaseMessagingService() {
         Auth.getCurrentUserUUID().let { uid ->
             if (uid is String) TokenRepository.setCurrentToken(uid, token).addOnCompleteListener {
                 if (it.isSuccessful) {
-                    Log.d(TAG, "token updated")
+                    Log.d(TAG, "token updated user id $uid")
                 }
             }
         }
