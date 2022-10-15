@@ -8,13 +8,11 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.*
 import android.provider.Settings
-import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.Switch
 import android.widget.TextView
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -25,14 +23,9 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.*
 import com.bumptech.glide.Glide
-import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
-import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
-import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.material.navigation.NavigationView
-import com.google.firebase.messaging.FirebaseMessaging
 import gorda.driver.R
 import gorda.driver.background.LocationService
-import gorda.driver.background.NotificationService
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.dataclasses.LocationUpdates
@@ -40,9 +33,9 @@ import gorda.driver.databinding.ActivityMainBinding
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
-import gorda.driver.repositories.TokenRepository
 import gorda.driver.services.firebase.Auth
 import gorda.driver.ui.driver.DriverUpdates
+import gorda.driver.utils.Constants
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class MainActivity : AppCompatActivity() {
@@ -51,7 +44,6 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
     }
 
-    private var sendLogin = false
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
@@ -59,10 +51,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var switchConnect: Switch
     private lateinit var lastLocation: Location
     private val viewModel: MainViewModel by viewModels()
-    private val signInLauncher = registerForActivityResult(FirebaseAuthUIActivityResultContract())
-    { res ->
-        this.onSignInResult(res)
-    }
     private var locationService: Messenger? = null
     private var mBound: Boolean = false
     private val connection = object : ServiceConnection {
@@ -89,6 +77,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val driverID = intent.getStringExtra(Constants.DRIVER_ID_EXTRA)
+        viewModel.getDriver(driverID!!)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -107,9 +98,13 @@ class MainActivity : AppCompatActivity() {
 
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
-                if (driver.id != null) viewModel.disconnect(driver)
-                Auth.logOut()
-                sendLogin = false
+                viewModel.disconnect(driver)
+                Auth.logOut(this).addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val intent = Intent(this, StartActivity::class.java)
+                        startActivity(intent)
+                    }
+                }
             }
             NavigationUI.onNavDestinationSelected(item, navController)
             drawerLayout.closeDrawer(GravityCompat.START)
@@ -135,7 +130,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.setAuth()
         observeDriver(navView)
     }
 
@@ -173,14 +167,6 @@ class MainActivity : AppCompatActivity() {
         if (!isLocationEnabled()) {
             val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(intent)
-        }
-    }
-
-    private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
-        if (result.resultCode != RESULT_OK) {
-            Log.e(TAG, "error ${result.resultCode}")
-            val intent = Auth.launchLogin()
-            this.signInLauncher.launch(intent)
         }
     }
 
@@ -247,21 +233,6 @@ class MainActivity : AppCompatActivity() {
                     if (driverUpdates.connecting) {
                         switchConnect.setText(R.string.status_connecting)
                     }
-                }
-
-                is DriverUpdates.AuthDriver -> {
-                    if (driverUpdates.uuid == null) {
-                        if (driver.id != null) viewModel.disconnect(driver)
-                        switchConnect.isEnabled = false
-                        if (!sendLogin) {
-                            val intent = Auth.launchLogin()
-                            this.signInLauncher.launch(intent)
-                            sendLogin = true
-                        }
-                    } else {
-                        viewModel.getDriver(driverUpdates.uuid!!)
-                    }
-
                 }
                 else -> {}
             }

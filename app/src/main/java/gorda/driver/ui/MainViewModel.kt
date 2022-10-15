@@ -18,7 +18,6 @@ import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
-import gorda.driver.services.firebase.Auth
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
@@ -80,13 +79,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         DriverRepository.getDriver(driverId) { driver ->
             _driver.postValue(driver)
             savedStateHandle[Driver.TAG] = driver
-        }
-    }
-
-    fun setAuth() {
-        _driverState.postValue(DriverUpdates.setUUID(Auth.getCurrentUserUUID()))
-        Auth.onAuthChanges { uuid ->
-            _driverState.postValue(DriverUpdates.setUUID(uuid))
         }
     }
 
