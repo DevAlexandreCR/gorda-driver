@@ -38,14 +38,12 @@ class StartActivity : AppCompatActivity() {
             if (uuid === null) {
                 launchLogin()
             } else {
-                Log.d("uuid not null ******** ",  uuid.toString())
                 launchMain(uuid.toString())
             }
         }
     }
 
     private fun launchLogin(): Unit {
-        Log.d("uuid NULL ********",  "")
         if (!loginLaunched) {
             loginLaunched = true
             val intent = Auth.launchLogin()
