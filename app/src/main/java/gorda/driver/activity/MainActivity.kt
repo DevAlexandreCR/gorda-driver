@@ -36,6 +36,7 @@ import gorda.driver.models.Driver
 import gorda.driver.services.firebase.Auth
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.utils.Constants
+import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class MainActivity : AppCompatActivity() {
@@ -67,7 +68,7 @@ class MainActivity : AppCompatActivity() {
     private val locationBroadcastReceiver =
         LocationBroadcastReceiver(object : LocationUpdateInterface {
             override fun onUpdate(intent: Intent) {
-                val extra: Location? = intent.getParcelableExtra("location")
+                val extra: Location? = intent.getParcelableExtra(LOCATION_EXTRA)
                 extra?.let { location ->
                     viewModel.updateLocation(location)
                 }

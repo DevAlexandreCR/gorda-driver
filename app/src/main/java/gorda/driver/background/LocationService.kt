@@ -18,6 +18,7 @@ import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.ui.service.LocationBroadcastReceiver
+import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 import gorda.driver.utils.Utils
 
 class LocationService: Service() {
@@ -45,7 +46,7 @@ class LocationService: Service() {
                             override var lng: Double = location.longitude
                         })
                         val broadcast = Intent(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
-                        broadcast.putExtra("location", lastLocation)
+                        broadcast.putExtra(LOCATION_EXTRA, lastLocation)
                         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(broadcast)
                     }
                 }
