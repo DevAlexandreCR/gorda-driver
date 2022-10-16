@@ -11,7 +11,7 @@ object Auth {
     private val auth: FirebaseAuth = FirebaseInitializeApp.auth
 
     fun getCurrentUserUUID(): String? {
-        return auth.uid
+        return auth.currentUser?.uid
     }
 
     fun onAuthChanges(listener: (uuid: String?) -> Unit) {

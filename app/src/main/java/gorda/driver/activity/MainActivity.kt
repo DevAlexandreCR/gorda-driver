@@ -99,7 +99,7 @@ class MainActivity : AppCompatActivity() {
 
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
-                viewModel.disconnect(driver)
+                driver.id?.let { viewModel.disconnect(driver) }
                 Auth.logOut(this).addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         val intent = Intent(this, StartActivity::class.java)
