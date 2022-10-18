@@ -2,6 +2,7 @@ package gorda.driver.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.content.*
 import android.content.pm.PackageManager
 import android.location.Location
@@ -16,6 +17,8 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -26,15 +29,15 @@ import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
 import gorda.driver.R
 import gorda.driver.background.LocationService
-import gorda.driver.ui.MainViewModel
-import gorda.driver.ui.service.LocationBroadcastReceiver
-import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.databinding.ActivityMainBinding
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.services.firebase.Auth
+import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.driver.DriverUpdates
+import gorda.driver.ui.service.LocationBroadcastReceiver
+import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 
@@ -91,7 +94,7 @@ class MainActivity : AppCompatActivity() {
         navController = findNavController(R.id.nav_host_fragment_content_main)
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.nav_home, R.id.nav_profile
+                R.id.nav_home, R.id.nav_profile, R.id.nav_current_service
             ), drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
@@ -148,6 +151,12 @@ class MainActivity : AppCompatActivity() {
         }
         Intent(this, LocationService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
+        }
+        viewModel.currentService.observe(this) { currentService ->
+            if (currentService != null) {
+//                showNotification()
+                navController.navigate(R.id.nav_current_service)
+            }
         }
     }
 
@@ -240,7 +249,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.driver.observe(this) {
-            when(it) {
+            when (it) {
                 is Driver -> {
                     this.driver = it
                     switchConnect.isEnabled = true
@@ -297,5 +306,25 @@ class MainActivity : AppCompatActivity() {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+    private fun showNotification(): Unit {
+        val intent = Intent(this, StartActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent: PendingIntent = PendingIntent
+            .getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        val builder: NotificationCompat.Builder = NotificationCompat.Builder(
+            this,
+            Constants.SERVICES_NOTIFICATION_CHANNEL_ID
+        )
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(getString(R.string.new_service_title))
+            .setContentText(getString(R.string.new_service_text))
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+        with(NotificationManagerCompat.from(this)) {
+            notify(Constants.SERVICES_NOTIFICATION_ID, builder.build())
+        }
     }
 }

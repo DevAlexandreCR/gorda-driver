@@ -1,6 +1,9 @@
 package gorda.driver.activity
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Intent
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +12,7 @@ import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import gorda.driver.databinding.ActivityStartBinding
 import gorda.driver.services.firebase.Auth
 import gorda.driver.utils.Constants
+import gorda.driver.utils.Utils
 
 class StartActivity : AppCompatActivity() {
 
@@ -30,6 +34,27 @@ class StartActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        if (Utils.isNewerVersion()) {
+            val notificationManager: NotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val locationChannel = NotificationChannel(
+                Constants.LOCATION_NOTIFICATION_CHANNEL_ID,
+                Constants.LOCATION_NOTIFICATION_CHANNEL_ID, NotificationManager.IMPORTANCE_HIGH
+            )
+            val servicesChannel = NotificationChannel(
+                Constants.SERVICES_NOTIFICATION_CHANNEL_ID,
+                Constants.SERVICES_NOTIFICATION_CHANNEL_ID, NotificationManager.IMPORTANCE_HIGH
+            )
+
+            locationChannel.description = Constants.LOCATION_NOTIFICATION_CHANNEL_ID
+            servicesChannel.description = Constants.SERVICES_NOTIFICATION_CHANNEL_ID
+//            locationChannel.setSound(null, null)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                servicesChannel.hasUserSetSound()
+            }
+            notificationManager.createNotificationChannel(locationChannel)
+            notificationManager.createNotificationChannel(servicesChannel)
+        }
     }
 
     override fun onResume() {
@@ -55,6 +80,7 @@ class StartActivity : AppCompatActivity() {
         val intent = Intent(this, MainActivity::class.java).apply {
             putExtra(Constants.DRIVER_ID_EXTRA, uuid)
         }
+        finish()
         startActivity(intent)
     }
 

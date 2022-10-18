@@ -18,6 +18,7 @@ import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.ui.service.LocationBroadcastReceiver
+import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 import gorda.driver.utils.Utils
 
@@ -25,7 +26,6 @@ class LocationService: Service() {
 
     companion object {
         const val SERVICE_ID = 100
-        private const val NOTIFICATION_CHANNEL_ID = "location_service"
         const val STOP_SERVICE_MSG = 1
     }
 
@@ -68,7 +68,7 @@ class LocationService: Service() {
                     PendingIntent.FLAG_IMMUTABLE)
             }
         val builder: NotificationCompat.Builder = NotificationCompat.Builder(this,
-            NOTIFICATION_CHANNEL_ID
+            Constants.LOCATION_NOTIFICATION_CHANNEL_ID
         )
             .setOngoing(false)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -76,15 +76,6 @@ class LocationService: Service() {
             .setContentText(getString(R.string.text_connected))
             .setContentIntent(pendingIntent)
         if (Utils.isNewerVersion()) {
-            val notificationManager: NotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            val notificationChannel = NotificationChannel(
-                NOTIFICATION_CHANNEL_ID,
-                NOTIFICATION_CHANNEL_ID, NotificationManager.IMPORTANCE_HIGH
-            )
-
-            notificationChannel.description = NOTIFICATION_CHANNEL_ID
-            notificationChannel.setSound(null, null)
-            notificationManager.createNotificationChannel(notificationChannel)
             startForeground(SERVICE_ID, builder.build())
         }
     }
