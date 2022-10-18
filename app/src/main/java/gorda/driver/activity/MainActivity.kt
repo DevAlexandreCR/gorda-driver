@@ -115,6 +115,12 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
+        navController.addOnDestinationChangedListener { controller, destination, _ ->
+            if (destination.id == R.id.nav_apply) {
+
+            }
+        }
+
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
 
         switchConnect.setOnClickListener {
