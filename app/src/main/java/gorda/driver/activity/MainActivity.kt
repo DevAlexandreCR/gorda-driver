@@ -7,6 +7,8 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.*
 import android.provider.Settings
 import android.view.View
@@ -33,6 +35,7 @@ import gorda.driver.databinding.ActivityMainBinding
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
+import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.driver.DriverUpdates
@@ -40,6 +43,7 @@ import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
+
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class MainActivity : AppCompatActivity() {
@@ -51,6 +55,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
+    private lateinit var preferences: SharedPreferences
+    private lateinit var player: MediaPlayer
     private var driver: Driver = Driver()
     private lateinit var switchConnect: Switch
     private lateinit var lastLocation: Location
@@ -81,8 +87,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val driverID = intent.getStringExtra(Constants.DRIVER_ID_EXTRA)
-        viewModel.getDriver(driverID!!)
+        preferences = getPreferences(MODE_PRIVATE)
+
+        intent.getStringExtra(Constants.DRIVER_ID_EXTRA)?.let {
+            viewModel.getDriver(it)
+        }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -115,12 +124,6 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-        navController.addOnDestinationChangedListener { controller, destination, _ ->
-            if (destination.id == R.id.nav_apply) {
-
-            }
-        }
-
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
 
         switchConnect.setOnClickListener {
@@ -141,6 +144,20 @@ class MainActivity : AppCompatActivity() {
         }
 
         observeDriver(navView)
+
+        viewModel.currentService.observe(this) { currentService ->
+            if (currentService != null && currentService.status == Service.STATUS_IN_PROGRESS) {
+                val notifyId = preferences.getInt(
+                    Constants.SERVICES_NOTIFICATION_ID,
+                    currentService.created_at.toInt()
+                )
+                println("**** $notifyId --- ${currentService.created_at.toInt()}")
+                if (notifyId != currentService.created_at.toInt())
+                    playSound(currentService.created_at.toInt())
+                navController.navigate(R.id.nav_current_service)
+            }
+        }
+        player = MediaPlayer.create(this, R.raw.assigned_service)
     }
 
     override fun onStart() {
@@ -157,12 +174,6 @@ class MainActivity : AppCompatActivity() {
         }
         Intent(this, LocationService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
-        }
-        viewModel.currentService.observe(this) { currentService ->
-            if (currentService != null) {
-//                showNotification()
-                navController.navigate(R.id.nav_current_service)
-            }
         }
     }
 
@@ -314,23 +325,16 @@ class MainActivity : AppCompatActivity() {
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
 
-    private fun showNotification(): Unit {
-        val intent = Intent(this, StartActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pendingIntent: PendingIntent = PendingIntent
-            .getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-        val builder: NotificationCompat.Builder = NotificationCompat.Builder(
-            this,
-            Constants.SERVICES_NOTIFICATION_CHANNEL_ID
-        )
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(getString(R.string.new_service_title))
-            .setContentText(getString(R.string.new_service_text))
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-        with(NotificationManagerCompat.from(this)) {
-            notify(Constants.SERVICES_NOTIFICATION_ID, builder.build())
+    private fun playSound(notifyId: Int) {
+        player.start()
+        val editor: SharedPreferences.Editor = preferences.edit()
+        editor.putInt(Constants.SERVICES_NOTIFICATION_ID, notifyId)
+        editor.apply()
+    }
+
+    override fun onBackPressed() {
+        if (navController.currentDestination != null && navController.currentDestination?.id != R.id.nav_home) {
+            super.onBackPressed()
         }
     }
 }

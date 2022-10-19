@@ -2,17 +2,21 @@ package gorda.driver.activity
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ContentResolver
 import android.content.Intent
-import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
+import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
+import gorda.driver.R
 import gorda.driver.databinding.ActivityStartBinding
 import gorda.driver.services.firebase.Auth
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
+
 
 class StartActivity : AppCompatActivity() {
 
@@ -36,6 +40,7 @@ class StartActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         if (Utils.isNewerVersion()) {
+            val newServiceUri: Uri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://"+ packageName + "/" + R.raw.assigned_service)
             val notificationManager: NotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             val locationChannel = NotificationChannel(
                 Constants.LOCATION_NOTIFICATION_CHANNEL_ID,
@@ -48,10 +53,11 @@ class StartActivity : AppCompatActivity() {
 
             locationChannel.description = Constants.LOCATION_NOTIFICATION_CHANNEL_ID
             servicesChannel.description = Constants.SERVICES_NOTIFICATION_CHANNEL_ID
-//            locationChannel.setSound(null, null)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                servicesChannel.hasUserSetSound()
-            }
+            val audioAttributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .build()
+            servicesChannel.setSound(newServiceUri, audioAttributes)
             notificationManager.createNotificationChannel(locationChannel)
             notificationManager.createNotificationChannel(servicesChannel)
         }
@@ -79,8 +85,8 @@ class StartActivity : AppCompatActivity() {
     private fun launchMain(uuid: String): Unit {
         val intent = Intent(this, MainActivity::class.java).apply {
             putExtra(Constants.DRIVER_ID_EXTRA, uuid)
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
-        finish()
         startActivity(intent)
     }
 

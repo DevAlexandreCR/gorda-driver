@@ -24,7 +24,7 @@ import gorda.driver.ui.service.dataclasses.ServiceUpdates
 class ApplyFragment : Fragment() {
 
     companion object {
-        const val TAG = "ui.service.apply.ApplyFragment"
+        const val TAG = "ApplyFragment"
     }
 
     private val mainViewModel: MainViewModel by activityViewModels()

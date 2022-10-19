@@ -2,8 +2,7 @@ package gorda.driver.repositories
 
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.*
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Database
@@ -13,6 +12,7 @@ import java.io.Serializable
 object ServiceRepository {
 
     private var serviceEventListener: ServicesEventListener? = null
+    private var newServiceEventListener: ChildEventListener? = null
 
     fun getPending(listener: (serviceList: MutableList<Service>) -> Unit) {
         serviceEventListener = ServicesEventListener(listener)
@@ -20,8 +20,19 @@ object ServiceRepository {
             .addValueEventListener(serviceEventListener!!)
     }
 
+    fun listenNewServices(listener: ChildEventListener) {
+        newServiceEventListener = listener
+        Database.dbServices().addChildEventListener(newServiceEventListener!!)
+    }
+
     fun stopListenServices() {
         serviceEventListener?.let { listener ->
+            Database.dbServices().removeEventListener(listener)
+        }
+    }
+
+    fun stopListenNewServices() {
+        newServiceEventListener?.let { listener ->
             Database.dbServices().removeEventListener(listener)
         }
     }
