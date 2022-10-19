@@ -40,8 +40,11 @@ class StartActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         if (Utils.isNewerVersion()) {
-            val newServiceUri: Uri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://"+ packageName + "/" + R.raw.assigned_service)
-            val notificationManager: NotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val newServiceUri: Uri =
+                Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName +
+                        "/" + R.raw.assigned_service)
+            val notificationManager: NotificationManager =
+                getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             val locationChannel = NotificationChannel(
                 Constants.LOCATION_NOTIFICATION_CHANNEL_ID,
                 Constants.LOCATION_NOTIFICATION_CHANNEL_ID, NotificationManager.IMPORTANCE_HIGH

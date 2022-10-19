@@ -54,7 +54,7 @@
     <string name="allow">Allow</string>
     <string name="disallow">Denny</string>
     <string name="disclosure_title">Use your location</string>
-    <string name="firebase_notification">FIREBASE_NOTIFICATION_CHANNEL</string>
+    <string name="firebase_notification">gorda.driver.services</string>
     <string name="title_activity_start">StartActivity</string>
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>

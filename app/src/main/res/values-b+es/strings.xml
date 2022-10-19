@@ -47,7 +47,7 @@
     <string name="allow">Permitir</string>
     <string name="disallow">Denegar</string>
     <string name="disclosure_title">Usa tu ubicación</string>
-    <string name="firebase_notification">FIREBASE_NOTIFICATION_CHANNEL</string>
+    <string name="firebase_notification">gorda.driver.services</string>
     <string name="new_service_title">Nuevo Servico!</string>
     <string name="new_service_text">Se te ha asignado un nuevo servicio!!!</string>
 </resources>
