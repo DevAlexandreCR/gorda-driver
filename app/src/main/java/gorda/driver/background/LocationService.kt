@@ -98,6 +98,7 @@ class LocationService: Service(), MediaPlayer.OnPreparedListener  {
 
     fun stop() {
         LocationHandler.stopLocationUpdates()
+        ServiceRepository.stopListenNewServices()
         stoped = true
         stopSelf()
     }

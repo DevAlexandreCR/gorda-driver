@@ -37,9 +37,9 @@ object ServiceRepository {
         }
     }
 
-    fun getCurrentServices(listener: (serviceList: MutableList<Service>) -> Unit) {
+    fun getCurrentServices(driverID: String, listener: (serviceList: MutableList<Service>) -> Unit) {
         serviceEventListener = ServicesEventListener(listener)
-        Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_IN_PROGRESS).limitToLast(100)
+        Database.dbServices().orderByChild(Service.DRIVER_ID).equalTo(driverID).limitToLast(1)
             .addValueEventListener(serviceEventListener!!)
     }
 

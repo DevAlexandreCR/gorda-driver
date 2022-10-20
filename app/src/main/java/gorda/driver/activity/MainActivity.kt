@@ -93,6 +93,8 @@ class MainActivity : AppCompatActivity() {
             viewModel.getDriver(it)
         }
 
+        player = MediaPlayer.create(this, R.raw.assigned_service)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -146,18 +148,31 @@ class MainActivity : AppCompatActivity() {
         observeDriver(navView)
 
         viewModel.currentService.observe(this) { currentService ->
-            if (currentService != null && currentService.status == Service.STATUS_IN_PROGRESS) {
-                val notifyId = preferences.getInt(
-                    Constants.SERVICES_NOTIFICATION_ID,
-                    currentService.created_at.toInt()
-                )
-                println("**** $notifyId --- ${currentService.created_at.toInt()}")
-                if (notifyId != currentService.created_at.toInt())
-                    playSound(currentService.created_at.toInt())
-                navController.navigate(R.id.nav_current_service)
+            currentService?.status?.let { status ->
+                when (status) {
+                    Service.STATUS_IN_PROGRESS -> {
+                        val notifyId = preferences.getInt(
+                            Constants.SERVICES_NOTIFICATION_ID,
+                            currentService.created_at.toInt()
+                        )
+                        if (notifyId != currentService.created_at.toInt())
+                        playSound(currentService.created_at.toInt())
+                        navController.navigate(R.id.nav_current_service)
+                    }
+                    Service.STATUS_CANCELED -> {
+                        val canceledSound = MediaPlayer.create(this, R.raw.cancel_service)
+                        canceledSound.isLooping = false
+                        canceledSound.start()
+                        if (navController.currentDestination?.id == R.id.nav_current_service)
+                            navController.navigate(R.id.nav_home)
+                    }
+                    else -> {
+                        if (navController.currentDestination?.id == R.id.nav_current_service)
+                            navController.navigate(R.id.nav_home)
+                    }
+                }
             }
         }
-        player = MediaPlayer.create(this, R.raw.assigned_service)
     }
 
     override fun onStart() {

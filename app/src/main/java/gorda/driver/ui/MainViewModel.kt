@@ -114,8 +114,8 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun thereIsACurrentService(driverID: String) {
-        ServiceRepository.getCurrentServices { services ->
-            val service = services.find { it.driver_id == driverID }
+        ServiceRepository.getCurrentServices(driverID) { services ->
+            val service = services[0]
             _currentService.postValue(service)
             savedStateHandle[Service.TAG] = service
         }

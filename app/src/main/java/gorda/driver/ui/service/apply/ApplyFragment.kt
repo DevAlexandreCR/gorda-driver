@@ -100,9 +100,11 @@ class ApplyFragment : Fragment() {
                     when (it.status) {
                         Service.STATUS_CANCELED -> {
                             Toast.makeText(requireContext(), R.string.service_canceled, Toast.LENGTH_SHORT).show()
+                            if (findNavController().currentDestination?.id == R.id.nav_apply)
                             findNavController().navigate(R.id.action_cancel_apply)
                         }
                         Service.STATUS_IN_PROGRESS -> {
+                            if (findNavController().currentDestination?.id == R.id.nav_apply)
                             findNavController().navigate(R.id.action_cancel_apply)
                         }
                     }
