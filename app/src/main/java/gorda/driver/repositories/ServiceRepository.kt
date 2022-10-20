@@ -15,14 +15,15 @@ object ServiceRepository {
     private var newServiceEventListener: ChildEventListener? = null
 
     fun getPending(listener: (serviceList: MutableList<Service>) -> Unit) {
-        serviceEventListener = ServicesEventListener(listener)
+        serviceEventListener = ServicesEventListener("", listener)
         Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING).limitToLast(100)
             .addValueEventListener(serviceEventListener!!)
     }
 
     fun listenNewServices(listener: ChildEventListener) {
         newServiceEventListener = listener
-        Database.dbServices().addChildEventListener(newServiceEventListener!!)
+        Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING)
+            .limitToLast(10).addChildEventListener(newServiceEventListener!!)
     }
 
     fun stopListenServices() {
@@ -38,8 +39,8 @@ object ServiceRepository {
     }
 
     fun getCurrentServices(driverID: String, listener: (serviceList: MutableList<Service>) -> Unit) {
-        serviceEventListener = ServicesEventListener(listener)
-        Database.dbServices().orderByChild(Service.DRIVER_ID).equalTo(driverID).limitToLast(1)
+        serviceEventListener = ServicesEventListener(driverID, listener)
+        Database.dbServices().orderByChild(Service.DRIVER_ID).equalTo(driverID).limitToLast(1000)
             .addValueEventListener(serviceEventListener!!)
     }
 

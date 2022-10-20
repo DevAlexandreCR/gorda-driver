@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var preferences: SharedPreferences
     private lateinit var player: MediaPlayer
+    private lateinit var cancelPlayer: MediaPlayer
     private var driver: Driver = Driver()
     private lateinit var switchConnect: Switch
     private lateinit var lastLocation: Location
@@ -94,7 +95,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         player = MediaPlayer.create(this, R.raw.assigned_service)
-
+        cancelPlayer = MediaPlayer.create(this, R.raw.cancel_service)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -148,6 +149,7 @@ class MainActivity : AppCompatActivity() {
         observeDriver(navView)
 
         viewModel.currentService.observe(this) { currentService ->
+            println("*********")
             currentService?.status?.let { status ->
                 when (status) {
                     Service.STATUS_IN_PROGRESS -> {
@@ -160,9 +162,12 @@ class MainActivity : AppCompatActivity() {
                         navController.navigate(R.id.nav_current_service)
                     }
                     Service.STATUS_CANCELED -> {
-                        val canceledSound = MediaPlayer.create(this, R.raw.cancel_service)
-                        canceledSound.isLooping = false
-                        canceledSound.start()
+                        val notifyId = preferences.getInt(
+                            Constants.CANCEL_SERVICES_NOTIFICATION_ID,
+                            currentService.created_at.toInt()
+                        )
+                        if (notifyId != currentService.created_at.toInt())
+                            playCancelSound(notifyId)
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
                     }
@@ -344,6 +349,13 @@ class MainActivity : AppCompatActivity() {
         player.start()
         val editor: SharedPreferences.Editor = preferences.edit()
         editor.putInt(Constants.SERVICES_NOTIFICATION_ID, notifyId)
+        editor.apply()
+    }
+
+    private fun playCancelSound(notifyId: Int) {
+        cancelPlayer.start()
+        val editor: SharedPreferences.Editor = preferences.edit()
+        editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, notifyId)
         editor.apply()
     }
 

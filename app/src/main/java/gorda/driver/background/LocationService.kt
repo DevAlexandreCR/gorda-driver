@@ -119,7 +119,7 @@ class LocationService: Service(), MediaPlayer.OnPreparedListener  {
         p0?.isLooping = false
         ServiceRepository.listenNewServices(object: ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                if (p0 != null) {
+                if (p0 != null && snapshot.hasChildren()) {
                     if (!p0.isPlaying) p0.start()
                 }
             }

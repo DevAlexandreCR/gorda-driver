@@ -37,7 +37,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     var driverStatus: LiveData<DriverUpdates> = _driverState
     var driver: LiveData<Driver> = savedStateHandle.getLiveData(Driver.TAG)
     var serviceUpdates: LiveData<ServiceUpdates> = _serviceUpdates
-    var currentService: LiveData<Service?> = savedStateHandle.getLiveData(Service.TAG)
+    var currentService: LiveData<Service?> = _currentService
 
     fun setServiceUpdateStartLocation(starLoc: LocType) {
         _serviceUpdates.postValue(ServiceUpdates.setStarLoc(starLoc))
@@ -115,6 +115,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun thereIsACurrentService(driverID: String) {
         ServiceRepository.getCurrentServices(driverID) { services ->
+            println("******* services " + services.toString())
             val service = services[0]
             _currentService.postValue(service)
             savedStateHandle[Service.TAG] = service
