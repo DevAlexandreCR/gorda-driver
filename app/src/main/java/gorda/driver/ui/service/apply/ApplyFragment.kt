@@ -9,12 +9,9 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.navigation.NavController
-import androidx.navigation.NavDestination
 import androidx.navigation.fragment.findNavController
 import com.google.android.gms.tasks.Task
 import gorda.driver.R
@@ -27,7 +24,7 @@ import gorda.driver.ui.service.dataclasses.ServiceUpdates
 class ApplyFragment : Fragment() {
 
     companion object {
-        const val TAG = "gorda.driver.ui.service.apply.ApplyFragment"
+        const val TAG = "ApplyFragment"
     }
 
     private val mainViewModel: MainViewModel by activityViewModels()
@@ -60,7 +57,7 @@ class ApplyFragment : Fragment() {
             button.isEnabled = false
             cancelApply().addOnSuccessListener {
                 button.isEnabled = true
-                findNavController().navigate(R.id.nav_home)
+                findNavController().navigate(R.id.action_cancel_apply)
                 Toast.makeText(requireContext(), R.string.cancelApply, Toast.LENGTH_SHORT).show()
             }. addOnFailureListener { e ->
                 button.isEnabled = true
@@ -103,10 +100,12 @@ class ApplyFragment : Fragment() {
                     when (it.status) {
                         Service.STATUS_CANCELED -> {
                             Toast.makeText(requireContext(), R.string.service_canceled, Toast.LENGTH_SHORT).show()
-                            findNavController().navigate(R.id.nav_home)
+                            if (findNavController().currentDestination?.id == R.id.nav_apply)
+                            findNavController().navigate(R.id.action_cancel_apply)
                         }
                         Service.STATUS_IN_PROGRESS -> {
-                            findNavController().navigate(R.id.nav_home)
+                            if (findNavController().currentDestination?.id == R.id.nav_apply)
+                            findNavController().navigate(R.id.action_cancel_apply)
                         }
                     }
                 }

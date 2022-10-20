@@ -6,15 +6,14 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.media.MediaPlayer
 import android.os.*
 import android.provider.Settings
-import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.Switch
 import android.widget.TextView
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -25,20 +24,22 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.*
 import com.bumptech.glide.Glide
-import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
-import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.navigation.NavigationView
 import gorda.driver.R
 import gorda.driver.background.LocationService
-import gorda.driver.ui.MainViewModel
-import gorda.driver.ui.service.LocationBroadcastReceiver
-import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.databinding.ActivityMainBinding
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
+import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
+import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.driver.DriverUpdates
+import gorda.driver.ui.service.LocationBroadcastReceiver
+import gorda.driver.ui.service.dataclasses.LocationUpdates
+import gorda.driver.utils.Constants
+import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
+
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class MainActivity : AppCompatActivity() {
@@ -47,18 +48,16 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
     }
 
-    private var sendLogin = false
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
+    private lateinit var preferences: SharedPreferences
+    private lateinit var player: MediaPlayer
+    private lateinit var cancelPlayer: MediaPlayer
     private var driver: Driver = Driver()
     private lateinit var switchConnect: Switch
     private lateinit var lastLocation: Location
     private val viewModel: MainViewModel by viewModels()
-    private val signInLauncher = registerForActivityResult(FirebaseAuthUIActivityResultContract())
-    { res ->
-        this.onSignInResult(res)
-    }
     private var locationService: Messenger? = null
     private var mBound: Boolean = false
     private val connection = object : ServiceConnection {
@@ -75,7 +74,7 @@ class MainActivity : AppCompatActivity() {
     private val locationBroadcastReceiver =
         LocationBroadcastReceiver(object : LocationUpdateInterface {
             override fun onUpdate(intent: Intent) {
-                val extra: Location? = intent.getParcelableExtra("location")
+                val extra: Location? = intent.getParcelableExtra(LOCATION_EXTRA)
                 extra?.let { location ->
                     viewModel.updateLocation(location)
                 }
@@ -85,6 +84,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        preferences = getPreferences(MODE_PRIVATE)
+
+        intent.getStringExtra(Constants.DRIVER_ID_EXTRA)?.let {
+            viewModel.getDriver(it)
+        }
+
+        player = MediaPlayer.create(this, R.raw.assigned_service)
+        cancelPlayer = MediaPlayer.create(this, R.raw.cancel_service)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -95,7 +102,7 @@ class MainActivity : AppCompatActivity() {
         navController = findNavController(R.id.nav_host_fragment_content_main)
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.nav_home, R.id.nav_profile
+                R.id.nav_home, R.id.nav_profile, R.id.nav_current_service
             ), drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
@@ -103,9 +110,13 @@ class MainActivity : AppCompatActivity() {
 
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
-                if (driver.id != null) viewModel.disconnect(driver)
-                Auth.logOut()
-                sendLogin = false
+                driver.id?.let { viewModel.disconnect(driver) }
+                Auth.logOut(this).addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val intent = Intent(this, StartActivity::class.java)
+                        startActivity(intent)
+                    }
+                }
             }
             NavigationUI.onNavDestinationSelected(item, navController)
             drawerLayout.closeDrawer(GravityCompat.START)
@@ -131,8 +142,46 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.setAuth()
         observeDriver(navView)
+
+        preferences.getString(Constants.CURRENT_SERVICE_ID, null)?.let { serviceID ->
+            viewModel.thereIsACurrentService(serviceID)
+        }
+
+        viewModel.currentService.observe(this) { currentService ->
+            currentService?.status?.let { status ->
+                when (status) {
+                    Service.STATUS_IN_PROGRESS -> {
+                        if (Auth.getCurrentUserUUID() == currentService.driver_id) {
+                            val notifyId = preferences.getInt(
+                                Constants.SERVICES_NOTIFICATION_ID,
+                                currentService.created_at.toInt()
+                            )
+                            if (notifyId != currentService.created_at.toInt())
+                                playSound(currentService.created_at.toInt())
+                            navController.navigate(R.id.nav_current_service)
+                        }
+                    }
+                    Service.STATUS_CANCELED -> {
+                        val cancelNotifyId = preferences.getInt(
+                            Constants.CANCEL_SERVICES_NOTIFICATION_ID,
+                            currentService.created_at.toInt()
+                        )
+                        if (cancelNotifyId != currentService.created_at.toInt())
+                            playCancelSound(currentService.created_at.toInt())
+                        if (navController.currentDestination?.id == R.id.nav_current_service)
+                            navController.navigate(R.id.nav_home)
+                    }
+                    else -> {
+                        if (navController.currentDestination?.id == R.id.nav_current_service)
+                            navController.navigate(R.id.nav_home)
+                        val editor: SharedPreferences.Editor = preferences.edit()
+                        editor.putString(Constants.CURRENT_SERVICE_ID, null)
+                        editor.apply()
+                    }
+                }
+            }
+        }
     }
 
     override fun onStart() {
@@ -154,6 +203,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        val editor: SharedPreferences.Editor = preferences.edit()
+        editor.putString(Constants.CURRENT_SERVICE_ID, viewModel.currentService.value?.id)
+        editor.apply()
         if (mBound) {
             this.unbindService(connection)
             mBound = false
@@ -169,14 +221,6 @@ class MainActivity : AppCompatActivity() {
         if (!isLocationEnabled()) {
             val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(intent)
-        }
-    }
-
-    private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
-        if (result.resultCode != RESULT_OK) {
-            Log.e(TAG, "error ${result.resultCode}")
-            val intent = Auth.launchLogin()
-            this.signInLauncher.launch(intent)
         }
     }
 
@@ -227,11 +271,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeDriver(navView: NavigationView) {
-        viewModel.driverStatus.observe(this) {
-            when (it) {
+        viewModel.driverStatus.observe(this) { driverUpdates ->
+            when (driverUpdates) {
                 is DriverUpdates.IsConnected -> {
-                    switchConnect.isChecked = it.connected
-                    if (it.connected) {
+                    switchConnect.isChecked = driverUpdates.connected
+                    if (driverUpdates.connected) {
                         startLocationService()
                         switchConnect.setText(R.string.status_connected)
                     } else {
@@ -240,37 +284,21 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 is DriverUpdates.Connecting -> {
-                    if (it.connecting) {
+                    if (driverUpdates.connecting) {
                         switchConnect.setText(R.string.status_connecting)
                     }
-                }
-
-                is DriverUpdates.AuthDriver -> {
-                    if (it.uuid == null) {
-                        if (driver.id != null) viewModel.disconnect(driver)
-                        switchConnect.isEnabled = false
-                        if (!sendLogin) {
-                            val intent = Auth.launchLogin()
-                            this.signInLauncher.launch(intent)
-                            sendLogin = true
-                        }
-                    } else {
-                        viewModel.getDriver(it.uuid!!)
-                    }
-
                 }
                 else -> {}
             }
         }
 
         viewModel.driver.observe(this) {
-            when(it) {
+            when (it) {
                 is Driver -> {
                     this.driver = it
                     switchConnect.isEnabled = true
                     setDrawerHeader(navView)
                     viewModel.isConnected(it.id!!)
-                    viewModel.thereIsACurrentService(it.id!!)
                 }
             }
         }
@@ -321,5 +349,26 @@ class MainActivity : AppCompatActivity() {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+    private fun playSound(notifyId: Int) {
+        player.start()
+        val editor: SharedPreferences.Editor = preferences.edit()
+        editor.putInt(Constants.SERVICES_NOTIFICATION_ID, notifyId)
+        editor.apply()
+    }
+
+    private fun playCancelSound(notifyId: Int) {
+        cancelPlayer.start()
+        val editor: SharedPreferences.Editor = preferences.edit()
+        editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, notifyId)
+        editor.putString(Constants.CURRENT_SERVICE_ID, null)
+        editor.apply()
+    }
+
+    override fun onBackPressed() {
+        if (navController.currentDestination != null && navController.currentDestination?.id != R.id.nav_home) {
+            super.onBackPressed()
+        }
     }
 }
