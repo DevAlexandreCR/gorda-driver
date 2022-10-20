@@ -34,6 +34,7 @@ data class Service(
         const val STATUS = "status"
         const val APPLICANTS = "applicants"
         const val DRIVER_ID = "driver_id"
+        const val ID = "id"
     }
 
     fun updateMetadata(): Task<Void> {

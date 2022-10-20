@@ -3,6 +3,7 @@ package gorda.driver.repositories
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.database.*
+import com.google.firebase.database.ktx.getValue
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Database
@@ -15,7 +16,7 @@ object ServiceRepository {
     private var newServiceEventListener: ChildEventListener? = null
 
     fun getPending(listener: (serviceList: MutableList<Service>) -> Unit) {
-        serviceEventListener = ServicesEventListener("", listener)
+        serviceEventListener = ServicesEventListener(listener)
         Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING).limitToLast(100)
             .addValueEventListener(serviceEventListener!!)
     }
@@ -38,10 +39,16 @@ object ServiceRepository {
         }
     }
 
-    fun getCurrentServices(driverID: String, listener: (serviceList: MutableList<Service>) -> Unit) {
-        serviceEventListener = ServicesEventListener(driverID, listener)
-        Database.dbServices().orderByChild(Service.DRIVER_ID).equalTo(driverID).limitToLast(1000)
-            .addValueEventListener(serviceEventListener!!)
+    fun getCurrentService(serviceID: String, listener: (service: Service) -> Unit) {
+        Database.dbServices().child(serviceID)
+            .addValueEventListener(object: ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    snapshot.getValue<Service>()?.let { service ->
+                        listener(service)
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
     }
 
     fun updateMetadata(serviceId: String, metadata: ServiceMetadata, status: String): Task<Void> {

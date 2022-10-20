@@ -2,13 +2,11 @@ package gorda.driver.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.PendingIntent
 import android.content.*
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
 import android.media.MediaPlayer
-import android.net.Uri
 import android.os.*
 import android.provider.Settings
 import android.view.View
@@ -19,8 +17,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -148,32 +144,40 @@ class MainActivity : AppCompatActivity() {
 
         observeDriver(navView)
 
+        preferences.getString(Constants.CURRENT_SERVICE_ID, null)?.let { serviceID ->
+            viewModel.thereIsACurrentService(serviceID)
+        }
+
         viewModel.currentService.observe(this) { currentService ->
-            println("*********")
             currentService?.status?.let { status ->
                 when (status) {
                     Service.STATUS_IN_PROGRESS -> {
-                        val notifyId = preferences.getInt(
-                            Constants.SERVICES_NOTIFICATION_ID,
-                            currentService.created_at.toInt()
-                        )
-                        if (notifyId != currentService.created_at.toInt())
-                        playSound(currentService.created_at.toInt())
-                        navController.navigate(R.id.nav_current_service)
+                        if (Auth.getCurrentUserUUID() == currentService.driver_id) {
+                            val notifyId = preferences.getInt(
+                                Constants.SERVICES_NOTIFICATION_ID,
+                                currentService.created_at.toInt()
+                            )
+                            if (notifyId != currentService.created_at.toInt())
+                                playSound(currentService.created_at.toInt())
+                            navController.navigate(R.id.nav_current_service)
+                        }
                     }
                     Service.STATUS_CANCELED -> {
-                        val notifyId = preferences.getInt(
+                        val cancelNotifyId = preferences.getInt(
                             Constants.CANCEL_SERVICES_NOTIFICATION_ID,
                             currentService.created_at.toInt()
                         )
-                        if (notifyId != currentService.created_at.toInt())
-                            playCancelSound(notifyId)
+                        if (cancelNotifyId != currentService.created_at.toInt())
+                            playCancelSound(currentService.created_at.toInt())
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
                     }
                     else -> {
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
+                        val editor: SharedPreferences.Editor = preferences.edit()
+                        editor.putString(Constants.CURRENT_SERVICE_ID, null)
+                        editor.apply()
                     }
                 }
             }
@@ -199,6 +203,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        val editor: SharedPreferences.Editor = preferences.edit()
+        editor.putString(Constants.CURRENT_SERVICE_ID, viewModel.currentService.value?.id)
+        editor.apply()
         if (mBound) {
             this.unbindService(connection)
             mBound = false
@@ -292,7 +299,6 @@ class MainActivity : AppCompatActivity() {
                     switchConnect.isEnabled = true
                     setDrawerHeader(navView)
                     viewModel.isConnected(it.id!!)
-                    viewModel.thereIsACurrentService(it.id!!)
                 }
             }
         }
@@ -356,6 +362,7 @@ class MainActivity : AppCompatActivity() {
         cancelPlayer.start()
         val editor: SharedPreferences.Editor = preferences.edit()
         editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, notifyId)
+        editor.putString(Constants.CURRENT_SERVICE_ID, null)
         editor.apply()
     }
 
