@@ -38,5 +38,11 @@
         <argument
             android:name="service"
             app:argType="gorda.driver.models.Service" />
+        <action
+            android:id="@+id/action_cancel_apply"
+            app:destination="@id/nav_home"
+            app:launchSingleTop="true"
+            app:popUpTo="@+id/mobile_navigation"
+            app:popUpToInclusive="true" />
     </fragment>
 </navigation>

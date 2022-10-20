@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -47,6 +48,7 @@ class CurrentServiceFragment : Fragment() {
         binding = FragmentCurrentServiceBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
+        requireActivity().onBackPressedDispatcher.addCallback(this) {}
         textName = binding.currentServiceName
         textPhone = binding.currentPhone
         textAddress = binding.currentAddress

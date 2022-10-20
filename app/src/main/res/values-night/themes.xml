@@ -46,4 +46,9 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textColor">@color/secondary_light</item>
     </style>
+
+    <style name="ThemeOverlay.GordaDriver.FullscreenContainer" parent="">
+        <item name="fullscreenBackgroundColor">@color/light_blue_900</item>
+        <item name="fullscreenTextColor">@color/light_blue_A400</item>
+    </style>
 </resources>
