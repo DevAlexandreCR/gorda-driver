@@ -50,4 +50,7 @@
     <string name="firebase_notification">gorda.driver.services</string>
     <string name="new_service_title">Nuevo Servico!</string>
     <string name="new_service_text">Se te ha asignado un nuevo servicio!!!</string>
+    <string name="about">Acerca de</string>
+    <string name="version">Versión: </string>
+    <string name="terms"><a href="https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764\">Política de privacidad</a></string>
 </resources>
