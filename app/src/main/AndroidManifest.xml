@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="gorda.driver">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -19,6 +18,10 @@
         android:theme="@style/Theme.GordaDriver"
         android:usesCleartextTraffic="true"
         tools:targetApi="32">
+        <meta-data android:name="io.sentry.dsn"
+            android:value="${SENTRY_DSN}" />
+        <meta-data android:name="io.sentry.traces.sample-rate" android:value="0.8" />
+        <meta-data android:name="io.sentry.traces.user-interaction.enable" android:value="true" />
         <activity
             android:name="gorda.driver.activity.StartActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
