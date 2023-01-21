@@ -30,6 +30,12 @@
         tools:layout="@layout/fragment_map"
         />
     <fragment
+        android:id="@+id/nav_about"
+        android:name="gorda.driver.ui.about.AboutFragment"
+        android:label="@string/about"
+        tools:layout="@layout/fragment_about"
+        />
+    <fragment
         android:id="@+id/nav_apply"
         android:name="gorda.driver.ui.service.apply.ApplyFragment"
         android:label="@string/apply"
