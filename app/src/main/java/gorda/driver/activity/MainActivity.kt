@@ -144,10 +144,6 @@ class MainActivity : AppCompatActivity() {
 
         observeDriver(navView)
 
-        preferences.getString(Constants.CURRENT_SERVICE_ID, null)?.let { serviceID ->
-            viewModel.thereIsACurrentService(serviceID)
-        }
-
         viewModel.currentService.observe(this) { currentService ->
             currentService?.status?.let { status ->
                 when (status) {
@@ -199,6 +195,8 @@ class MainActivity : AppCompatActivity() {
         Intent(this, LocationService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
         }
+
+        viewModel.isThereCurrentService()
     }
 
     override fun onStop() {

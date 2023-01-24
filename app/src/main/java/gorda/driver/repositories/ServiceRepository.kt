@@ -1,11 +1,13 @@
 package gorda.driver.repositories
 
+import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
+import gorda.driver.services.firebase.Auth
 import gorda.driver.services.firebase.Database
 import gorda.driver.ui.service.ServicesEventListener
 import java.io.Serializable
@@ -45,6 +47,22 @@ object ServiceRepository {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     snapshot.getValue<Service>()?.let { service ->
                         listener(service)
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
+    }
+
+    fun isThereCurrentService(listener: (service: Service?) -> Unit) {
+        Database.dbServices().orderByChild(Service.DRIVER_ID)
+            .equalTo(Auth.getCurrentUserUUID()).limitToLast(1)
+            .addValueEventListener(object: ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.hasChildren()) {
+                        snapshot.children.iterator().next().getValue<Service>()?.let { service ->
+                            if (service.status == Service.STATUS_IN_PROGRESS) listener(service)
+                            else listener(null)
+                        }
                     }
                 }
                 override fun onCancelled(error: DatabaseError) {}
