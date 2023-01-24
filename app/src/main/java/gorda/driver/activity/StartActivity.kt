@@ -11,11 +11,14 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
+import gorda.driver.BuildConfig
 import gorda.driver.R
 import gorda.driver.databinding.ActivityStartBinding
 import gorda.driver.services.firebase.Auth
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
+import io.sentry.Sentry
+import io.sentry.SentryLevel
 
 
 class StartActivity : AppCompatActivity() {
@@ -41,8 +44,10 @@ class StartActivity : AppCompatActivity() {
 
         if (Utils.isNewerVersion()) {
             val newServiceUri: Uri =
-                Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName +
-                        "/" + R.raw.assigned_service)
+                Uri.parse(
+                    ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName +
+                        "/" + R.raw.assigned_service
+                )
             val notificationManager: NotificationManager =
                 getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             val locationChannel = NotificationChannel(
@@ -64,6 +69,12 @@ class StartActivity : AppCompatActivity() {
             notificationManager.createNotificationChannel(locationChannel)
             notificationManager.createNotificationChannel(servicesChannel)
         }
+
+        setupSentry()
+    }
+
+    private fun setupSentry() {
+        Sentry.init(BuildConfig.SENTRY_DSN);
     }
 
     override fun onResume() {
@@ -96,7 +107,9 @@ class StartActivity : AppCompatActivity() {
     private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
         loginLaunched = false
         if (result.resultCode != RESULT_OK) {
-            Log.e(TAG, "error ${result.resultCode}")
+            val msg = "error ${result.resultCode}"
+            Utils.sendEvent(msg, SentryLevel.DEBUG)
+            Log.e(TAG, msg)
             launchLogin()
         }
     }
