@@ -61,7 +61,7 @@ class ServiceAdapter(
             apply(getItem(position), getItem(position).start_loc)
         }
         val service = getItem(position)
-        val time = Date().toInstant().minusMillis(service.created_at * 1000).toEpochMilli()
+        val time = Date().time - (service.created_at * 1000)
         holder.serviceTimer.base = SystemClock.elapsedRealtime() - time
         holder.serviceTimer.start()
         holder.serviceTimer.format = context.resources.getString(R.string.ago) + " %s"
