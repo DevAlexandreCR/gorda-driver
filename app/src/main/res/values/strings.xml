@@ -55,18 +55,18 @@
     <string name="disallow">Denny</string>
     <string name="disclosure_title">Use your location</string>
     <string name="firebase_notification">gorda.driver.services</string>
-    <string name="title_activity_start">Loading...</string>
+    <string name="title_activity_start">Loading…</string>
     <string name="new_service_title">New Service!</string>
     <string name="new_service_text">You have been assigned to new service</string>
     <string name="about">About</string>
     <string name="version">Version: </string>
     <string name="terms"><a href="https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764">Privacy Police</a></string>
+    <string name="service_to">Service to </string>
     <!-- Preference Titles -->
     <string name="notifications">Notifications</string>
-    <string name="sync_header">Sync</string>
 
     <!-- Notifications Preferences -->
     <string name="voice">Voice</string>
-    <string name="sound">Sound</string>
+    <string name="sound">New Service</string>
     <string name="tone">Tone</string>
 </resources>

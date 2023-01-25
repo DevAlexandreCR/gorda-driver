@@ -50,6 +50,7 @@ class LocationService: Service(), MediaPlayer.OnPreparedListener, TextToSpeech.O
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
+            val chanel = sharedPreferences?.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
             stoped = false
             intent.getStringExtra(Driver.DRIVER_KEY)?.let { id ->
                 driverID = id
@@ -71,7 +72,6 @@ class LocationService: Service(), MediaPlayer.OnPreparedListener, TextToSpeech.O
                     override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                         if (snapshot.exists()) {
                             snapshot.getValue<gorda.driver.models.Service>()?.let { service ->
-                                val chanel = sharedPreferences?.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
                                 if (chanel == Constants.NOTIFICATION_VOICE) speech(service.start_loc.name)
                                 else play()
                             }
@@ -169,8 +169,8 @@ class LocationService: Service(), MediaPlayer.OnPreparedListener, TextToSpeech.O
 
     private fun speech(text: String) {
         if (!toSpeech!!.isSpeaking) toSpeech!!.speak(
-            text,
-            TextToSpeech.QUEUE_FLUSH,
+            resources.getString(R.string.service_to) + text,
+            TextToSpeech.QUEUE_ADD,
             null,
             ""
         )
