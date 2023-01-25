@@ -65,6 +65,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging:23.1.1'
     implementation 'com.google.firebase:firebase-core:21.1.1'
     implementation 'io.sentry:sentry-android:6.12.1'
+    implementation 'androidx.preference:preference:1.2.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.13.2'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

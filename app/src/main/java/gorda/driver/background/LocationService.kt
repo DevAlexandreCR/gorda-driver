@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.ContentResolver
 import android.content.Intent
+import android.content.SharedPreferences
 import android.location.Location
 import android.media.MediaPlayer
 import android.net.Uri
@@ -13,6 +14,7 @@ import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -44,6 +46,7 @@ class LocationService: Service(), MediaPlayer.OnPreparedListener, TextToSpeech.O
     private var driverID: String = ""
     private var toSpeech: TextToSpeech? = null
     private var mediaPlayer: MediaPlayer? = null
+    private var sharedPreferences: SharedPreferences? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
@@ -66,9 +69,11 @@ class LocationService: Service(), MediaPlayer.OnPreparedListener, TextToSpeech.O
                 })
                 ServiceRepository.listenNewServices(object: ChildEventListener {
                     override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                        if (toSpeech != null && snapshot.exists()) {
+                        if (snapshot.exists()) {
                             snapshot.getValue<gorda.driver.models.Service>()?.let { service ->
-
+                                val chanel = sharedPreferences?.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
+                                if (chanel == Constants.NOTIFICATION_VOICE) speech(service.start_loc.name)
+                                else play()
                             }
                         }
                     }
@@ -122,6 +127,7 @@ class LocationService: Service(), MediaPlayer.OnPreparedListener, TextToSpeech.O
         player.setOnPreparedListener(this@LocationService)
 
         toSpeech = TextToSpeech(this, this)
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this@LocationService)
     }
 
     fun stop() {
