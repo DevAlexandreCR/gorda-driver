@@ -21,7 +21,6 @@ import gorda.driver.R
 import gorda.driver.databinding.FragmentMapBinding
 import gorda.driver.interfaces.LocType
 import gorda.driver.maps.*
-import gorda.driver.maps.Map
 import gorda.driver.services.retrofit.RetrofitBase
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.dataclasses.LocationUpdates
@@ -104,10 +103,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 .include(startLatLng)
                 .include(driverLatLng)
                 .build()
+            val paddingInPixels = (requireView().width.coerceAtMost(requireView().height) * 0.1).toInt()
             googleMap.animateCamera(
                 CameraUpdateFactory.newLatLngBounds(
                     bounds,
-                    300
+                    paddingInPixels
                 )
             )
             val mapService = Map()

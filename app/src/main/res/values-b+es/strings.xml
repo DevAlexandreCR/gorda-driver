@@ -52,5 +52,15 @@
     <string name="new_service_text">Se te ha asignado un nuevo servicio!!!</string>
     <string name="about">Acerca de</string>
     <string name="version">Versión: </string>
+    <string name="title_activity_start">Cargando…</string>
     <string name="terms"><a href="https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764\">Política de privacidad</a></string>
+    <string name="service_to">Servicio para </string>
+    <!-- Preference Titles -->
+    <string name="notifications">Notificaciones</string>
+
+    <!-- Notifications Preferences -->
+    <string name="voice">Voz</string>
+    <string name="sound">Servicio nuevo</string>
+    <string name="tone">Tono</string>
+
 </resources>

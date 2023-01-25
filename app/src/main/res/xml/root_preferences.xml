@@ -1,0 +1,17 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/notifications">
+
+        <ListPreference
+            app:defaultValue="gorda.driver.NOTIFICATION_VOICE"
+            app:entries="@array/notify_entries"
+            app:entryValues="@array/notify_values"
+            app:key="gorda.driver.NOTIFICATIONS"
+            app:icon="@drawable/common_full_open_on_phone"
+            app:title="@string/sound"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
