@@ -1,0 +1,12 @@
+<resources>
+    <!-- Reply Preference -->
+    <string-array name="notify_entries">
+        <item>@string/voice</item>
+        <item>@string/tone</item>
+    </string-array>
+
+    <string-array name="notify_values">
+        <item>gorda.driver.NOTIFICATION_VOICE</item>
+        <item>gorda.driver.NOTIFICATION_TONE</item>
+    </string-array>
+</resources>

@@ -9,5 +9,8 @@ class Constants {
         const val SERVICES_NOTIFICATION_ID = "gorda.driver.SERVICE_ID"
         const val CANCEL_SERVICES_NOTIFICATION_ID = "gorda.driver.CANCEL_SERVICE_ID"
         const val CURRENT_SERVICE_ID = "gorda.driver.CURRENT_SERVICE_ID"
+        const val NOTIFICATIONS = "gorda.driver.NOTIFICATIONS"
+        const val NOTIFICATION_VOICE = "gorda.driver.NOTIFICATION_VOICE"
+        const val NOTIFICATION_TONE = "gorda.driver.NOTIFICATION_TONE"
     }
 }
