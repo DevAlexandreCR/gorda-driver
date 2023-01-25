@@ -60,7 +60,6 @@
     <string name="dummy_content">DUMMY\nCONTENT</string>
     <string name="new_service_title">New Service!</string>
     <string name="new_service_text">You have been assigned to new service</string>
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="about">About</string>
     <string name="version">Version: </string>
     <string name="terms"><a href="https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764">Privacy Police</a></string>
