@@ -107,8 +107,7 @@ class StartActivity : AppCompatActivity() {
     private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
         loginLaunched = false
         if (result.resultCode != RESULT_OK) {
-            val msg = "error ${result.resultCode}"
-            Utils.sendEvent(msg, SentryLevel.DEBUG)
+            val msg = "error while login ${result.resultCode}"
             Log.e(TAG, msg)
             launchLogin()
         }
