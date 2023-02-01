@@ -189,7 +189,7 @@ class MainActivity : AppCompatActivity() {
             )
         LocationHandler.getLastLocation()?.let {
             it.addOnSuccessListener { loc ->
-                viewModel.updateLocation(loc)
+                if (loc != null) viewModel.updateLocation(loc)
             }
         }
         Intent(this, LocationService::class.java).also { intent ->

@@ -86,14 +86,16 @@ class ApplyFragment : Fragment() {
         mainViewModel.serviceUpdates.observe(viewLifecycleOwner) {
             when(it) {
                 is ServiceUpdates.DistanceTime -> {
-                    time = it.time.value
-                    distance = it.distance.value
-                    service.addApplicant(driver, distance, time).addOnSuccessListener {
-                        textView.text = requireActivity().resources.getString(R.string.wait_for_assign)
-                        btnCancel.isEnabled = true
-                    }.addOnFailureListener { e ->
-                        e.message?.let { message -> Log.e(TAG, message) }
-                        Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
+                    if (isAdded) {
+                        time = it.time.value
+                        distance = it.distance.value
+                        service.addApplicant(driver, distance, time).addOnSuccessListener {
+                            textView.text = requireActivity().resources.getString(R.string.wait_for_assign)
+                            btnCancel.isEnabled = true
+                        }.addOnFailureListener { e ->
+                            e.message?.let { message -> Log.e(TAG, message) }
+                            Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
                 is ServiceUpdates.Status -> {

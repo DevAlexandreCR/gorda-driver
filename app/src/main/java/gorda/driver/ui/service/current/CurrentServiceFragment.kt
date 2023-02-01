@@ -68,9 +68,13 @@ class CurrentServiceFragment : Fragment() {
                 val uri: String = String.format(Locale.ENGLISH, "google.navigation:q=%f,%f",
                     service.start_loc.lat, service.start_loc.lng)
                 textAddress.setOnClickListener {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
-                    intent.setPackage("com.google.android.apps.maps")
-                    startActivity(intent)
+                    val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+                    mapIntent.setPackage("com.google.android.apps.maps")
+                    activity?.let { fragmentActivity ->
+                        mapIntent.resolveActivity(fragmentActivity.packageManager)?.let {
+                            startActivity(mapIntent)
+                        }
+                    }
                 }
                 if (service.metadata.arrived_at == null) {
                     btnStatus.text = haveArrived
