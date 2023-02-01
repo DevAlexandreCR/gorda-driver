@@ -19,14 +19,14 @@ object ServiceRepository {
 
     fun getPending(listener: (serviceList: MutableList<Service>) -> Unit) {
         serviceEventListener = ServicesEventListener(listener)
-        Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING).limitToLast(100)
+        Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING)
             .addValueEventListener(serviceEventListener!!)
     }
 
     fun listenNewServices(listener: ChildEventListener) {
         newServiceEventListener = listener
         Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING)
-            .limitToLast(10).addChildEventListener(newServiceEventListener!!)
+            .addChildEventListener(newServiceEventListener!!)
     }
 
     fun stopListenServices() {

@@ -8,6 +8,7 @@ import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.result.ActivityResultLauncher
 import androidx.appcompat.app.AppCompatActivity
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
@@ -18,7 +19,6 @@ import gorda.driver.services.firebase.Auth
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
 import io.sentry.Sentry
-import io.sentry.SentryLevel
 
 
 class StartActivity : AppCompatActivity() {
@@ -29,10 +29,7 @@ class StartActivity : AppCompatActivity() {
 
     private var loginLaunched = false
     private lateinit var binding: ActivityStartBinding
-    private val signInLauncher = registerForActivityResult(FirebaseAuthUIActivityResultContract())
-    { res ->
-        this.onSignInResult(res)
-    }
+    private lateinit var signInLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +38,11 @@ class StartActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        signInLauncher = registerForActivityResult(FirebaseAuthUIActivityResultContract())
+        { res ->
+            this.onSignInResult(res)
+        }
 
         if (Utils.isNewerVersion()) {
             val newServiceUri: Uri =
@@ -77,8 +79,8 @@ class StartActivity : AppCompatActivity() {
         Sentry.init(BuildConfig.SENTRY_DSN);
     }
 
-    override fun onResume() {
-        super.onResume()
+    override fun onStart() {
+        super.onStart()
         Auth.onAuthChanges { uuid ->
             if (uuid === null) {
                 launchLogin()
