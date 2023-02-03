@@ -374,9 +374,6 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         if (navController.currentDestination != null && navController.currentDestination?.id != R.id.nav_home) {
             super.onBackPressed()
-            if (viewModel.currentService.value != null) {
-                navController.navigate(R.id.nav_current_service)
-            }
         }
     }
 }
