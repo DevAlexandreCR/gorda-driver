@@ -47,6 +47,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }
     }
 
+    fun completeCurrentService() {
+        _currentService.postValue(null)
+    }
+
     fun setServiceUpdateDistTime(distance: Distance, time: Duration) {
         _serviceUpdates.postValue(ServiceUpdates.distanceTime(distance, time))
     }

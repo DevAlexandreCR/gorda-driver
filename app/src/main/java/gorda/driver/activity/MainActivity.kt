@@ -101,9 +101,8 @@ class MainActivity : AppCompatActivity() {
         val navView: NavigationView = binding.navView
         navController = findNavController(R.id.nav_host_fragment_content_main)
         appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.nav_home, R.id.nav_profile, R.id.nav_current_service, R.id.nav_about
-            ), drawerLayout
+            setOf(R.id.nav_current_service, R.id.nav_home),
+            drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
@@ -121,6 +120,14 @@ class MainActivity : AppCompatActivity() {
             NavigationUI.onNavDestinationSelected(item, navController)
             drawerLayout.closeDrawer(GravityCompat.START)
             true
+        }
+
+        navController.addOnDestinationChangedListener { controller, destination, _ ->
+            if (destination.id == R.id.nav_home) {
+                if (viewModel.currentService.value != null) {
+                    controller.navigate(R.id.nav_current_service)
+                }
+            }
         }
 
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)

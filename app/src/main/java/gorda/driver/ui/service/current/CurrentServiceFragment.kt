@@ -25,7 +25,7 @@ import java.util.*
 class CurrentServiceFragment : Fragment() {
 
     companion object {
-        const val TAG = "gorda.driver.ui.service.current.CurrentServiceFragment"
+        const val TAG = "CurrentServiceFragment"
     }
 
     private var _binding: FragmentCurrentServiceBinding? = null
@@ -114,6 +114,7 @@ class CurrentServiceFragment : Fragment() {
             }
             service.updateMetadata()
                 .addOnSuccessListener {
+                    if (service.status == Service.STATUS_TERMINATED) mainViewModel.completeCurrentService()
                     Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
                 }
                 .addOnFailureListener {
