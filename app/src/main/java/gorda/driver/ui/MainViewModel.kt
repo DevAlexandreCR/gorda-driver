@@ -18,7 +18,6 @@ import gorda.driver.repositories.ServiceRepository
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
-import gorda.driver.utils.Constants
 
 class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     companion object {
@@ -64,9 +63,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                     status?.let {
                         _serviceUpdates.postValue(ServiceUpdates.Status(status))
                         when (status) {
-                            Service.STATUS_PENDING -> {
-                                thereIsACurrentService(service.id)
-                            }
                             Service.STATUS_CANCELED,
                             Service.STATUS_IN_PROGRESS -> {
                                 service.getStatusReference().removeEventListener(this)
@@ -121,13 +117,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }.addOnFailureListener { e ->
             _driverState.postValue(DriverUpdates.setConnected(true))
             e.message?.let { message -> Log.e(TAG, message) }
-        }
-    }
-
-    fun thereIsACurrentService(serviceID: String) {
-        ServiceRepository.getCurrentService(serviceID) { service ->
-            _currentService.postValue(service)
-            savedStateHandle[Constants.CURRENT_SERVICE_ID] = serviceID
         }
     }
 }
