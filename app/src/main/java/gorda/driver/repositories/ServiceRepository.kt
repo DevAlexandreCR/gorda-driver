@@ -41,18 +41,6 @@ object ServiceRepository {
         }
     }
 
-    fun getCurrentService(serviceID: String, listener: (service: Service) -> Unit) {
-        Database.dbServices().child(serviceID)
-            .addValueEventListener(object: ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    snapshot.getValue<Service>()?.let { service ->
-                        listener(service)
-                    }
-                }
-                override fun onCancelled(error: DatabaseError) {}
-            })
-    }
-
     fun isThereCurrentService(listener: (service: Service?) -> Unit) {
         Database.dbServices().orderByChild(Service.DRIVER_ID)
             .equalTo(Auth.getCurrentUserUUID()).limitToLast(1)
