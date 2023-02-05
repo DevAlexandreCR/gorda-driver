@@ -100,6 +100,8 @@ class CurrentServiceFragment : Fragment() {
     private fun setOnClickListener(service: Service) {
         btnStatus.setOnClickListener {
             val now = Date().time / 1000
+            var canUpdate = true
+
             when (btnStatus.text) {
                 haveArrived -> {
                     service.metadata.arrived_at = now
@@ -108,11 +110,14 @@ class CurrentServiceFragment : Fragment() {
                     service.metadata.start_trip_at = now
                 }
                 else -> {
-                    service.metadata.end_trip_at = now
-                    service.status = Service.STATUS_TERMINATED
+                    canUpdate = (now - service.created_at) > 300
+                    if (canUpdate) {
+                        service.metadata.end_trip_at = now
+                        service.status = Service.STATUS_TERMINATED
+                    }
                 }
             }
-            service.updateMetadata()
+            if (canUpdate) service.updateMetadata()
                 .addOnSuccessListener {
                     if (service.status == Service.STATUS_TERMINATED) mainViewModel.completeCurrentService()
                     Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
@@ -121,6 +126,7 @@ class CurrentServiceFragment : Fragment() {
                     it.message?.let { message -> Log.e(TAG, message) }
                     Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                 }
+            else Toast.makeText(requireContext(), R.string.cannot_complete_service_yet, Toast.LENGTH_SHORT).show()
         }
     }
 
