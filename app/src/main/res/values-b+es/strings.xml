@@ -55,6 +55,8 @@
     <string name="title_activity_start">Cargando…</string>
     <string name="terms"><a href="https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764\">Política de privacidad</a></string>
     <string name="service_to">Servicio para </string>
+    <string name="not_waze">Waze no está instalado! </string>
+    <string name="navigation">Navegar: </string>
     <!-- Preference Titles -->
     <string name="notifications">Notificaciones</string>
 

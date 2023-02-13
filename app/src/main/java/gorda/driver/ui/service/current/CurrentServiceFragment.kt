@@ -1,5 +1,6 @@
 package gorda.driver.ui.service.current
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -9,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
@@ -31,6 +33,8 @@ class CurrentServiceFragment : Fragment() {
     private var _binding: FragmentCurrentServiceBinding? = null
     private val mainViewModel: MainViewModel by activityViewModels()
     private lateinit var btnStatus: Button
+    private lateinit var imgBtnMaps: ImageButton
+    private lateinit var imgButtonWaze: ImageButton
     private lateinit var textName: TextView
     private lateinit var textPhone: TextView
     private lateinit var textAddress: TextView
@@ -54,6 +58,8 @@ class CurrentServiceFragment : Fragment() {
         textAddress = binding.currentAddress
         textComment = binding.serviceComment
         btnStatus = binding.btnServiceStatus
+        imgBtnMaps = binding.imgBtnMaps
+        imgButtonWaze = binding.imgBtnWaze
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 setOnClickListener(service)
@@ -65,15 +71,25 @@ class CurrentServiceFragment : Fragment() {
                     val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + service.phone))
                     startActivity(intent)
                 }
-                val uri: String = String.format(Locale.ENGLISH, "google.navigation:q=%f,%f",
-                    service.start_loc.lat, service.start_loc.lng)
-                textAddress.setOnClickListener {
+                imgBtnMaps.setOnClickListener {
+                    val uri: String = String.format(Locale.ENGLISH, "google.navigation:q=%f,%f",
+                        service.start_loc.lat, service.start_loc.lng)
                     val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
                     mapIntent.setPackage("com.google.android.apps.maps")
                     activity?.let { fragmentActivity ->
                         mapIntent.resolveActivity(fragmentActivity.packageManager)?.let {
                             startActivity(mapIntent)
                         }
+                    }
+                }
+                imgButtonWaze.setOnClickListener {
+                    val uri: String = String.format(Locale.ENGLISH, "waze://?ll=%f,%f&navigate=yes",
+                        service.start_loc.lat, service.start_loc.lng)
+                    val wazeIntent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+                    try {
+                        startActivity(wazeIntent)
+                    } catch (e: ActivityNotFoundException) {
+                        Toast.makeText(requireContext(), R.string.not_waze, Toast.LENGTH_SHORT).show()
                     }
                 }
                 if (service.metadata.arrived_at == null) {
