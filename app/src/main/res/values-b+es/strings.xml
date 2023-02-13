@@ -34,6 +34,7 @@
     <string name="service_start_trip">Iniciar Viaje</string>
     <string name="service_end_trip">Terminar Viaje</string>
     <string name="service_updated">Servicio actualizado correctamente</string>
+    <string name="cannot_complete_service_yet">El servicio no puede completarse nada más empezar</string>
     <string name="distance">Distancia: </string>
     <string name="time">Tiempo: </string>
     <string name="cancel">Cancelar</string>
@@ -55,6 +56,8 @@
     <string name="title_activity_start">Cargando…</string>
     <string name="terms"><a href="https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764\">Política de privacidad</a></string>
     <string name="service_to">Servicio para </string>
+    <string name="not_waze">Waze no está instalado! </string>
+    <string name="navigation">Navegar: </string>
     <!-- Preference Titles -->
     <string name="notifications">Notificaciones</string>
 

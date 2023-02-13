@@ -41,6 +41,7 @@
     <string name="service_start_trip">Start Trip</string>
     <string name="service_end_trip">End Trip</string>
     <string name="service_updated">Service successfully updated</string>
+    <string name="cannot_complete_service_yet">Service cannot be completed as soon as it starts</string>
     <string name="distance">Distance: </string>
     <string name="time">Time: </string>
     <string name="cancel">Cancel</string>
@@ -62,6 +63,8 @@
     <string name="version">Version: </string>
     <string name="terms"><a href="https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764">Privacy Police</a></string>
     <string name="service_to">Service to </string>
+    <string name="not_waze">Waze is not installed! </string>
+    <string name="navigation">Navigation: </string>
     <!-- Preference Titles -->
     <string name="notifications">Notifications</string>
 
