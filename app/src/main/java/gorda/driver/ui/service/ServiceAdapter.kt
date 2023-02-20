@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import gorda.driver.R
 import gorda.driver.interfaces.LocType
+import gorda.driver.maps.Map
 import gorda.driver.models.Service
 import java.util.*
 
@@ -67,7 +68,7 @@ class ServiceAdapter(
         holder.serviceTimer.format = context.resources.getString(R.string.ago) + " %s"
         holder.textName.text = service.name
         holder.textComment.text = service.comment
-        holder.textDis.text = distanceToString(calculateDistance(service.start_loc))
+        holder.textDis.text = lastLocation?.let { Map.distanceToString(Map.calculateDistance(service.start_loc, it))}
     }
 
     object ServiceDiffCallback : DiffUtil.ItemCallback<Service>() {
@@ -78,22 +79,5 @@ class ServiceAdapter(
         override fun areContentsTheSame(oldItem: Service, newItem: Service): Boolean {
             return oldItem.id == newItem.id
         }
-    }
-
-    private fun calculateDistance(starLoc: LocType): Int {
-        val location = Location("last")
-        location.latitude = starLoc.lat
-        location.longitude = starLoc.lng
-        var distance = 0
-        if (null != lastLocation) {
-            distance = lastLocation!!.distanceTo(location).toInt()
-        }
-
-        return distance
-    }
-
-    private fun distanceToString(distance: Int): String {
-        return if (distance > 1000) (distance / 1000).toString() + "km"
-        else distance.toString() + "m"
     }
 }

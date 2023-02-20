@@ -57,19 +57,19 @@ class HomeFragment : Fragment() {
             textView.text = getString(it)
         }
 
-        homeViewModel.serviceList.observe(viewLifecycleOwner) {
-            when (it) {
+        homeViewModel.serviceList.observe(viewLifecycleOwner) { updates ->
+            when (updates) {
                 is ServiceUpdates.SetList -> {
                     location?.let { loc ->
-                        it.services.sortWith(compareBy {
+                        updates.services.sortWith(compareBy { service ->
                             val location = Location("last")
-                            location.latitude = it.start_loc.lat
-                            location.longitude = it.start_loc.lng
+                            location.latitude = service.start_loc.lat
+                            location.longitude = service.start_loc.lng
 
                             loc.distanceTo(location).toInt()
                         })
                     }
-                    serviceAdapter.submitList(it.services)
+                    serviceAdapter.submitList(updates.services)
                 }
                 is ServiceUpdates.StopListen -> {
                     serviceAdapter.submitList(mutableListOf())

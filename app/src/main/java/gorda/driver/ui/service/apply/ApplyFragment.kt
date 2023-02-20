@@ -87,8 +87,8 @@ class ApplyFragment : Fragment() {
             when(it) {
                 is ServiceUpdates.DistanceTime -> {
                     if (isAdded) {
-                        time = it.time.value
-                        distance = it.distance.value
+                        time = it.time
+                        distance = it.distance
                         service.addApplicant(driver, distance, time).addOnSuccessListener {
                             textView.text = requireActivity().resources.getString(R.string.wait_for_assign)
                             btnCancel.isEnabled = true
