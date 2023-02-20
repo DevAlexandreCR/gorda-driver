@@ -1,10 +1,41 @@
 package gorda.driver.maps
 
 import android.graphics.Color
+import android.location.Location
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.PolylineOptions
+import gorda.driver.interfaces.LocType
 
 class Map {
+
+    companion object {
+        fun calculateDistance(starLoc: LocType, endLoc: Location): Int {
+            val location = Location("last")
+            location.latitude = starLoc.lat
+            location.longitude = starLoc.lng
+            var distance = 0
+            distance = endLoc.distanceTo(location).toInt()
+
+            return distance
+        }
+
+        fun distanceToString(distance: Int): String {
+            return if (distance > 1000) (distance / 1000).toString() + "km"
+            else distance.toString() + "m"
+        }
+
+        fun calculateTime(distance: Int): Int {
+            return (distance / 5)
+        }
+
+        fun getTimeString(time: Int): String {
+            return if (time < 60) {
+                 "1m"
+            } else {
+                (time / 60).toString() + "m"
+            }
+        }
+    }
 
     fun getDirectionURL(origin: LatLng, dest:LatLng, secret: String) : String{
         return "directions/json?origin=${origin.latitude},${origin.longitude}" +

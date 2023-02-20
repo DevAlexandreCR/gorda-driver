@@ -1,8 +1,6 @@
 package gorda.driver.ui.service.dataclasses
 
 import gorda.driver.interfaces.LocType
-import gorda.driver.maps.Distance
-import gorda.driver.maps.Duration
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 
@@ -15,7 +13,7 @@ sealed class ServiceUpdates {
 
     data class StarLoc(var starLoc: LocType): ServiceUpdates()
 
-    data class DistanceTime(var distance: Distance, val time: Duration): ServiceUpdates()
+    data class DistanceTime(var distance: Int, val time: Int): ServiceUpdates()
 
     data class Status(var status: String): ServiceUpdates()
 
@@ -28,7 +26,7 @@ sealed class ServiceUpdates {
 
         fun setStarLoc(starLoc: LocType): StarLoc = StarLoc(starLoc)
 
-        fun distanceTime(distance: Distance, time: Duration): DistanceTime = DistanceTime(distance, time)
+        fun distanceTime(distance: Int, time: Int): DistanceTime = DistanceTime(distance, time)
 
         fun status(status: String): Status = Status(status)
     }
