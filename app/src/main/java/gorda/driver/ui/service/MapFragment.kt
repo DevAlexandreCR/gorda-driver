@@ -9,7 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -21,6 +20,7 @@ import gorda.driver.R
 import gorda.driver.databinding.FragmentMapBinding
 import gorda.driver.interfaces.LocType
 import gorda.driver.maps.*
+import gorda.driver.maps.Map
 import gorda.driver.services.retrofit.RetrofitBase
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.dataclasses.LocationUpdates
@@ -116,43 +116,19 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 startLatLng,
                 getApiKey()
             )
-            getDirections(url, object : OnDirectionCompleteListener {
-                override fun onSuccess(routes: ArrayList<Routes>) {
-                    if (isAdded) {
-                        val lineOptions = mapService.makePolylineOptions(routes)
-                        requireActivity().runOnUiThread {
-                            googleMap.addPolyline(lineOptions)
-                            if (markerStartAddress != null) {
-                                val distance = routes[0].legs[0].distance
-                                val time = routes[0].legs[0].duration
-                                textTime.text = time.getDurationString()
-                                textDistance.text = distance.getDistanceString()
-                                mainViewModel.setServiceUpdateDistTime(distance, time)
-                                markerStartAddress.tag = makeInfoWindowData(
-                                    statLoc!!.name,
-                                    distance.getDistanceString(),
-                                    time.getDurationString()
-                                )
-                                markerStartAddress.showInfoWindow()
-                            }
-                        }
-                    }
-                }
-
-                override fun onFailure() {
-                    if (isAdded) {
-                        requireActivity().runOnUiThread {
-                            markerStartAddress?.tag = makeInfoWindowData(statLoc!!.name)
-                            markerStartAddress?.showInfoWindow()
-                            Toast.makeText(
-                                context,
-                                R.string.no_routes_available,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-            })
+            val distance = Map.calculateDistance(statLoc!!, location!!)
+            val time = Map.calculateTime(distance)
+            textTime.text = Map.getTimeString(time)
+            textDistance.text = Map.distanceToString(distance)
+            mainViewModel.setServiceUpdateDistTime(distance, time)
+            if (markerStartAddress != null) {
+                markerStartAddress.tag = makeInfoWindowData(
+                    statLoc!!.name,
+                    Map.distanceToString(distance),
+                    Map.getTimeString(time)
+                )
+                markerStartAddress.showInfoWindow()
+            }
         } else {
             println(statLoc.toString() + location.toString())
         }

@@ -2,15 +2,16 @@ package gorda.driver.ui
 
 import android.location.Location
 import android.util.Log
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
-import gorda.driver.maps.Distance
-import gorda.driver.maps.Duration
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
@@ -50,7 +51,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         _currentService.postValue(null)
     }
 
-    fun setServiceUpdateDistTime(distance: Distance, time: Duration) {
+    fun setServiceUpdateDistTime(distance: Int, time: Int) {
         _serviceUpdates.postValue(ServiceUpdates.distanceTime(distance, time))
     }
 
