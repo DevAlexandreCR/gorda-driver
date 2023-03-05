@@ -30,12 +30,18 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _driver = savedStateHandle.getLiveData<Driver>(Driver.TAG)
     private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
     private val _currentService = MutableLiveData<Service?>()
+    private val _isNetWorkConnected = MutableLiveData(true)
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driverStatus: LiveData<DriverUpdates> = _driverState
     var driver: LiveData<Driver> = _driver
     var serviceUpdates: LiveData<ServiceUpdates> = _serviceUpdates
     val currentService: LiveData<Service?> = _currentService
+    val isNetWorkConnected: LiveData<Boolean> = _isNetWorkConnected
+
+    fun changeNetWorkStatus(isConnected: Boolean) {
+        _isNetWorkConnected.postValue(isConnected)
+    }
 
     fun setServiceUpdateStartLocation(starLoc: LocType) {
         _serviceUpdates.postValue(ServiceUpdates.setStarLoc(starLoc))
@@ -91,7 +97,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun isConnected(driverId: String) {
+        _driverState.postValue(DriverUpdates.connecting(true))
         DriverRepository.isConnected(driverId) {
+            _driverState.postValue(DriverUpdates.connecting(false))
             _driverState.postValue(DriverUpdates.setConnected(it))
         }
     }
@@ -119,5 +127,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             _driverState.postValue(DriverUpdates.setConnected(true))
             e.message?.let { message -> Log.e(TAG, message) }
         }
+    }
+
+    fun setConnectedLocal(connected: Boolean) {
+        _driverState.postValue(DriverUpdates.setConnected(connected))
     }
 }

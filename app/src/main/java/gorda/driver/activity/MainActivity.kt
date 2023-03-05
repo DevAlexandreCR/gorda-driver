@@ -6,11 +6,11 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
-import android.media.MediaPlayer
 import android.os.*
 import android.provider.Settings
 import android.view.View
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.Switch
 import android.widget.TextView
 import androidx.activity.viewModels
@@ -25,6 +25,7 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.*
 import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
 import gorda.driver.R
 import gorda.driver.background.LocationService
 import gorda.driver.databinding.ActivityMainBinding
@@ -33,6 +34,7 @@ import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
+import gorda.driver.services.network.NetworkMonitor
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.LocationBroadcastReceiver
@@ -49,11 +51,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var appBarConfiguration: AppBarConfiguration
+    private lateinit var networkMonitor: NetworkMonitor
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
     private lateinit var preferences: SharedPreferences
-    private lateinit var player: MediaPlayer
-    private lateinit var cancelPlayer: MediaPlayer
+    private lateinit var connectionBar: ProgressBar
     private var driver: Driver = Driver()
     private lateinit var switchConnect: Switch
     private lateinit var lastLocation: Location
@@ -81,6 +83,8 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+    private lateinit var snackBar: Snackbar
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -90,10 +94,9 @@ class MainActivity : AppCompatActivity() {
             viewModel.getDriver(it)
         }
 
-        player = MediaPlayer.create(this, R.raw.assigned_service)
-        cancelPlayer = MediaPlayer.create(this, R.raw.cancel_service)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        connectionBar = binding.root.findViewById(R.id.connectionBar)
 
         setSupportActionBar(binding.appBarMain.toolbar)
 
@@ -106,6 +109,19 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        networkMonitor = NetworkMonitor(this) { isConnected ->
+            onNetWorkChange(isConnected)
+        }
+
+        snackBar = Snackbar.make(
+            binding.root,
+            resources.getString(R.string.connection_lost),
+            Snackbar.LENGTH_INDEFINITE
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            snackBar.setTextColor(getColor(R.color.white))
+        }
 
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
@@ -126,6 +142,10 @@ class MainActivity : AppCompatActivity() {
             if (destination.id == R.id.nav_home) {
                 if (viewModel.currentService.value != null) {
                     controller.navigate(R.id.nav_current_service)
+                }
+            } else if (destination.id == R.id.nav_apply) {
+                if (viewModel.isNetWorkConnected.value == false) {
+                    controller.navigate(R.id.nav_home)
                 }
             }
         }
@@ -151,27 +171,29 @@ class MainActivity : AppCompatActivity() {
 
         observeDriver(navView)
 
+
+        viewModel.isNetWorkConnected.observe(this) {
+            switchConnect.isEnabled = it
+            if (!it) {
+                connectionBar.visibility = View.VISIBLE
+                snackBar.show()
+                viewModel.setConnectedLocal(false)
+            }
+            else {
+                driver.id?.let { id -> viewModel.isConnected(id) }
+                connectionBar.visibility = View.GONE
+                snackBar.dismiss()
+            }
+        }
+
         viewModel.currentService.observe(this) { currentService ->
             currentService?.status?.let { status ->
                 when (status) {
                     Service.STATUS_IN_PROGRESS -> {
-                        if (Auth.getCurrentUserUUID() == currentService.driver_id) {
-                            val notifyId = preferences.getInt(
-                                Constants.SERVICES_NOTIFICATION_ID,
-                                currentService.created_at.toInt()
-                            )
-                            if (notifyId != currentService.created_at.toInt())
-                                playSound(currentService.created_at.toInt())
                             navController.navigate(R.id.nav_current_service)
-                        }
                     }
                     Service.STATUS_CANCELED -> {
-                        val cancelNotifyId = preferences.getInt(
-                            Constants.CANCEL_SERVICES_NOTIFICATION_ID,
-                            currentService.created_at.toInt()
-                        )
-                        if (cancelNotifyId != currentService.created_at.toInt())
-                            playCancelSound(currentService.created_at.toInt())
+                        viewModel.completeCurrentService()
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
                     }
@@ -185,6 +207,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun onNetWorkChange(isConnected: Boolean) {
+        viewModel.changeNetWorkStatus(isConnected)
     }
 
     override fun onStart() {
@@ -204,6 +230,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.isThereCurrentService()
+        networkMonitor.startMonitoring()
     }
 
     override fun onStop() {
@@ -216,6 +243,7 @@ class MainActivity : AppCompatActivity() {
             mBound = false
             LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
         }
+        networkMonitor.stopMonitoring()
     }
 
     override fun onResume() {
@@ -229,7 +257,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showDisClosure(): Unit {
+    private fun showDisClosure() {
         val builder = AlertDialog.Builder(this)
         builder.setIcon(R.drawable.ic_location_24)
         val layout: View = layoutInflater.inflate(R.layout.disclosure_layout, null)
@@ -354,21 +382,6 @@ class MainActivity : AppCompatActivity() {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-    }
-
-    private fun playSound(notifyId: Int) {
-        player.start()
-        val editor: SharedPreferences.Editor = preferences.edit()
-        editor.putInt(Constants.SERVICES_NOTIFICATION_ID, notifyId)
-        editor.apply()
-    }
-
-    private fun playCancelSound(notifyId: Int) {
-        cancelPlayer.start()
-        val editor: SharedPreferences.Editor = preferences.edit()
-        editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, notifyId)
-        editor.putString(Constants.CURRENT_SERVICE_ID, null)
-        editor.apply()
     }
 
     override fun onBackPressed() {

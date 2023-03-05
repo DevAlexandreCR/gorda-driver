@@ -51,6 +51,7 @@
     <string name="cancelApply">The Request has been cancelled</string>
     <string name="service_canceled">Service has been canceled</string>
     <string name="text_connected">You are available to receive services</string>
+    <string name="connection_lost"><strong>Network lost!</strong> Connecting…</string>
     <string name="text_disclosure">Red Blanca Conductor needs to know your location to enable the "Connected" feature and assign nearby services to you even when the app is closed or not in use. \nAllows Red Blanca Conductor to use your real-time location</string>
     <string name="allow">Allow</string>
     <string name="disallow">Denny</string>
