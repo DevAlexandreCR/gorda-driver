@@ -6,7 +6,6 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
-import android.media.MediaPlayer
 import android.os.*
 import android.provider.Settings
 import android.view.View
@@ -56,9 +55,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
     private lateinit var preferences: SharedPreferences
-    private lateinit var player: MediaPlayer
     private lateinit var connectionBar: ProgressBar
-    private lateinit var cancelPlayer: MediaPlayer
     private var driver: Driver = Driver()
     private lateinit var switchConnect: Switch
     private lateinit var lastLocation: Location
@@ -97,8 +94,6 @@ class MainActivity : AppCompatActivity() {
             viewModel.getDriver(it)
         }
 
-        player = MediaPlayer.create(this, R.raw.assigned_service)
-        cancelPlayer = MediaPlayer.create(this, R.raw.cancel_service)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         connectionBar = binding.root.findViewById(R.id.connectionBar)
@@ -195,23 +190,10 @@ class MainActivity : AppCompatActivity() {
             currentService?.status?.let { status ->
                 when (status) {
                     Service.STATUS_IN_PROGRESS -> {
-                        if (Auth.getCurrentUserUUID() == currentService.driver_id) {
-                            val notifyId = preferences.getInt(
-                                Constants.SERVICES_NOTIFICATION_ID,
-                                currentService.created_at.toInt()
-                            )
-                            if (notifyId != currentService.created_at.toInt())
-                                playSound(currentService.created_at.toInt())
                             navController.navigate(R.id.nav_current_service)
-                        }
                     }
                     Service.STATUS_CANCELED -> {
-                        val cancelNotifyId = preferences.getInt(
-                            Constants.CANCEL_SERVICES_NOTIFICATION_ID,
-                            currentService.created_at.toInt()
-                        )
-                        if (cancelNotifyId != currentService.created_at.toInt())
-                            playCancelSound(currentService.created_at.toInt())
+                        viewModel.completeCurrentService()
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
                     }
@@ -400,21 +382,6 @@ class MainActivity : AppCompatActivity() {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-    }
-
-    private fun playSound(notifyId: Int) {
-        player.start()
-        val editor: SharedPreferences.Editor = preferences.edit()
-        editor.putInt(Constants.SERVICES_NOTIFICATION_ID, notifyId)
-        editor.apply()
-    }
-
-    private fun playCancelSound(notifyId: Int) {
-        cancelPlayer.start()
-        val editor: SharedPreferences.Editor = preferences.edit()
-        editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, notifyId)
-        editor.putString(Constants.CURRENT_SERVICE_ID, null)
-        editor.apply()
     }
 
     override fun onBackPressed() {

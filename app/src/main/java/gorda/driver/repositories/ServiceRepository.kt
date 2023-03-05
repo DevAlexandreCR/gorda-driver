@@ -1,6 +1,5 @@
 package gorda.driver.repositories
 
-import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.database.*
@@ -48,8 +47,11 @@ object ServiceRepository {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.hasChildren()) {
                         snapshot.children.iterator().next().getValue<Service>()?.let { service ->
-                            if (service.status == Service.STATUS_IN_PROGRESS) listener(service)
-                            else listener(null)
+                            when (service.status) {
+                                Service.STATUS_IN_PROGRESS -> listener(service)
+                                Service.STATUS_CANCELED -> listener(service)
+                                else -> listener(null)
+                            }
                         }
                     }
                 }
