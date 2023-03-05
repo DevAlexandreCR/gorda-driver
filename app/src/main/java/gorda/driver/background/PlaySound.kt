@@ -9,31 +9,33 @@ import gorda.driver.utils.Constants
 
 class PlaySound(private val context: Context, private val sharedPreferences: SharedPreferences) {
 
-    fun playCancelSound(notifyId: Int, player: MediaPlayer) {
+    private val player: MediaPlayer = MediaPlayer.create(context, R.raw.new_service)
+
+    fun playCancelSound(notifyId: Int) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             player.reset()
             player.setDataSource(context.resources.openRawResourceFd(R.raw.cancel_service))
             player.prepare()
         }
-        player.start()
+        if (!player.isPlaying) player.start()
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
         editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, notifyId)
         editor.apply()
     }
 
-    fun playAssignedSound(notifyId: Int, player: MediaPlayer) {
+    fun playAssignedSound(notifyId: Int) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             player.reset()
             player.setDataSource(context.resources.openRawResourceFd(R.raw.assigned_service))
             player.prepare()
         }
-        player.start()
+        if (!player.isPlaying) player.start()
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
         editor.putInt(Constants.SERVICES_NOTIFICATION_ID, notifyId)
         editor.apply()
     }
 
-    fun playNewService(player: MediaPlayer) {
+    fun playNewService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             player.reset()
             player.setDataSource(context.resources.openRawResourceFd(R.raw.new_service))

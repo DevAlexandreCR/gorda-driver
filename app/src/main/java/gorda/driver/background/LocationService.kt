@@ -34,7 +34,7 @@ import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 import gorda.driver.utils.Utils
 import java.util.*
 
-class LocationService: Service(), TextToSpeech.OnInitListener  {
+class LocationService : Service(), TextToSpeech.OnInitListener {
 
     companion object {
         const val SERVICE_ID = 100
@@ -79,7 +79,7 @@ class LocationService: Service(), TextToSpeech.OnInitListener  {
                         if (snapshot.exists()) {
                             snapshot.getValue<gorda.driver.models.Service>()?.let { service ->
                                 if (chanel == Constants.NOTIFICATION_VOICE) speech(service.start_loc.name)
-                                else playSound.playNewService(mediaPlayer)
+                                else playSound.playNewService()
                             }
                         }
                     }
@@ -106,7 +106,7 @@ class LocationService: Service(), TextToSpeech.OnInitListener  {
                                         0
                                     )
                                     if (notifyId != service.created_at.toInt())
-                                        playSound.playAssignedSound(service.created_at.toInt(), mediaPlayer)
+                                        playSound.playAssignedSound(service.created_at.toInt())
                                 }
                             }
                             gorda.driver.models.Service.STATUS_CANCELED -> {
@@ -115,10 +115,7 @@ class LocationService: Service(), TextToSpeech.OnInitListener  {
                                     0
                                 )
                                 if (cancelNotifyId != service.created_at.toInt())
-                                    playSound.playCancelSound(
-                                        service.created_at.toInt(),
-                                        mediaPlayer
-                                    )
+                                    playSound.playCancelSound(service.created_at.toInt())
                             }
                         }
                     }
@@ -127,6 +124,7 @@ class LocationService: Service(), TextToSpeech.OnInitListener  {
         }
         return START_STICKY
     }
+
     override fun onBind(intent: Intent?): IBinder {
         messenger = Messenger(IncomingHandler())
         return messenger.binder
@@ -135,20 +133,26 @@ class LocationService: Service(), TextToSpeech.OnInitListener  {
     @SuppressLint("UnspecifiedImmutableFlag")
     override fun onCreate() {
         super.onCreate()
-        val connectedUri: Uri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://"+ packageName + "/" + R.raw.assigned_service)
+        val connectedUri: Uri =
+            Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName + "/" + R.raw.assigned_service)
         val pendingIntent: PendingIntent =
             Intent(this, StartActivity::class.java).let { notificationIntent ->
                 notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                 notificationIntent.putExtra(Constants.DRIVER_ID_EXTRA, driverID)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    PendingIntent.getActivity(this, 0, notificationIntent,
-                        PendingIntent.FLAG_IMMUTABLE)
+                    PendingIntent.getActivity(
+                        this, 0, notificationIntent,
+                        PendingIntent.FLAG_IMMUTABLE
+                    )
                 } else {
-                    PendingIntent.getActivity(this, 0, notificationIntent,
-                        Intent.FILL_IN_ACTION)
+                    PendingIntent.getActivity(
+                        this, 0, notificationIntent,
+                        Intent.FILL_IN_ACTION
+                    )
                 }
             }
-        val builder: NotificationCompat.Builder = NotificationCompat.Builder(this,
+        val builder: NotificationCompat.Builder = NotificationCompat.Builder(
+            this,
             Constants.LOCATION_NOTIFICATION_CHANNEL_ID
         )
             .setOngoing(false)
@@ -208,7 +212,7 @@ class LocationService: Service(), TextToSpeech.OnInitListener  {
             val result = toSpeech!!.setLanguage(locSpanish)
 
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Log.e("TTS","The Language not supported!")
+                Log.e("TTS", "The Language not supported!")
             }
         }
     }

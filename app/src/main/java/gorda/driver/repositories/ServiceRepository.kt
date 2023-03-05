@@ -42,17 +42,24 @@ object ServiceRepository {
 
     fun isThereCurrentService(listener: (service: Service?) -> Unit) {
         Database.dbServices().orderByChild(Service.DRIVER_ID)
-            .equalTo(Auth.getCurrentUserUUID()).limitToLast(1)
+            .equalTo(Auth.getCurrentUserUUID()).limitToLast(3)
             .addValueEventListener(object: ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.hasChildren()) {
-                        snapshot.children.iterator().next().getValue<Service>()?.let { service ->
-                            when (service.status) {
-                                Service.STATUS_IN_PROGRESS -> listener(service)
-                                Service.STATUS_CANCELED -> listener(service)
-                                else -> listener(null)
+                        var lastService: Service? = null
+                        snapshot.children.forEach {
+                            it.getValue<Service>()?.let { service ->
+                                when (service.status) {
+                                    Service.STATUS_IN_PROGRESS -> {
+                                        lastService = service
+                                        return@forEach
+                                    }
+                                    Service.STATUS_CANCELED -> lastService = service
+                                    else -> lastService = null
+                                }
                             }
                         }
+                        listener(lastService)
                     }
                 }
                 override fun onCancelled(error: DatabaseError) {}
