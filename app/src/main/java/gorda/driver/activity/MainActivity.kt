@@ -178,11 +178,14 @@ class MainActivity : AppCompatActivity() {
 
 
         viewModel.isNetWorkConnected.observe(this) {
-            if (it) {
+            switchConnect.isEnabled = it
+            if (!it) {
                 connectionBar.visibility = View.VISIBLE
                 snackBar.show()
+                viewModel.setConnectedLocal(false)
             }
             else {
+                driver.id?.let { id -> viewModel.isConnected(id) }
                 connectionBar.visibility = View.GONE
                 snackBar.dismiss()
             }
@@ -272,7 +275,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showDisClosure(): Unit {
+    private fun showDisClosure() {
         val builder = AlertDialog.Builder(this)
         builder.setIcon(R.drawable.ic_location_24)
         val layout: View = layoutInflater.inflate(R.layout.disclosure_layout, null)

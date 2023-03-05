@@ -97,7 +97,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun isConnected(driverId: String) {
+        _driverState.postValue(DriverUpdates.connecting(true))
         DriverRepository.isConnected(driverId) {
+            _driverState.postValue(DriverUpdates.connecting(false))
             _driverState.postValue(DriverUpdates.setConnected(it))
         }
     }
@@ -125,5 +127,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             _driverState.postValue(DriverUpdates.setConnected(true))
             e.message?.let { message -> Log.e(TAG, message) }
         }
+    }
+
+    fun setConnectedLocal(connected: Boolean) {
+        _driverState.postValue(DriverUpdates.setConnected(connected))
     }
 }
