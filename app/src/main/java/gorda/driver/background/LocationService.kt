@@ -169,7 +169,7 @@ class LocationService: Service(), MediaPlayer.OnPreparedListener, TextToSpeech.O
 
     private fun speech(text: String) {
         if (!toSpeech!!.isSpeaking) toSpeech!!.speak(
-            resources.getString(R.string.service_to) + text,
+            resources.getString(R.string.service_to) + text.lowercase(),
             TextToSpeech.QUEUE_ADD,
             null,
             ""

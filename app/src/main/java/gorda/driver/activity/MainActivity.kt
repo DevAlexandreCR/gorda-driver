@@ -148,7 +148,7 @@ class MainActivity : AppCompatActivity() {
                 if (viewModel.currentService.value != null) {
                     controller.navigate(R.id.nav_current_service)
                 }
-            } else if (destination.id == R.id.nav_apply || destination.id == R.id.nav_map) {
+            } else if (destination.id == R.id.nav_apply) {
                 if (viewModel.isNetWorkConnected.value == false) {
                     controller.navigate(R.id.nav_home)
                 }
