@@ -11,6 +11,7 @@ import android.os.*
 import android.provider.Settings
 import android.view.View
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.Switch
 import android.widget.TextView
 import androidx.activity.viewModels
@@ -25,6 +26,7 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.*
 import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
 import gorda.driver.R
 import gorda.driver.background.LocationService
 import gorda.driver.databinding.ActivityMainBinding
@@ -33,6 +35,7 @@ import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
+import gorda.driver.services.network.NetworkMonitor
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.LocationBroadcastReceiver
@@ -49,10 +52,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var appBarConfiguration: AppBarConfiguration
+    private lateinit var networkMonitor: NetworkMonitor
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
     private lateinit var preferences: SharedPreferences
     private lateinit var player: MediaPlayer
+    private lateinit var connectionBar: ProgressBar
     private lateinit var cancelPlayer: MediaPlayer
     private var driver: Driver = Driver()
     private lateinit var switchConnect: Switch
@@ -81,6 +86,8 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+    private lateinit var snackBar: Snackbar
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -94,6 +101,7 @@ class MainActivity : AppCompatActivity() {
         cancelPlayer = MediaPlayer.create(this, R.raw.cancel_service)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        connectionBar = binding.root.findViewById(R.id.connectionBar)
 
         setSupportActionBar(binding.appBarMain.toolbar)
 
@@ -106,6 +114,19 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        networkMonitor = NetworkMonitor(this) { isConnected ->
+            onNetWorkChange(isConnected)
+        }
+
+        snackBar = Snackbar.make(
+            binding.root,
+            resources.getString(R.string.connection_lost),
+            Snackbar.LENGTH_INDEFINITE
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            snackBar.setTextColor(getColor(R.color.white))
+        }
 
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
@@ -126,6 +147,10 @@ class MainActivity : AppCompatActivity() {
             if (destination.id == R.id.nav_home) {
                 if (viewModel.currentService.value != null) {
                     controller.navigate(R.id.nav_current_service)
+                }
+            } else if (destination.id == R.id.nav_apply || destination.id == R.id.nav_map) {
+                if (viewModel.isNetWorkConnected.value == false) {
+                    controller.navigate(R.id.nav_home)
                 }
             }
         }
@@ -150,6 +175,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         observeDriver(navView)
+
+
+        viewModel.isNetWorkConnected.observe(this) {
+            if (it) {
+                connectionBar.visibility = View.VISIBLE
+                snackBar.show()
+            }
+            else {
+                connectionBar.visibility = View.GONE
+                snackBar.dismiss()
+            }
+        }
 
         viewModel.currentService.observe(this) { currentService ->
             currentService?.status?.let { status ->
@@ -187,6 +224,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun onNetWorkChange(isConnected: Boolean) {
+        viewModel.changeNetWorkStatus(isConnected)
+    }
+
     override fun onStart() {
         super.onStart()
         LocalBroadcastManager.getInstance(this)
@@ -204,6 +245,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.isThereCurrentService()
+        networkMonitor.startMonitoring()
     }
 
     override fun onStop() {
@@ -216,6 +258,7 @@ class MainActivity : AppCompatActivity() {
             mBound = false
             LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
         }
+        networkMonitor.stopMonitoring()
     }
 
     override fun onResume() {
