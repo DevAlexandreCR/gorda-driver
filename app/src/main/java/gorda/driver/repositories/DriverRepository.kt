@@ -23,8 +23,8 @@ object DriverRepository {
         })
     }
 
-    fun disconnect(driver: DriverInterface): Task<Void> {
-        return Database.dbOnlineDrivers().child(driver.id!!).removeValue()
+    fun disconnect(driverId: String): Task<Void> {
+        return Database.dbOnlineDrivers().child(driverId).removeValue()
     }
 
     fun updateLocation(driverId: String, location: LocInterface): Unit {
