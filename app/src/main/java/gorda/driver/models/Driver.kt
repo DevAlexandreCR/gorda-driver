@@ -29,6 +29,6 @@ class Driver : DriverInterface, Serializable {
     }
 
     fun disconnect(): Task<Void> {
-        return DriverRepository.disconnect(this)
+        return DriverRepository.disconnect(this.id!!)
     }
 }

@@ -173,7 +173,6 @@ class MainActivity : AppCompatActivity() {
 
 
         viewModel.isNetWorkConnected.observe(this) {
-            switchConnect.isEnabled = it
             if (!it) {
                 connectionBar.visibility = View.VISIBLE
                 snackBar.show()
