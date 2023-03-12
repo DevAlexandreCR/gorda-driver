@@ -65,6 +65,8 @@
     <!-- Notifications Preferences -->
     <string name="voice">Voz</string>
     <string name="sound">Servicio nuevo</string>
+    <string name="sound_canceled">Servicio cancelado</string>
+    <string name="sound_assigned">Servicio asignado</string>
     <string name="tone">Tono</string>
-
+    <string name="none">Ninguno</string>
 </resources>
