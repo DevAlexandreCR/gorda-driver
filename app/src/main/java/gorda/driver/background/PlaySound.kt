@@ -20,6 +20,7 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
             player.prepare()
         }
         if (!player.isPlaying && chanel == Constants.NOTIFICATION_TONE) player.start()
+
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
         editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, notifyId)
         editor.apply()
@@ -34,6 +35,7 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
             player.prepare()
         }
         if (!player.isPlaying && chanel == Constants.NOTIFICATION_TONE) player.start()
+
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
         editor.putInt(Constants.SERVICES_NOTIFICATION_ID, notifyId)
         editor.apply()

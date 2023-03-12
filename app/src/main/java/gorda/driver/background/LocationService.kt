@@ -119,6 +119,10 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
                                         sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_VOICE)
                                     if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_canceled))
                                     else playSound.playCancelSound(service.created_at.toInt())
+
+                                    val editor: SharedPreferences.Editor = sharedPreferences.edit()
+                                    editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, service.created_at.toInt())
+                                    editor.apply()
                                 }
                             }
                         }
