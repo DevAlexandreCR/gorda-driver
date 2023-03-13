@@ -307,6 +307,7 @@ class MainActivity : AppCompatActivity() {
             when (driverUpdates) {
                 is DriverUpdates.IsConnected -> {
                     switchConnect.isChecked = driverUpdates.connected
+                    switchConnect.isEnabled = true
                     if (driverUpdates.connected) {
                         startLocationService()
                         switchConnect.setText(R.string.status_connected)
