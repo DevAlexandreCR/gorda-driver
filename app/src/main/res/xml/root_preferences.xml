@@ -8,9 +8,28 @@
             app:entries="@array/notify_entries"
             app:entryValues="@array/notify_values"
             app:key="gorda.driver.NOTIFICATIONS"
-            app:icon="@drawable/common_full_open_on_phone"
+            app:icon="@drawable/add_24"
             app:title="@string/sound"
             app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:defaultValue="gorda.driver.NOTIFICATION_TONE"
+            app:entries="@array/notify_assigned_entries"
+            app:entryValues="@array/notify_assigned_values"
+            app:key="gorda.driver.NOTIFICATION_ASSIGNED"
+            app:icon="@drawable/assign_24"
+            app:title="@string/sound_assigned"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:defaultValue="gorda.driver.NOTIFICATION_TONE"
+            app:entries="@array/notify_canceled_entries"
+            app:entryValues="@array/notify_canceled_values"
+            app:key="gorda.driver.NOTIFICATION_CANCELED"
+            app:icon="@drawable/cancel_24"
+            app:title="@string/sound_canceled"
+            app:useSimpleSummaryProvider="true" />
+
 
     </PreferenceCategory>
 

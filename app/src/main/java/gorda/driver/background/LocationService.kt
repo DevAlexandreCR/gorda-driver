@@ -53,8 +53,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
             playSound = PlaySound(this, sharedPreferences)
-            val chanel =
-                sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
             stoped = false
             intent.getStringExtra(Driver.DRIVER_KEY)?.let { id ->
                 driverID = id
@@ -77,8 +75,10 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
                 ServiceRepository.listenNewServices(object : ChildEventListener {
                     override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                         if (snapshot.exists()) {
+                            val chanel =
+                                sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
                             snapshot.getValue<gorda.driver.models.Service>()?.let { service ->
-                                if (chanel == Constants.NOTIFICATION_VOICE) speech(service.start_loc.name)
+                                if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + service.start_loc.name)
                                 else playSound.playNewService()
                             }
                         }
@@ -114,8 +114,16 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
                                     Constants.CANCEL_SERVICES_NOTIFICATION_ID,
                                     0
                                 )
-                                if (cancelNotifyId != service.created_at.toInt())
-                                    playSound.playCancelSound(service.created_at.toInt())
+                                if (cancelNotifyId != service.created_at.toInt()) {
+                                    val chanel =
+                                        sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_VOICE)
+                                    if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_canceled))
+                                    else playSound.playCancelSound(service.created_at.toInt())
+
+                                    val editor: SharedPreferences.Editor = sharedPreferences.edit()
+                                    editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, service.created_at.toInt())
+                                    editor.apply()
+                                }
                             }
                         }
                     }
@@ -199,7 +207,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
 
     private fun speech(text: String) {
         if (!toSpeech!!.isSpeaking) toSpeech!!.speak(
-            resources.getString(R.string.service_to) + text.lowercase(),
+            text.lowercase(),
             TextToSpeech.QUEUE_ADD,
             null,
             ""

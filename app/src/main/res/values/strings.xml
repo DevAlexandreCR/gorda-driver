@@ -72,5 +72,8 @@
     <!-- Notifications Preferences -->
     <string name="voice">Voice</string>
     <string name="sound">New Service</string>
+    <string name="sound_canceled">Service canceled</string>
+    <string name="sound_assigned">Service assigned</string>
     <string name="tone">Tone</string>
+    <string name="none">None</string>
 </resources>
