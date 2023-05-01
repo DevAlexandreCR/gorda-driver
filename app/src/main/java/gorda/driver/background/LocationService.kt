@@ -206,7 +206,8 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun speech(text: String) {
-        if (!toSpeech!!.isSpeaking) toSpeech!!.speak(
+        val mute = sharedPreferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
+        if (!toSpeech!!.isSpeaking && !mute) toSpeech!!.speak(
             text.lowercase(),
             TextToSpeech.QUEUE_ADD,
             null,

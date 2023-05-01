@@ -14,5 +14,6 @@ class Constants {
         const val NOTIFICATION_CANCELED = "gorda.driver.NOTIFICATION_CANCELED"
         const val NOTIFICATION_VOICE = "gorda.driver.NOTIFICATION_VOICE"
         const val NOTIFICATION_TONE = "gorda.driver.NOTIFICATION_TONE"
+        const val NOTIFICATION_MUTE = "gorda.driver.NOTIFICATION_MUTE"
     }
 }
