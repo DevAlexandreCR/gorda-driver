@@ -126,7 +126,9 @@ class CurrentServiceFragment : Fragment() {
                     service.metadata.start_trip_at = now
                 }
                 else -> {
-                    canUpdate = (now - service.created_at) > 300
+                    canUpdate = if (service.metadata.start_trip_at != null) (now - service.metadata.start_trip_at!!) > 300
+                    else false
+
                     if (canUpdate) {
                         service.metadata.end_trip_at = now
                         service.status = Service.STATUS_TERMINATED
