@@ -12,6 +12,9 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
     private val player: MediaPlayer = MediaPlayer.create(context, R.raw.new_service)
 
     fun playCancelSound(notifyId: Int) {
+        val mute = sharedPreferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
+        if (mute) return
+
         val chanel =
             sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_TONE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -27,6 +30,9 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
     }
 
     fun playAssignedSound(notifyId: Int) {
+        val mute = sharedPreferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
+        if (mute) return
+
         val chanel =
             sharedPreferences.getString(Constants.NOTIFICATION_ASSIGNED, Constants.NOTIFICATION_TONE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -42,6 +48,9 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
     }
 
     fun playNewService() {
+        val mute = sharedPreferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
+        if (mute) return
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             player.reset()
             player.setDataSource(context.resources.openRawResourceFd(R.raw.new_service))
