@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.*
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.location.Location
 import android.location.LocationManager
 import android.os.*
@@ -23,7 +24,9 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.*
+import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
 import gorda.driver.R
@@ -51,6 +54,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var appBarConfiguration: AppBarConfiguration
+    private lateinit var notificationButton: FloatingActionButton
     private lateinit var networkMonitor: NetworkMonitor
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
@@ -88,7 +92,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        preferences = getPreferences(MODE_PRIVATE)
+        preferences = PreferenceManager.getDefaultSharedPreferences(this)
 
         intent.getStringExtra(Constants.DRIVER_ID_EXTRA)?.let {
             viewModel.getDriver(it)
@@ -169,6 +173,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        notificationButton = binding.root.findViewById(R.id.notification_button)
+        val isNotificationMute: Boolean = preferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
+        setIconNotificationButton(isNotificationMute)
+
+        notificationButton.setOnClickListener {
+            val isNotifyMute: Boolean = !preferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
+            val editor: SharedPreferences.Editor = preferences.edit()
+            editor.putBoolean(Constants.NOTIFICATION_MUTE, isNotifyMute)
+            editor.apply()
+            setIconNotificationButton(isNotifyMute)
+        }
+
         observeDriver(navView)
 
 
@@ -205,6 +221,20 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun setIconNotificationButton(isNotificationMute: Boolean) {
+        if (isNotificationMute) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                notificationButton.backgroundTintList = ColorStateList.valueOf(getColor(R.color.red))
+            }
+            notificationButton.setImageResource(R.drawable.notifications_off)
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                notificationButton.backgroundTintList = ColorStateList.valueOf(getColor(R.color.secondary_dark))
+            }
+            notificationButton.setImageResource(R.drawable.notifications_active)
         }
     }
 
