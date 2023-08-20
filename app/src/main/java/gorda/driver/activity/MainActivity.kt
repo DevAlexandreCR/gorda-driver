@@ -414,6 +414,7 @@ class MainActivity : AppCompatActivity() {
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (navController.currentDestination != null && navController.currentDestination?.id != R.id.nav_home) {
             super.onBackPressed()
