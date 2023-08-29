@@ -6,6 +6,8 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
+import gorda.driver.interfaces.Device
+import gorda.driver.interfaces.DeviceInterface
 import gorda.driver.interfaces.DriverInterface
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.models.Driver
@@ -43,9 +45,10 @@ object DriverRepository {
         })
     }
 
-    fun getDriver(driverId: String, listener: (driver: Driver) -> Unit): Unit {
+    fun getDriver(driverId: String, listener: (driver: Driver) -> Unit) {
         Database.dbDrivers().child(driverId).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
+                Log.d(TAG, "onDataChange: ${snapshot.value}")
                 snapshot.getValue<Driver>()?.let {
                     listener(it)
                 }
@@ -55,5 +58,9 @@ object DriverRepository {
                 Log.e(TAG, error.message)
             }
         })
+    }
+
+    fun updateDevice(driverID: String, device: DeviceInterface?): Task<Void> {
+        return Database.dbDrivers().child(driverID).child("device").setValue(device)
     }
 }

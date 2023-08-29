@@ -18,7 +18,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GordaDriver"
         android:usesCleartextTraffic="true"
-        tools:targetApi="32">
+        tools:targetApi="33">
         <meta-data android:name="io.sentry.dsn"
             android:value="${SENTRY_DSN}" />
         <meta-data android:name="io.sentry.traces.sample-rate" android:value="0.8" />

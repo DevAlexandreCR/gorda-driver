@@ -35,6 +35,7 @@
     <string name="service_end_trip">Terminar Viaje</string>
     <string name="service_updated">Servicio actualizado correctamente</string>
     <string name="cannot_complete_service_yet">El servicio no puede completarse nada más empezar</string>
+    <string name="logout_first">Tienes una sesion en otro dispositivo, ciérrala e intenta de nuevo</string>
     <string name="distance">Distancia: </string>
     <string name="time">Tiempo: </string>
     <string name="cancel">Cancelar</string>
