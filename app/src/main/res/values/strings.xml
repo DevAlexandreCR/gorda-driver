@@ -42,6 +42,7 @@
     <string name="service_end_trip">End Trip</string>
     <string name="service_updated">Service successfully updated</string>
     <string name="cannot_complete_service_yet">Service cannot be completed as soon as it starts</string>
+    <string name="logout_first">You have a session in other device, first logout</string>
     <string name="distance">Distance: </string>
     <string name="time">Time: </string>
     <string name="cancel">Cancel</string>

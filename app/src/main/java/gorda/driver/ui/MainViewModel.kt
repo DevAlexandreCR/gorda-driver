@@ -6,10 +6,13 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import com.google.android.gms.tasks.Task
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
+import gorda.driver.interfaces.Device
+import gorda.driver.interfaces.DeviceInterface
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
 import gorda.driver.models.Driver
@@ -118,6 +121,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             _driverState.postValue(DriverUpdates.connecting(false))
             e.message?.let { message -> Log.e(TAG, message) }
         }
+    }
+
+    fun updateDriverDevice(driverID: String, device: DeviceInterface?): Task<Void> {
+        return DriverRepository.updateDevice(driverID, device)
     }
 
     fun disconnect(driver: Driver) {

@@ -14,6 +14,7 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -32,6 +33,7 @@ import com.google.android.material.snackbar.Snackbar
 import gorda.driver.R
 import gorda.driver.background.LocationService
 import gorda.driver.databinding.ActivityMainBinding
+import gorda.driver.interfaces.DeviceInterface
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
@@ -60,6 +62,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var preferences: SharedPreferences
     private lateinit var connectionBar: ProgressBar
+    private lateinit var deviceID: String
+    private lateinit var deviceName: String
     private var driver: Driver = Driver()
     private lateinit var switchConnect: Switch
     private lateinit var lastLocation: Location
@@ -89,10 +93,14 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var snackBar: Snackbar
 
+    @SuppressLint("HardwareIds")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this)
+
+        this.deviceID = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+        this.deviceName = Build.MANUFACTURER + " " + Build.BRAND
 
         intent.getStringExtra(Constants.DRIVER_ID_EXTRA)?.let {
             viewModel.getDriver(it)
@@ -130,12 +138,7 @@ class MainActivity : AppCompatActivity() {
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
                 driver.id?.let { viewModel.disconnect(driver) }
-                Auth.logOut(this).addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val intent = Intent(this, StartActivity::class.java)
-                        startActivity(intent)
-                    }
-                }
+                Auth.logOut(this)
             }
             NavigationUI.onNavDestinationSelected(item, navController)
             drawerLayout.closeDrawer(GravityCompat.START)
@@ -169,6 +172,7 @@ class MainActivity : AppCompatActivity() {
                 is LocationUpdates.LastLocation -> {
                     lastLocation = locationUpdate.location
                 }
+
                 else -> {}
             }
         }
@@ -193,8 +197,7 @@ class MainActivity : AppCompatActivity() {
                 connectionBar.visibility = View.VISIBLE
                 snackBar.show()
                 viewModel.setConnectedLocal(false)
-            }
-            else {
+            } else {
                 driver.id?.let { id -> viewModel.isConnected(id) }
                 connectionBar.visibility = View.GONE
                 snackBar.dismiss()
@@ -205,13 +208,15 @@ class MainActivity : AppCompatActivity() {
             currentService?.status?.let { status ->
                 when (status) {
                     Service.STATUS_IN_PROGRESS -> {
-                            navController.navigate(R.id.nav_current_service)
+                        navController.navigate(R.id.nav_current_service)
                     }
+
                     Service.STATUS_CANCELED -> {
                         viewModel.completeCurrentService()
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
                     }
+
                     else -> {
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
@@ -227,12 +232,14 @@ class MainActivity : AppCompatActivity() {
     private fun setIconNotificationButton(isNotificationMute: Boolean) {
         if (isNotificationMute) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                notificationButton.backgroundTintList = ColorStateList.valueOf(getColor(R.color.red))
+                notificationButton.backgroundTintList =
+                    ColorStateList.valueOf(getColor(R.color.red))
             }
             notificationButton.setImageResource(R.drawable.notifications_off)
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                notificationButton.backgroundTintList = ColorStateList.valueOf(getColor(R.color.secondary_dark))
+                notificationButton.backgroundTintList =
+                    ColorStateList.valueOf(getColor(R.color.secondary_dark))
             }
             notificationButton.setImageResource(R.drawable.notifications_active)
         }
@@ -260,6 +267,13 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.isThereCurrentService()
         networkMonitor.startMonitoring()
+        Auth.onAuthChanges { uuid ->
+            if (uuid === null) {
+                val intent = Intent(this, StartActivity::class.java)
+                startActivity(intent)
+                finish()
+            }
+        }
     }
 
     override fun onStop() {
@@ -323,7 +337,7 @@ class MainActivity : AppCompatActivity() {
 
         nameDrawer.text = driver.name
         emailDrawer.text = driver.email
-        driver.photoUrl?.let { url ->
+        driver.photoUrl.let { url ->
             Glide
                 .with(this)
                 .load(url)
@@ -346,11 +360,13 @@ class MainActivity : AppCompatActivity() {
                         stopLocationService()
                     }
                 }
+
                 is DriverUpdates.Connecting -> {
                     if (driverUpdates.connecting) {
                         switchConnect.setText(R.string.status_connecting)
                     }
                 }
+
                 else -> {}
             }
         }
@@ -359,6 +375,28 @@ class MainActivity : AppCompatActivity() {
             when (it) {
                 is Driver -> {
                     this.driver = it
+                    if (this.driver.device != null) {
+                        if (this.deviceID != this.driver.device!!.id) {
+                            Auth.logOut(this).addOnCompleteListener { completed ->
+                                if (completed.isSuccessful) {
+                                    Toast.makeText(
+                                        this,
+                                        R.string.logout_first,
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        }
+                    } else {
+                        this.driver.id?.let { it1 ->
+                            viewModel.updateDriverDevice(it1, object : DeviceInterface {
+                                override var id = deviceID
+                                override var name = deviceName
+                            }).addOnFailureListener { exception ->
+                                Toast.makeText(this, exception.message, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
                     switchConnect.isEnabled = true
                     setDrawerHeader(navView)
                     viewModel.isConnected(it.id!!)
@@ -414,6 +452,7 @@ class MainActivity : AppCompatActivity() {
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (navController.currentDestination != null && navController.currentDestination?.id != R.id.nav_home) {
             super.onBackPressed()
