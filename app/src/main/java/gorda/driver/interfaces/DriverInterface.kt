@@ -7,8 +7,9 @@ interface DriverInterface {
     var phone: String
     var docType: String
     var document: String
-    var photoUrl: String?
-    var vehicle: VehicleInterface
-    var enabled_at: Int?
+    var photoUrl: String
+    var vehicle: Vehicle
+    var enabled_at: Int
     var created_at: Int
+    var device: Device?
 }
