@@ -9,7 +9,6 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.*
 import android.provider.Settings
-import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
@@ -173,6 +172,7 @@ class MainActivity : AppCompatActivity() {
                 is LocationUpdates.LastLocation -> {
                     lastLocation = locationUpdate.location
                 }
+
                 else -> {}
             }
         }
@@ -197,8 +197,7 @@ class MainActivity : AppCompatActivity() {
                 connectionBar.visibility = View.VISIBLE
                 snackBar.show()
                 viewModel.setConnectedLocal(false)
-            }
-            else {
+            } else {
                 driver.id?.let { id -> viewModel.isConnected(id) }
                 connectionBar.visibility = View.GONE
                 snackBar.dismiss()
@@ -209,13 +208,15 @@ class MainActivity : AppCompatActivity() {
             currentService?.status?.let { status ->
                 when (status) {
                     Service.STATUS_IN_PROGRESS -> {
-                            navController.navigate(R.id.nav_current_service)
+                        navController.navigate(R.id.nav_current_service)
                     }
+
                     Service.STATUS_CANCELED -> {
                         viewModel.completeCurrentService()
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
                     }
+
                     else -> {
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
@@ -231,12 +232,14 @@ class MainActivity : AppCompatActivity() {
     private fun setIconNotificationButton(isNotificationMute: Boolean) {
         if (isNotificationMute) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                notificationButton.backgroundTintList = ColorStateList.valueOf(getColor(R.color.red))
+                notificationButton.backgroundTintList =
+                    ColorStateList.valueOf(getColor(R.color.red))
             }
             notificationButton.setImageResource(R.drawable.notifications_off)
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                notificationButton.backgroundTintList = ColorStateList.valueOf(getColor(R.color.secondary_dark))
+                notificationButton.backgroundTintList =
+                    ColorStateList.valueOf(getColor(R.color.secondary_dark))
             }
             notificationButton.setImageResource(R.drawable.notifications_active)
         }
@@ -357,16 +360,16 @@ class MainActivity : AppCompatActivity() {
                         stopLocationService()
                     }
                 }
+
                 is DriverUpdates.Connecting -> {
                     if (driverUpdates.connecting) {
                         switchConnect.setText(R.string.status_connecting)
                     }
                 }
+
                 else -> {}
             }
         }
-
-        Log.d(TAG, "observeDriver: on create")
 
         viewModel.driver.observe(this) {
             when (it) {
@@ -376,13 +379,17 @@ class MainActivity : AppCompatActivity() {
                         if (this.deviceID != this.driver.device!!.id) {
                             Auth.logOut(this).addOnCompleteListener { completed ->
                                 if (completed.isSuccessful) {
-                                    Toast.makeText(this, R.string.logout_first, Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        this,
+                                        R.string.logout_first,
+                                        Toast.LENGTH_LONG
+                                    ).show()
                                 }
                             }
                         }
                     } else {
                         this.driver.id?.let { it1 ->
-                            viewModel.updateDriverDevice(it1, object: DeviceInterface {
+                            viewModel.updateDriverDevice(it1, object : DeviceInterface {
                                 override var id = deviceID
                                 override var name = deviceName
                             }).addOnFailureListener { exception ->
