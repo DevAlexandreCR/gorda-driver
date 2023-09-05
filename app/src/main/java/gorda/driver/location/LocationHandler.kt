@@ -1,67 +1,99 @@
 package gorda.driver.location
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
-import android.os.Looper
 import androidx.core.app.ActivityCompat
-import com.google.android.gms.location.*
-import com.google.android.gms.tasks.Task
-import gorda.driver.interfaces.CustomLocationListener
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationListener
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 
-object LocationHandler {
-    private var fusedLocationClient: FusedLocationProviderClient? = null
-    private var locationCallback: LocationCallback? = null
+class LocationHandler private constructor(context: Context) {
+    private var fusedLocationClient: FusedLocationProviderClient =
+        LocationServices.getFusedLocationProviderClient(context)
+    private val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            LOCATION_REFRESH_TIME,
+        )
+        .build()
 
-    const val PERMISSION_REQUEST_ACCESS_LOCATION = 100
-    private const val LOCATION_REFRESH_TIME = 5000
-
-    fun checkPermissions(context: Context): Boolean {
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-            == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            return true
-        }
-
-        return false
-    }
-
-    @SuppressLint("MissingPermission")
-    fun startListeningUserLocation(context: Context, listener: CustomLocationListener) {
-        this.fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-        val locationRequest = LocationRequest.create().apply {
-            interval = LOCATION_REFRESH_TIME.toLong() * 2
-            fastestInterval = LOCATION_REFRESH_TIME.toLong()
-            priority = Priority.PRIORITY_HIGH_ACCURACY
-        }
-        locationCallback = object : LocationCallback() {
-            override fun onLocationResult(p0: LocationResult) {
-                for (location in p0.locations) {
-                    listener.onLocationChanged(location)
-                }
+    private val listeners = mutableListOf<LocationListener>()
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            val location = locationResult.lastLocation
+            location?.let {
+                notifyListeners(it)
             }
         }
-        fusedLocationClient!!.requestLocationUpdates(
-            locationRequest,
-            locationCallback as LocationCallback,
-            Looper.getMainLooper()
-        )
     }
 
-    fun getLastLocation(): Task<Location>? {
-        return fusedLocationClient?.lastLocation
+    init {
+        startLocationUpdates()
     }
 
-    fun stopLocationUpdates() {
-        fusedLocationClient ?: return
-        locationCallback?.let { fusedLocationClient!!.removeLocationUpdates(it) }
+    companion object {
+        @Volatile
+        private var INSTANCE: LocationHandler? = null
+        const val PERMISSION_REQUEST_ACCESS_LOCATION = 100
+        private const val LOCATION_REFRESH_TIME: Long = 10000
+
+        fun getInstance(context: Context): LocationHandler {
+            return INSTANCE ?: synchronized(this) {
+                val instance = LocationHandler(context.applicationContext)
+                INSTANCE = instance
+                instance
+            }
+        }
+
+        fun checkPermissions(context: Context): Boolean {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+                == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                return true
+            }
+
+            return false
+        }
+    }
+
+    fun addListener(listener: LocationListener) {
+        listeners.add(listener)
+    }
+
+    fun removeListener(listener: LocationListener) {
+        listeners.remove(listener)
+        if (listeners.isEmpty()) {
+            stopLocationUpdates()
+        }
+    }
+
+    private fun startLocationUpdates() {
+        try {
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+        }
+    }
+
+
+    private fun stopLocationUpdates() {
+        locationCallback.let { fusedLocationClient.removeLocationUpdates(it) }
+    }
+
+    private fun notifyListeners(location: Location) {
+        for (listener in listeners) {
+            listener.onLocationChanged(location)
+        }
     }
 }

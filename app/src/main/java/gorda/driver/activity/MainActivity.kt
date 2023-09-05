@@ -256,11 +256,6 @@ class MainActivity : AppCompatActivity() {
                 locationBroadcastReceiver,
                 IntentFilter(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
             )
-        LocationHandler.getLastLocation()?.let {
-            it.addOnSuccessListener { loc ->
-                if (loc != null) viewModel.updateLocation(loc)
-            }
-        }
         Intent(this, LocationService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
         }
