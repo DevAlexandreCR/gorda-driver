@@ -9,6 +9,7 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.*
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
@@ -46,6 +47,7 @@ import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
+import gorda.driver.utils.Utils
 
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -131,7 +133,7 @@ class MainActivity : AppCompatActivity() {
             resources.getString(R.string.connection_lost),
             Snackbar.LENGTH_INDEFINITE
         )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
             snackBar.setTextColor(getColor(R.color.white))
         }
 
@@ -231,13 +233,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun setIconNotificationButton(isNotificationMute: Boolean) {
         if (isNotificationMute) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
                 notificationButton.backgroundTintList =
                     ColorStateList.valueOf(getColor(R.color.red))
             }
             notificationButton.setImageResource(R.drawable.notifications_off)
         } else {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
                 notificationButton.backgroundTintList =
                     ColorStateList.valueOf(getColor(R.color.secondary_dark))
             }
@@ -309,7 +311,7 @@ class MainActivity : AppCompatActivity() {
         val alertDialog: AlertDialog = builder.create()
         alertDialog.setCancelable(false)
         alertDialog.setOnShowListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
                 alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
                     .setTextColor(resources.getColor(R.color.primary_light, null))
                 alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
@@ -433,11 +435,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestPermissions() {
+        val permissions: Array<String> = arrayOf(
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        )
+        if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
+            permissions.plus(Manifest.permission.POST_NOTIFICATIONS)
+        }
         ActivityCompat.requestPermissions(
-            this, arrayOf(
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ), LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
+            this, permissions, LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
         )
     }
 

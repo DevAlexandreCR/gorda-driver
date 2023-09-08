@@ -134,7 +134,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
             Intent(this, StartActivity::class.java).let { notificationIntent ->
                 notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                 notificationIntent.putExtra(Constants.DRIVER_ID_EXTRA, driverID)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
                     PendingIntent.getActivity(
                         this, 0, notificationIntent,
                         PendingIntent.FLAG_IMMUTABLE
@@ -156,7 +156,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
             .setContentText(getString(R.string.text_connected))
             .setSound(connectedUri)
             .setContentIntent(pendingIntent)
-        if (Utils.isNewerVersion()) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
             startForeground(SERVICE_ID, builder.build())
         }
         toSpeech = TextToSpeech(this, this)

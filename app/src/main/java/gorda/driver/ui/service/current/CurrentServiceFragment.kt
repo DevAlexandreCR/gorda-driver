@@ -1,30 +1,41 @@
 package gorda.driver.ui.service.current
 
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.net.Uri
 import android.os.Bundle
+import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.Chronometer
+import android.widget.Chronometer.OnChronometerTickListener
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import gorda.driver.R
+import gorda.driver.background.FeesService
+import gorda.driver.background.LocationService
 import gorda.driver.databinding.FragmentCurrentServiceBinding
+import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
+import gorda.driver.utils.Constants
 import java.util.*
 
 
-class CurrentServiceFragment : Fragment() {
+class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
 
     companion object {
         const val TAG = "CurrentServiceFragment"
@@ -43,6 +54,25 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var startTrip: String
     private lateinit var endTrip: String
     private lateinit var binding: FragmentCurrentServiceBinding
+    private lateinit var feesService: FeesService
+    private lateinit var chronometer: Chronometer
+    private var isServiceBound = false
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as FeesService.ChronometerBinder
+            feesService = binder.getService()
+            isServiceBound = true
+            chronometer.base = feesService.getElapsedTime()
+            chronometer.onChronometerTickListener = this@CurrentServiceFragment
+            chronometer.start()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            isServiceBound = false
+            chronometer.stop()
+            chronometer.base = SystemClock.elapsedRealtime()
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -60,6 +90,7 @@ class CurrentServiceFragment : Fragment() {
         btnStatus = binding.btnServiceStatus
         imgBtnMaps = binding.imgBtnMaps
         imgButtonWaze = binding.imgBtnWaze
+        chronometer = binding.chronometer
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 setOnClickListener(service)
@@ -124,6 +155,11 @@ class CurrentServiceFragment : Fragment() {
                 }
                 startTrip -> {
                     service.metadata.start_trip_at = now
+                    Intent(activity, FeesService::class.java).also { intentFee ->
+                        intentFee.putExtra(Constants.START_TRIP, doubleArrayOf(service.start_loc.lat, service.start_loc.lng))
+                        activity?.applicationContext?.startService(intentFee)
+                        activity?.bindService(intentFee, serviceConnection, AppCompatActivity.BIND_NOT_FOREGROUND)
+                    }
                 }
                 else -> {
                     canUpdate = if (service.metadata.start_trip_at != null) (now - service.metadata.start_trip_at!!) > 240
@@ -151,5 +187,9 @@ class CurrentServiceFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    override fun onChronometerTick(chrono: Chronometer) {
+        //TODO: calculate service fees
     }
 }
