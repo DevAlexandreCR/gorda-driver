@@ -25,6 +25,7 @@ import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
+import com.google.android.gms.maps.model.LatLng
 import gorda.driver.R
 import gorda.driver.background.FeesService
 import gorda.driver.databinding.FragmentCurrentServiceBinding
@@ -34,6 +35,10 @@ import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
 import java.util.Date
 import java.util.Locale
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 
 class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
@@ -62,7 +67,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             val binder = service as FeesService.ChronometerBinder
             feesService = binder.getService()
             mainViewModel.changeConnectTripService(true)
-            chronometer.base = feesService.getElapsedTime()
+            chronometer.base = feesService.getBaseTime()
             chronometer.start()
             chronometer.onChronometerTickListener = this@CurrentServiceFragment
         }
@@ -210,6 +215,22 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     }
 
     override fun onChronometerTick(chrono: Chronometer) {
-        //TODO: calculate service fees
+        var totalDistance = 0.0
+        for (i in 0 until feesService.getPoints().size - 1) {
+            totalDistance += calculateDistanceBetween(feesService.getPoints()[i], feesService.getPoints()[i + 1])
+        }
+
+        var time = feesService.getElapsedTime()
+    }
+
+    private fun calculateDistanceBetween(latLng1: LatLng, latLng2: LatLng): Double {
+        val earthRadius = 6371000.0
+        val dLat = Math.toRadians(latLng2.latitude - latLng1.latitude)
+        val dLng = Math.toRadians(latLng2.longitude - latLng1.longitude)
+        val a = sin(dLat / 2) * sin(dLat / 2) +
+                cos(Math.toRadians(latLng1.latitude)) * cos(Math.toRadians(latLng2.latitude)) *
+                sin(dLng / 2) * sin(dLng / 2)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return earthRadius * c
     }
 }

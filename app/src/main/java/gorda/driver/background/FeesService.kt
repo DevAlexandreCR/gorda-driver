@@ -79,8 +79,12 @@ class FeesService: Service(), LocationListener {
         LatLng(location.latitude, location.longitude).also { points.add(it) }
     }
 
-    fun getElapsedTime(): Long {
+    fun getBaseTime(): Long {
         return startTime
+    }
+
+    fun getElapsedTime(): Long {
+        return SystemClock.elapsedRealtime() - startTime
     }
 
     fun getPoints(): ArrayList<LatLng> {

@@ -72,4 +72,13 @@
     <string name="sound_assigned">Servicio asignado</string>
     <string name="tone">Tono</string>
     <string name="none">Ninguno</string>
+
+    <!--  Base fees-->
+    <string name="km">km</string>
+    <string name="min">min</string>
+    <string name="base">Tarifa base</string>
+    <string name="fees">Tarifa adicional</string>
+    <string name="time_fare">Precio por minuto</string>
+    <string name="distance_fare">Precio por kilómetro</string>
+    <string name="fare_multiplier">Multiplicador de tarifa</string>
 </resources>
