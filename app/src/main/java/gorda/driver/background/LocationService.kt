@@ -130,27 +130,18 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         super.onCreate()
         val connectedUri: Uri =
             Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName + "/" + R.raw.assigned_service)
-        val pendingIntent: PendingIntent =
-            Intent(this, StartActivity::class.java).let { notificationIntent ->
-                notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                notificationIntent.putExtra(Constants.DRIVER_ID_EXTRA, driverID)
-                if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
-                    PendingIntent.getActivity(
-                        this, 0, notificationIntent,
-                        PendingIntent.FLAG_IMMUTABLE
-                    )
-                } else {
-                    PendingIntent.getActivity(
-                        this, 0, notificationIntent,
-                        Intent.FILL_IN_ACTION
-                    )
-                }
-            }
+        val notificationIntent = Intent(this, StartActivity::class.java)
+            notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            notificationIntent.putExtra(Constants.DRIVER_ID_EXTRA, driverID)
+            val pendingIntent: PendingIntent = PendingIntent.getActivity(
+                    this, 0, notificationIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
         val builder: NotificationCompat.Builder = NotificationCompat.Builder(
             this,
             Constants.LOCATION_NOTIFICATION_CHANNEL_ID
         )
-            .setOngoing(false)
+            .setOngoing(true)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(getString(R.string.status_connected))
             .setContentText(getString(R.string.text_connected))

@@ -9,7 +9,6 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.*
 import android.provider.Settings
-import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
@@ -419,7 +418,11 @@ class MainActivity : AppCompatActivity() {
     private fun startLocationService() {
         Intent(this, LocationService::class.java).also { intent ->
             intent.putExtra(Driver.DRIVER_KEY, this.driver.id)
-            applicationContext.startService(intent)
+            if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
+                applicationContext.startForegroundService(intent)
+            } else {
+                applicationContext.startService(intent)
+            }
             this.bindService(intent, connection, BIND_NOT_FOREGROUND)
             mBound = true
         }
@@ -435,12 +438,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestPermissions() {
-        val permissions: Array<String> = arrayOf(
+        var permissions: Array<String> = arrayOf(
             Manifest.permission.ACCESS_COARSE_LOCATION,
             Manifest.permission.ACCESS_FINE_LOCATION,
         )
         if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
-            permissions.plus(Manifest.permission.POST_NOTIFICATIONS)
+            permissions += Manifest.permission.POST_NOTIFICATIONS
         }
         ActivityCompat.requestPermissions(
             this, permissions, LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION

@@ -59,6 +59,11 @@
             android:exported="false"
             android:foregroundServiceType="location" />
         <service
+            android:name="gorda.driver.background.FeesService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+        <service
             android:name="gorda.driver.background.NotificationService"
             android:exported="false">
             <meta-data

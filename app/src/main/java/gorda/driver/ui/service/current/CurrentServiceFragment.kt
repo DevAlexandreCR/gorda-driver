@@ -3,9 +3,11 @@ package gorda.driver.ui.service.current
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
+import android.content.Context.BIND_NOT_FOREGROUND
 import android.content.Intent
 import android.content.ServiceConnection
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.SystemClock
@@ -20,19 +22,18 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
-import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import gorda.driver.R
 import gorda.driver.background.FeesService
-import gorda.driver.background.LocationService
 import gorda.driver.databinding.FragmentCurrentServiceBinding
-import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import gorda.driver.utils.Constants
-import java.util.*
+import gorda.driver.utils.Utils
+import java.util.Date
+import java.util.Locale
 
 
 class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
@@ -56,21 +57,20 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var binding: FragmentCurrentServiceBinding
     private lateinit var feesService: FeesService
     private lateinit var chronometer: Chronometer
-    private var isServiceBound = false
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as FeesService.ChronometerBinder
             feesService = binder.getService()
-            isServiceBound = true
+            mainViewModel.changeConnectTripService(true)
             chronometer.base = feesService.getElapsedTime()
-            chronometer.onChronometerTickListener = this@CurrentServiceFragment
             chronometer.start()
+            chronometer.onChronometerTickListener = this@CurrentServiceFragment
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            isServiceBound = false
-            chronometer.stop()
+            mainViewModel.changeConnectTripService(false)
             chronometer.base = SystemClock.elapsedRealtime()
+            chronometer.stop()
         }
     }
 
@@ -142,6 +142,18 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         haveArrived = context.resources.getString(R.string.service_have_arrived)
         startTrip = context.resources.getString(R.string.service_start_trip)
         endTrip = context.resources.getString(R.string.service_end_trip)
+        Intent(requireContext(), FeesService::class.java).also { intentFee ->
+            requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
+            mainViewModel.changeConnectTripService(true)
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        if (mainViewModel.isTripStarted.value == true) {
+            requireContext().unbindService(serviceConnection)
+            mainViewModel.changeConnectTripService(false)
+        }
     }
 
     private fun setOnClickListener(service: Service) {
@@ -155,10 +167,13 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 }
                 startTrip -> {
                     service.metadata.start_trip_at = now
-                    Intent(activity, FeesService::class.java).also { intentFee ->
+                    Intent(requireContext(), FeesService::class.java).also { intentFee ->
                         intentFee.putExtra(Constants.START_TRIP, doubleArrayOf(service.start_loc.lat, service.start_loc.lng))
-                        activity?.applicationContext?.startService(intentFee)
-                        activity?.bindService(intentFee, serviceConnection, AppCompatActivity.BIND_NOT_FOREGROUND)
+                        if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
+                            requireContext().startForegroundService(intentFee)
+                        } else {
+                            requireContext().startService(intentFee)
+                        }
                     }
                 }
                 else -> {
@@ -168,12 +183,16 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                     if (canUpdate) {
                         service.metadata.end_trip_at = now
                         service.status = Service.STATUS_TERMINATED
+                        Intent(requireContext(), FeesService::class.java).also { intentFee ->
+                            requireContext().stopService(intentFee)
+                        }
                     }
                 }
             }
             if (canUpdate) service.updateMetadata()
                 .addOnSuccessListener {
                     if (service.status == Service.STATUS_TERMINATED) mainViewModel.completeCurrentService()
+
                     Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
                 }
                 .addOnFailureListener {
