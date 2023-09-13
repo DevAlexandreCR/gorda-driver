@@ -169,6 +169,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                     service.metadata.start_trip_at = now
                     Intent(requireContext(), FeesService::class.java).also { intentFee ->
                         intentFee.putExtra(Constants.START_TRIP, doubleArrayOf(service.start_loc.lat, service.start_loc.lng))
+                        intentFee.putExtra(Constants.LOCATION_EXTRA, service.start_loc.name)
                         if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
                             requireContext().startForegroundService(intentFee)
                         } else {
