@@ -19,7 +19,6 @@ import android.widget.Button
 import android.widget.Chronometer
 import android.widget.Chronometer.OnChronometerTickListener
 import android.widget.ImageButton
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
@@ -104,8 +103,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         textPriceBase = binding.textBaseFare
         textPriceMinFee = binding.textPrice
         textPriceAddFee = binding.textFees
-        textDistancePrice = binding.textPriceByDistance
-        textTimePrice = binding.textPriceByTime
+        textDistancePrice = binding.textDistanceFare
+        textTimePrice = binding.textTimeFare
         textFareMultiplier = binding.textFareMultiplier
         btnStatus = binding.btnServiceStatus
         imgBtnMaps = binding.imgBtnMaps
