@@ -28,11 +28,11 @@ object DriverRepository {
         return Database.dbOnlineDrivers().child(driverId).removeValue()
     }
 
-    fun updateLocation(driverId: String, location: LocInterface): Unit {
+    fun updateLocation(driverId: String, location: LocInterface) {
         Database.dbOnlineDrivers().child(driverId).child("location").setValue(location)
     }
 
-    fun isConnected(driverId: String, listener: (connected: Boolean) -> Unit): Unit{
+    fun isConnected(driverId: String, listener: (connected: Boolean) -> Unit) {
         Database.dbOnlineDrivers().child(driverId).addListenerForSingleValueEvent(object: ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 listener(snapshot.hasChildren())

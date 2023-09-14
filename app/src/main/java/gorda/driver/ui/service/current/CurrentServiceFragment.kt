@@ -19,9 +19,11 @@ import android.widget.Button
 import android.widget.Chronometer
 import android.widget.Chronometer.OnChronometerTickListener
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -56,6 +58,13 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var textPhone: TextView
     private lateinit var textAddress: TextView
     private lateinit var textComment: TextView
+    private lateinit var textTimePrice: TextView
+    private lateinit var textDistancePrice: TextView
+    private lateinit var textPriceAddFee: TextView
+    private lateinit var textPriceMinFee: TextView
+    private lateinit var textPriceBase: TextView
+    private lateinit var textFareMultiplier: TextView
+    private lateinit var layoutFees: ConstraintLayout
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
     private lateinit var endTrip: String
@@ -92,10 +101,17 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         textPhone = binding.currentPhone
         textAddress = binding.currentAddress
         textComment = binding.serviceComment
+        textPriceBase = binding.textBaseFare
+        textPriceMinFee = binding.textPrice
+        textPriceAddFee = binding.textFees
+        textDistancePrice = binding.textPriceByDistance
+        textTimePrice = binding.textPriceByTime
+        textFareMultiplier = binding.textFareMultiplier
         btnStatus = binding.btnServiceStatus
         imgBtnMaps = binding.imgBtnMaps
         imgButtonWaze = binding.imgBtnWaze
         chronometer = binding.chronometer
+        layoutFees = binding.layoutFees
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 setOnClickListener(service)
@@ -134,10 +150,19 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                     btnStatus.text = startTrip
                 } else {
                     btnStatus.text = endTrip
+                    layoutFees.visibility = ConstraintLayout.VISIBLE
                 }
             } else {
                 findNavController().navigate(R.id.nav_home)
             }
+        }
+        mainViewModel.rideFees.value?.let { fees ->
+            textPriceBase.text = fees.feesBase.toString()
+            textPriceMinFee.text = fees.priceMinFee.toString()
+            textPriceAddFee.text = fees.priceAddFee.toString()
+            textDistancePrice.text = fees.priceKm.toString()
+            textTimePrice.text = fees.priceMin.toString()
+            textFareMultiplier.text = fees.priceNightFee.toString() //TODO: add validation to know which multiplier to apply
         }
         return root
     }

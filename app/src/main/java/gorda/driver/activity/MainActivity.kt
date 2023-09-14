@@ -205,6 +205,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        viewModel.getRideFees()
+
         viewModel.currentService.observe(this) { currentService ->
             currentService?.status?.let { status ->
                 when (status) {

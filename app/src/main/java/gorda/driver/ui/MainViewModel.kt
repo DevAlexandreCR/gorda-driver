@@ -14,10 +14,12 @@ import com.google.firebase.database.ktx.getValue
 import gorda.driver.interfaces.DeviceInterface
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
+import gorda.driver.interfaces.RideFees
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
+import gorda.driver.repositories.SettingsRepository
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
@@ -34,6 +36,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _currentService = MutableLiveData<Service?>()
     private val _isNetWorkConnected = MutableLiveData(true)
     private val _isTripStarted = MutableLiveData(false)
+    private val _rideFees = MutableLiveData<RideFees>()
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driverStatus: LiveData<DriverUpdates> = _driverState
@@ -42,6 +45,15 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val currentService: LiveData<Service?> = _currentService
     val isNetWorkConnected: LiveData<Boolean> = _isNetWorkConnected
     val isTripStarted: LiveData<Boolean> = _isTripStarted
+    val rideFees: LiveData<RideFees> = _rideFees
+
+    fun getRideFees() {
+        SettingsRepository.getRideFees().addOnSuccessListener { snapshot ->
+            snapshot.getValue<RideFees>().let { rideFees ->
+                _rideFees.postValue(rideFees)
+            }
+        }
+    }
 
     fun changeConnectTripService(connect: Boolean) {
         _isTripStarted.postValue(connect)
