@@ -36,6 +36,7 @@ import gorda.driver.ui.MainViewModel
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
 import java.text.NumberFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -74,6 +75,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var chronometer: Chronometer
     private lateinit var fees: RideFees
     private lateinit var currencyFormat: NumberFormat
+    private var feeMultiplier: Double = 1.0
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as FeesService.ChronometerBinder
@@ -164,6 +166,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 findNavController().navigate(R.id.nav_home)
             }
         }
+        feeMultiplier = getFeeMultiplier()
         mainViewModel.rideFees.value?.let { fees ->
             this.fees = fees
             textPriceBase.text = currencyFormat.format(this.fees.feesBase)
@@ -171,7 +174,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             textPriceAddFee.text = currencyFormat.format(this.fees.priceAddFee)
             textDistancePrice.text = currencyFormat.format(this.fees.priceKm)
             textTimePrice.text = currencyFormat.format(this.fees.priceMin)
-            textFareMultiplier.text = this.fees.priceNightFee.toString() //TODO: add validation to know which multiplier to apply
+            textFareMultiplier.text = feeMultiplier.toString()
         }
         return root
     }
@@ -207,7 +210,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 startTrip -> {
                     service.metadata.start_trip_at = now
                     Intent(requireContext(), FeesService::class.java).also { intentFee ->
-                        intentFee.putExtra(Constants.START_TRIP, doubleArrayOf(service.start_loc.lat, service.start_loc.lng))
                         intentFee.putExtra(Constants.LOCATION_EXTRA, service.start_loc.name)
                         if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
                             requireContext().startForegroundService(intentFee)
@@ -257,10 +259,34 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         val priceMeter = fees.priceKm / 1000
         val distance = priceMeter * totalDistance
         val time = priceSec * feesService.getElapsedSeconds()
-        val total = (distance + time + fees.feesBase) * fees.priceNightFee
+        val total = (distance + time + fees.feesBase) * feeMultiplier
         textTotalFee.text = currencyFormat.format(total)
         textCurrentDistance.text = String.format("%.2f", totalDistance / 1000)
         textCurrentTimePrice.text = currencyFormat.format(time)
         textCurrentDistancePrice.text = currencyFormat.format(distance)
+    }
+
+    private fun getFeeMultiplier(): Double {
+        val calendar = Calendar.getInstance()
+        return if (isFestive()) {
+            when(calendar.get(Calendar.HOUR_OF_DAY)) {
+                in 0..5 -> fees.priceFestiveNight
+                in 19..23 -> fees.priceFestiveNight
+                else -> fees.priceFestive
+            }
+        } else {
+            when(calendar.get(Calendar.HOUR_OF_DAY)) {
+                in 0..5 -> fees.priceFestiveNight
+                in 19..23 -> fees.priceNightFee
+                else -> 1.0
+            }
+        }
+    }
+
+    private fun isFestive(): Boolean {
+        val calendar = Calendar.getInstance()
+        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+
+        return dayOfWeek == 7
     }
 }

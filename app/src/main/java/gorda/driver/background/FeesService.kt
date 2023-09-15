@@ -30,18 +30,12 @@ class FeesService: Service(), LocationListener {
         const val SERVICE_ID = 101
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        intent?.getDoubleArrayExtra(Constants.START_TRIP)?.also { location ->
-            val startLat = location[0]
-            val startLng = location[1]
-            LatLng(startLat, startLng).also { points.add(it) }
-            locationManager = LocationHandler.getInstance(this)
-            locationManager.addListener(this)
-        }
         intent?.getStringExtra(Constants.LOCATION_EXTRA)?.also { locationName ->
             name = locationName
+            locationManager = LocationHandler.getInstance(this)
+            locationManager.addListener(this)
+            createNotification()
         }
-
-        createNotification()
 
         return START_STICKY
     }
