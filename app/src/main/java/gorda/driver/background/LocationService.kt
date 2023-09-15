@@ -33,6 +33,7 @@ import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 import gorda.driver.utils.Utils
 import java.util.*
+import gorda.driver.models.Service as DBService
 
 class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener {
 
@@ -86,7 +87,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                 ServiceRepository.isThereCurrentService { service ->
                     service?.let { s ->
                         when (s.status) {
-                            gorda.driver.models.Service.STATUS_IN_PROGRESS -> {
+                            DBService.STATUS_IN_PROGRESS -> {
                                 if (Auth.getCurrentUserUUID() == service.driver_id) {
                                     val notifyId = sharedPreferences.getInt(
                                         Constants.SERVICES_NOTIFICATION_ID,
@@ -96,7 +97,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                                         playSound.playAssignedSound(service.created_at.toInt())
                                 }
                             }
-                            gorda.driver.models.Service.STATUS_CANCELED -> {
+                            DBService.STATUS_CANCELED -> {
                                 val cancelNotifyId = sharedPreferences.getInt(
                                     Constants.CANCEL_SERVICES_NOTIFICATION_ID,
                                     0

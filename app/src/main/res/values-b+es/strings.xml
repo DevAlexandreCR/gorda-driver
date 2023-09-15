@@ -82,4 +82,8 @@
     <string name="distance_fare">Precio por kilómetro</string>
     <string name="fare_multiplier">Multiplicador de tarifa</string>
     <string name="fare_minimum">Tarifa mínima</string>
+    <string name="finalize_service">Finalizando servicio!</string>
+    <string name="finalizing_message">El valor a cobrar es de <b> %s </b>, Desea continuar?</string>
+    <string name="yes">Si</string>
+    <string name="no">No</string>
 </resources>

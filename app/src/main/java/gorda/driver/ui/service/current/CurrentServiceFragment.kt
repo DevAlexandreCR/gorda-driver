@@ -1,5 +1,6 @@
 package gorda.driver.ui.service.current
 
+import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
@@ -39,6 +40,7 @@ import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlin.math.round
 
 
 class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
@@ -75,6 +77,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var chronometer: Chronometer
     private lateinit var fees: RideFees
     private lateinit var currencyFormat: NumberFormat
+    private var totalRide: Double = 0.0
     private var feeMultiplier: Double = 1.0
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -162,6 +165,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                     btnStatus.text = endTrip
                     layoutFees.visibility = ConstraintLayout.VISIBLE
                 }
+
+                if (service.status == Service.STATUS_TERMINATED) {
+
+                }
             } else {
                 findNavController().navigate(R.id.nav_home)
             }
@@ -201,47 +208,79 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private fun setOnClickListener(service: Service) {
         btnStatus.setOnClickListener {
             val now = Date().time / 1000
-            var canUpdate = true
 
             when (btnStatus.text) {
                 haveArrived -> {
                     service.metadata.arrived_at = now
+                    service.updateMetadata()
+                        .addOnSuccessListener {
+                            Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener {
+                            it.message?.let { message -> Log.e(TAG, message) }
+                            Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                        }
                 }
+
                 startTrip -> {
                     service.metadata.start_trip_at = now
-                    Intent(requireContext(), FeesService::class.java).also { intentFee ->
-                        intentFee.putExtra(Constants.LOCATION_EXTRA, service.start_loc.name)
-                        if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
-                            requireContext().startForegroundService(intentFee)
-                        } else {
-                            requireContext().startService(intentFee)
+                    service.updateMetadata()
+                        .addOnSuccessListener {
+                            Intent(requireContext(), FeesService::class.java).also { intentFee ->
+                                intentFee.putExtra(Constants.LOCATION_EXTRA, service.start_loc.name)
+                                if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
+                                    requireContext().startForegroundService(intentFee)
+                                } else {
+                                    requireContext().startService(intentFee)
+                                }
+                            }
+                            Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
                         }
-                    }
+                        .addOnFailureListener {
+                            it.message?.let { message -> Log.e(TAG, message) }
+                            Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                        }
                 }
-                else -> {
-                    canUpdate = if (service.metadata.start_trip_at != null) (now - service.metadata.start_trip_at!!) > 240
-                    else false
 
-                    if (canUpdate) {
-                        service.metadata.end_trip_at = now
-                        service.status = Service.STATUS_TERMINATED
-                        Intent(requireContext(), FeesService::class.java).also { intentFee ->
-                            requireContext().stopService(intentFee)
-                        }
+                else -> {
+                    if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > 240) {
+                        val builder = AlertDialog.Builder(requireContext())
+                        builder.setTitle(R.string.finalize_service)
+                            .setCancelable(false)
+                            .setMessage(getString(R.string.finalizing_message, getTotalFee()))
+                            .setPositiveButton(R.string.yes) { _, _ ->
+                                service.metadata.end_trip_at = now
+                                service.status = Service.STATUS_TERMINATED
+                                service.updateMetadata()
+                                    .addOnSuccessListener {
+                                        Intent(
+                                            requireContext(),
+                                            FeesService::class.java
+                                        ).also { intentFee ->
+                                            requireContext().stopService(intentFee)
+                                        }
+                                        mainViewModel.completeCurrentService()
+                                        Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
+                                    }
+                                    .addOnFailureListener {
+                                        it.message?.let { message -> Log.e(TAG, message) }
+                                        Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                                    }
+                            }
+                            .setNegativeButton(R.string.no) { dialog, _ ->
+                                dialog.dismiss()
+                            }
+                        val dialog: AlertDialog = builder.create()
+                        dialog.show()
+                    } else {
+                        Toast.makeText(
+                            requireContext(),
+                            R.string.cannot_complete_service_yet,
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             }
-            if (canUpdate) service.updateMetadata()
-                .addOnSuccessListener {
-                    if (service.status == Service.STATUS_TERMINATED) mainViewModel.completeCurrentService()
-
-                    Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
-                }
-                .addOnFailureListener {
-                    it.message?.let { message -> Log.e(TAG, message) }
-                    Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
-                }
-            else Toast.makeText(requireContext(), R.string.cannot_complete_service_yet, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -259,8 +298,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         val priceMeter = fees.priceKm / 1000
         val distance = priceMeter * totalDistance
         val time = priceSec * feesService.getElapsedSeconds()
-        val total = (distance + time + fees.feesBase) * feeMultiplier
-        textTotalFee.text = currencyFormat.format(total)
+        totalRide = (distance + time + fees.feesBase) * feeMultiplier
+        textTotalFee.text = currencyFormat.format(totalRide)
         textCurrentDistance.text = String.format("%.2f", totalDistance / 1000)
         textCurrentTimePrice.text = currencyFormat.format(time)
         textCurrentDistancePrice.text = currencyFormat.format(distance)
@@ -280,6 +319,14 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 in 19..23 -> fees.priceNightFee
                 else -> 1.0
             }
+        }
+    }
+
+    private fun getTotalFee(): String {
+        return if (totalRide < fees.priceMinFee) {
+            currencyFormat.format(fees.priceMinFee)
+        } else {
+            currencyFormat.format(round(totalRide / 100) * 100)
         }
     }
 
