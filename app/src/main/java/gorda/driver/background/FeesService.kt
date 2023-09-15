@@ -14,6 +14,7 @@ import com.google.android.gms.location.LocationListener
 import com.google.android.gms.maps.model.LatLng
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
+import gorda.driver.location.LocationHandler
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
 
@@ -23,6 +24,8 @@ class FeesService: Service(), LocationListener {
     private val points = ArrayList<LatLng>()
     private var startTime: Long = 0
     private var name: String = ""
+    private lateinit var locationManager: LocationHandler
+
     companion object {
         const val SERVICE_ID = 101
     }
@@ -31,6 +34,8 @@ class FeesService: Service(), LocationListener {
             val startLat = location[0]
             val startLng = location[1]
             LatLng(startLat, startLng).also { points.add(it) }
+            locationManager = LocationHandler.getInstance(this)
+            locationManager.addListener(this)
         }
         intent?.getStringExtra(Constants.LOCATION_EXTRA)?.also { locationName ->
             name = locationName
@@ -83,8 +88,8 @@ class FeesService: Service(), LocationListener {
         return startTime
     }
 
-    fun getElapsedTime(): Long {
-        return SystemClock.elapsedRealtime() - startTime
+    fun getElapsedSeconds(): Long {
+        return (SystemClock.elapsedRealtime() - startTime) / 1000
     }
 
     fun getPoints(): ArrayList<LatLng> {

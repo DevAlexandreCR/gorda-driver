@@ -88,4 +88,5 @@
     <string name="time_fare">Time fare</string>
     <string name="distance_fare">Distance fare</string>
     <string name="fare_multiplier">Fare multiplier</string>
+    <string name="fare_minimum">Minimum fare</string>
 </resources>

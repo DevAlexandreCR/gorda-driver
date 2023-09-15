@@ -81,4 +81,5 @@
     <string name="time_fare">Precio por minuto</string>
     <string name="distance_fare">Precio por kilómetro</string>
     <string name="fare_multiplier">Multiplicador de tarifa</string>
+    <string name="fare_minimum">Tarifa mínima</string>
 </resources>

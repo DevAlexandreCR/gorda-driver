@@ -26,20 +26,18 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
-import com.google.android.gms.maps.model.LatLng
 import gorda.driver.R
 import gorda.driver.background.FeesService
 import gorda.driver.databinding.FragmentCurrentServiceBinding
+import gorda.driver.interfaces.RideFees
+import gorda.driver.maps.Map
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
+import java.text.NumberFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 
 class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
@@ -58,11 +56,15 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var textAddress: TextView
     private lateinit var textComment: TextView
     private lateinit var textTimePrice: TextView
+    private lateinit var textCurrentTimePrice: TextView
     private lateinit var textDistancePrice: TextView
+    private lateinit var textCurrentDistancePrice: TextView
+    private lateinit var textCurrentDistance: TextView
     private lateinit var textPriceAddFee: TextView
     private lateinit var textPriceMinFee: TextView
     private lateinit var textPriceBase: TextView
     private lateinit var textFareMultiplier: TextView
+    private lateinit var textTotalFee: TextView
     private lateinit var layoutFees: ConstraintLayout
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
@@ -70,6 +72,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var binding: FragmentCurrentServiceBinding
     private lateinit var feesService: FeesService
     private lateinit var chronometer: Chronometer
+    private lateinit var fees: RideFees
+    private lateinit var currencyFormat: NumberFormat
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as FeesService.ChronometerBinder
@@ -101,16 +105,21 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         textAddress = binding.currentAddress
         textComment = binding.serviceComment
         textPriceBase = binding.textBaseFare
-        textPriceMinFee = binding.textPrice
+        textPriceMinFee = binding.textFareMin
         textPriceAddFee = binding.textFees
         textDistancePrice = binding.textDistanceFare
+        textCurrentDistance = binding.textCurrentDistance
+        textCurrentDistancePrice = binding.textPriceByDistance
         textTimePrice = binding.textTimeFare
+        textCurrentTimePrice = binding.textPriceByTime
         textFareMultiplier = binding.textFareMultiplier
+        textTotalFee = binding.textPrice
         btnStatus = binding.btnServiceStatus
         imgBtnMaps = binding.imgBtnMaps
         imgButtonWaze = binding.imgBtnWaze
         chronometer = binding.chronometer
         layoutFees = binding.layoutFees
+        currencyFormat = NumberFormat.getCurrencyInstance()
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 setOnClickListener(service)
@@ -156,12 +165,13 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             }
         }
         mainViewModel.rideFees.value?.let { fees ->
-            textPriceBase.text = fees.feesBase.toString()
-            textPriceMinFee.text = fees.priceMinFee.toString()
-            textPriceAddFee.text = fees.priceAddFee.toString()
-            textDistancePrice.text = fees.priceKm.toString()
-            textTimePrice.text = fees.priceMin.toString()
-            textFareMultiplier.text = fees.priceNightFee.toString() //TODO: add validation to know which multiplier to apply
+            this.fees = fees
+            textPriceBase.text = currencyFormat.format(this.fees.feesBase)
+            textPriceMinFee.text = currencyFormat.format(this.fees.priceMinFee)
+            textPriceAddFee.text = currencyFormat.format(this.fees.priceAddFee)
+            textDistancePrice.text = currencyFormat.format(this.fees.priceKm)
+            textTimePrice.text = currencyFormat.format(this.fees.priceMin)
+            textFareMultiplier.text = this.fees.priceNightFee.toString() //TODO: add validation to know which multiplier to apply
         }
         return root
     }
@@ -241,20 +251,16 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     override fun onChronometerTick(chrono: Chronometer) {
         var totalDistance = 0.0
         for (i in 0 until feesService.getPoints().size - 1) {
-            totalDistance += calculateDistanceBetween(feesService.getPoints()[i], feesService.getPoints()[i + 1])
+            totalDistance += Map.calculateDistanceBetween(feesService.getPoints()[i], feesService.getPoints()[i + 1])
         }
-
-        var time = feesService.getElapsedTime()
-    }
-
-    private fun calculateDistanceBetween(latLng1: LatLng, latLng2: LatLng): Double {
-        val earthRadius = 6371000.0
-        val dLat = Math.toRadians(latLng2.latitude - latLng1.latitude)
-        val dLng = Math.toRadians(latLng2.longitude - latLng1.longitude)
-        val a = sin(dLat / 2) * sin(dLat / 2) +
-                cos(Math.toRadians(latLng1.latitude)) * cos(Math.toRadians(latLng2.latitude)) *
-                sin(dLng / 2) * sin(dLng / 2)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return earthRadius * c
+        val priceSec = fees.priceMin / 60
+        val priceMeter = fees.priceKm / 1000
+        val distance = priceMeter * totalDistance
+        val time = priceSec * feesService.getElapsedSeconds()
+        val total = (distance + time + fees.feesBase) * fees.priceNightFee
+        textTotalFee.text = currencyFormat.format(total)
+        textCurrentDistance.text = String.format("%.2f", totalDistance / 1000)
+        textCurrentTimePrice.text = currencyFormat.format(time)
+        textCurrentDistancePrice.text = currencyFormat.format(distance)
     }
 }

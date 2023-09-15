@@ -5,6 +5,10 @@ import android.location.Location
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.PolylineOptions
 import gorda.driver.interfaces.LocType
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 class Map {
 
@@ -17,6 +21,17 @@ class Map {
             distance = endLoc.distanceTo(location).toInt()
 
             return distance
+        }
+
+        fun calculateDistanceBetween(latLng1: LatLng, latLng2: LatLng): Double {
+            val earthRadius = 6371000.0
+            val dLat = Math.toRadians(latLng2.latitude - latLng1.latitude)
+            val dLng = Math.toRadians(latLng2.longitude - latLng1.longitude)
+            val a = sin(dLat / 2) * sin(dLat / 2) +
+                    cos(Math.toRadians(latLng1.latitude)) * cos(Math.toRadians(latLng2.latitude)) *
+                    sin(dLng / 2) * sin(dLng / 2)
+            val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+            return earthRadius * c
         }
 
         fun distanceToString(distance: Int): String {
