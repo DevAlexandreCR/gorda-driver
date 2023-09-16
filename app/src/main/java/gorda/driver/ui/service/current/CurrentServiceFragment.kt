@@ -36,6 +36,7 @@ import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import gorda.driver.utils.Constants
 import gorda.driver.utils.NumberHelper
+import gorda.driver.utils.StringHelper
 import gorda.driver.utils.Utils
 import java.util.Calendar
 import java.util.Date
@@ -243,9 +244,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 else -> {
                     if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > 240) {
                         val builder = AlertDialog.Builder(requireContext())
+                        val message = getString(R.string.finalizing_message, getTotalFee())
                         builder.setTitle(R.string.finalize_service)
                             .setCancelable(false)
-                            .setMessage(getString(R.string.finalizing_message, getTotalFee()))
+                            .setMessage(StringHelper.getString(message))
                             .setPositiveButton(R.string.yes) { _, _ ->
                                 service.metadata.end_trip_at = now
                                 service.status = Service.STATUS_TERMINATED
