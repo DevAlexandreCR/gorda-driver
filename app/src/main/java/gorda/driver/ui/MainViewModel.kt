@@ -52,6 +52,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         SettingsRepository.getRideFees().addOnSuccessListener { snapshot ->
             _rideFees.postValue(RideFeesDeserializer.getRideFees(snapshot))
         }
+        .addOnFailureListener { _ ->
+            _rideFees.postValue(RideFees())
+        }
     }
 
     fun changeConnectTripService(connect: Boolean) {

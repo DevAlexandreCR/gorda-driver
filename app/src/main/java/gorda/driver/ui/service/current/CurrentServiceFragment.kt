@@ -174,9 +174,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 findNavController().navigate(R.id.nav_home)
             }
         }
-        feeMultiplier = getFeeMultiplier()
         mainViewModel.rideFees.value?.let { fees ->
             this.fees = fees
+            feeMultiplier = getFeeMultiplier()
             textPriceBase.text = currencyFormat.format(this.fees.feesBase)
             textPriceMinFee.text = currencyFormat.format(this.fees.priceMinFee)
             textPriceAddFee.text = currencyFormat.format(this.fees.priceAddFee)
@@ -337,6 +337,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         val calendar = Calendar.getInstance()
         val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
 
-        return dayOfWeek == 7
+        return dayOfWeek == 1
     }
 }

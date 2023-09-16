@@ -6,21 +6,23 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
+import gorda.driver.BuildConfig
 import gorda.driver.interfaces.DeviceInterface
+import gorda.driver.interfaces.DriverConnected
 import gorda.driver.interfaces.DriverInterface
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.models.Driver
 import gorda.driver.services.firebase.Database
-import java.io.Serializable
 
 object DriverRepository {
 
     val TAG = DriverRepository::class.java.toString()
 
     fun connect(driver: DriverInterface, location: LocInterface): Task<Void> {
-        return Database.dbOnlineDrivers().child(driver.id!!).setValue(object : Serializable {
-            val id = driver.id
-            val location = location
+        return Database.dbOnlineDrivers().child(driver.id!!).setValue(object : DriverConnected {
+            override var id: String = driver.id!!
+            override var location: LocInterface = location
+            override var version: String = BuildConfig.VERSION_NAME
         })
     }
 
