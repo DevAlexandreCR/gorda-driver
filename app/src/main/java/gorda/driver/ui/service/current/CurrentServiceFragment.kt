@@ -79,6 +79,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var currencyFormat: NumberFormat
     private var totalRide: Double = 0.0
     private var feeMultiplier: Double = 1.0
+    private var totalDistance = 0.0
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as FeesService.ChronometerBinder
@@ -251,6 +252,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             .setPositiveButton(R.string.yes) { _, _ ->
                                 service.metadata.end_trip_at = now
                                 service.status = Service.STATUS_TERMINATED
+                                service.metadata.trip_distance = round(totalDistance).toInt()
+                                service.metadata.trip_fee = getTotalFee().toInt()
                                 service.updateMetadata()
                                     .addOnSuccessListener {
                                         Intent(
@@ -290,13 +293,13 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     }
 
     override fun onChronometerTick(chrono: Chronometer) {
-        var totalDistance = 0.0
+        var distance = 0.0
         for (i in 0 until feesService.getPoints().size - 1) {
-            totalDistance += Map.calculateDistanceBetween(feesService.getPoints()[i], feesService.getPoints()[i + 1])
+            distance += Map.calculateDistanceBetween(feesService.getPoints()[i], feesService.getPoints()[i + 1])
         }
         val priceSec = fees.priceMin / 60
         val priceMeter = fees.priceKm / 1000
-        val distance = priceMeter * totalDistance
+        totalDistance = distance * priceMeter
         val time = priceSec * feesService.getElapsedSeconds()
         totalRide = (distance + time + fees.feesBase) * feeMultiplier
         textTotalFee.text = currencyFormat.format(totalRide)
