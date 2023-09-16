@@ -35,12 +35,11 @@ import gorda.driver.maps.Map
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import gorda.driver.utils.Constants
+import gorda.driver.utils.NumberHelper
 import gorda.driver.utils.Utils
-import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import kotlin.math.round
 
 
 class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
@@ -76,7 +75,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var feesService: FeesService
     private lateinit var chronometer: Chronometer
     private lateinit var fees: RideFees
-    private lateinit var currencyFormat: NumberFormat
     private var totalRide: Double = 0.0
     private var feeMultiplier: Double = 1.0
     private var totalDistance = 0.0
@@ -125,7 +123,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         imgButtonWaze = binding.imgBtnWaze
         chronometer = binding.chronometer
         layoutFees = binding.layoutFees
-        currencyFormat = NumberFormat.getCurrencyInstance()
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 setOnClickListener(service)
@@ -177,11 +174,11 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         mainViewModel.rideFees.value?.let { fees ->
             this.fees = fees
             feeMultiplier = getFeeMultiplier()
-            textPriceBase.text = currencyFormat.format(this.fees.feesBase)
-            textPriceMinFee.text = currencyFormat.format(this.fees.priceMinFee)
-            textPriceAddFee.text = currencyFormat.format(this.fees.priceAddFee)
-            textDistancePrice.text = currencyFormat.format(this.fees.priceKm)
-            textTimePrice.text = currencyFormat.format(this.fees.priceMin)
+            textPriceBase.text = NumberHelper.toCurrency(this.fees.feesBase)
+            textPriceMinFee.text = NumberHelper.toCurrency(this.fees.priceMinFee)
+            textPriceAddFee.text = NumberHelper.toCurrency(this.fees.priceAddFee)
+            textDistancePrice.text = NumberHelper.toCurrency(this.fees.priceKm)
+            textTimePrice.text = NumberHelper.toCurrency(this.fees.priceMin)
             textFareMultiplier.text = feeMultiplier.toString()
         }
         return root
@@ -252,8 +249,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             .setPositiveButton(R.string.yes) { _, _ ->
                                 service.metadata.end_trip_at = now
                                 service.status = Service.STATUS_TERMINATED
-                                service.metadata.trip_distance = round(totalDistance).toInt()
-                                service.metadata.trip_fee = getTotalFee().toInt()
+                                service.metadata.trip_distance = NumberHelper.roundDouble(totalDistance).toInt()
+                                service.metadata.trip_fee = NumberHelper.roundDouble(totalRide).toInt()
                                 service.updateMetadata()
                                     .addOnSuccessListener {
                                         Intent(
@@ -302,10 +299,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         totalDistance = distance * priceMeter
         val time = priceSec * feesService.getElapsedSeconds()
         totalRide = (distance + time + fees.feesBase) * feeMultiplier
-        textTotalFee.text = currencyFormat.format(totalRide)
+        textTotalFee.text = NumberHelper.toCurrency(totalRide)
         textCurrentDistance.text = String.format("%.2f", totalDistance / 1000)
-        textCurrentTimePrice.text = currencyFormat.format(time)
-        textCurrentDistancePrice.text = currencyFormat.format(distance)
+        textCurrentTimePrice.text = NumberHelper.toCurrency(time)
+        textCurrentDistancePrice.text = NumberHelper.toCurrency(distance)
     }
 
     private fun getFeeMultiplier(): Double {
@@ -327,9 +324,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
 
     private fun getTotalFee(): String {
         return if (totalRide < fees.priceMinFee) {
-            currencyFormat.format(fees.priceMinFee)
+            NumberHelper.toCurrency(fees.priceMinFee, true)
         } else {
-            currencyFormat.format(round(totalRide / 100) * 100)
+            NumberHelper.toCurrency(totalRide, true)
         }
     }
 
