@@ -3,7 +3,6 @@ package gorda.driver.ui.service.current
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
-import android.content.Context
 import android.content.Context.BIND_NOT_FOREGROUND
 import android.content.Intent
 import android.content.ServiceConnection
@@ -75,7 +74,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var binding: FragmentCurrentServiceBinding
     private lateinit var feesService: FeesService
     private lateinit var chronometer: Chronometer
-    private lateinit var fees: RideFees
+    private var fees: RideFees = RideFees()
     private var totalRide: Double = 0.0
     private var feeMultiplier: Double = 1.0
     private var totalDistance = 0.0
@@ -164,40 +163,36 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                     btnStatus.text = endTrip
                     layoutFees.visibility = ConstraintLayout.VISIBLE
                 }
-
-                if (service.status == Service.STATUS_TERMINATED) {
-
-                }
             } else {
                 findNavController().navigate(R.id.nav_home)
             }
         }
-        mainViewModel.rideFees.value?.let { fees ->
+        mainViewModel.rideFees.observe(viewLifecycleOwner) { fees ->
             this.fees = fees
-            feeMultiplier = getFeeMultiplier()
-            textPriceBase.text = NumberHelper.toCurrency(this.fees.feesBase)
-            textPriceMinFee.text = NumberHelper.toCurrency(this.fees.priceMinFee)
-            textPriceAddFee.text = NumberHelper.toCurrency(this.fees.priceAddFee)
-            textDistancePrice.text = NumberHelper.toCurrency(this.fees.priceKm)
-            textTimePrice.text = NumberHelper.toCurrency(this.fees.priceMin)
+            feeMultiplier = getFeeMultiplier(fees)
+            textPriceBase.text = NumberHelper.toCurrency(fees.feesBase)
+            textPriceMinFee.text = NumberHelper.toCurrency(fees.priceMinFee)
+            textPriceAddFee.text = NumberHelper.toCurrency(fees.priceAddFee)
+            textDistancePrice.text = NumberHelper.toCurrency(fees.priceKm)
+            textTimePrice.text = NumberHelper.toCurrency(fees.priceMin)
             textFareMultiplier.text = feeMultiplier.toString()
         }
         return root
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        haveArrived = context.resources.getString(R.string.service_have_arrived)
-        startTrip = context.resources.getString(R.string.service_start_trip)
-        endTrip = context.resources.getString(R.string.service_end_trip)
+    override fun onStart() {
+        super.onStart()
+        haveArrived = getString(R.string.service_have_arrived)
+        startTrip = getString(R.string.service_start_trip)
+        endTrip = getString(R.string.service_end_trip)
         Intent(requireContext(), FeesService::class.java).also { intentFee ->
             requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
             mainViewModel.changeConnectTripService(true)
         }
     }
 
-    override fun onDetach() {
-        super.onDetach()
+    override fun onPause() {
+        super.onPause()
         if (mainViewModel.isTripStarted.value == true) {
             requireContext().unbindService(serviceConnection)
             mainViewModel.changeConnectTripService(false)
@@ -244,7 +239,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 else -> {
                     if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > 240) {
                         val builder = AlertDialog.Builder(requireContext())
-                        val message = getString(R.string.finalizing_message, getTotalFee())
+                        val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee()))
                         builder.setTitle(R.string.finalize_service)
                             .setCancelable(false)
                             .setMessage(StringHelper.getString(message))
@@ -252,7 +247,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                 service.metadata.end_trip_at = now
                                 service.status = Service.STATUS_TERMINATED
                                 service.metadata.trip_distance = NumberHelper.roundDouble(totalDistance).toInt()
-                                service.metadata.trip_fee = NumberHelper.roundDouble(totalRide).toInt()
+                                service.metadata.trip_fee = getTotalFee().toInt()
                                 service.updateMetadata()
                                     .addOnSuccessListener {
                                         Intent(
@@ -308,7 +303,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         textCurrentDistancePrice.text = NumberHelper.toCurrency(distanceFee)
     }
 
-    private fun getFeeMultiplier(): Double {
+    private fun getFeeMultiplier(fees: RideFees): Double {
         val calendar = Calendar.getInstance()
         return if (isFestive()) {
             when(calendar.get(Calendar.HOUR_OF_DAY)) {
@@ -325,11 +320,11 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         }
     }
 
-    private fun getTotalFee(): String {
+    private fun getTotalFee(): Double {
         return if (totalRide < fees.priceMinFee) {
-            NumberHelper.toCurrency(fees.priceMinFee, true)
+            NumberHelper.roundDouble(fees.priceMinFee)
         } else {
-            NumberHelper.toCurrency(totalRide, true)
+            NumberHelper.roundDouble(totalRide)
         }
     }
 
