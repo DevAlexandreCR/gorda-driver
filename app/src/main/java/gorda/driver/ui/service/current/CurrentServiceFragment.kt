@@ -191,8 +191,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         }
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onStop() {
+        super.onStop()
         if (mainViewModel.isTripStarted.value == true) {
             requireContext().unbindService(serviceConnection)
             mainViewModel.changeConnectTripService(false)
