@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -21,7 +20,7 @@ class LocationHandler private constructor(context: Context) {
         LocationServices.getFusedLocationProviderClient(context)
     private val locationRequest = LocationRequest.Builder(
         Priority.PRIORITY_HIGH_ACCURACY,
-        LOCATION_REFRESH_TIME,
+        LOCATION_REFRESH_TIME
     )
         .build()
 
@@ -35,15 +34,11 @@ class LocationHandler private constructor(context: Context) {
         }
     }
 
-    init {
-        startLocationUpdates()
-    }
-
     companion object {
         @Volatile
         private var INSTANCE: LocationHandler? = null
         const val PERMISSION_REQUEST_ACCESS_LOCATION = 100
-        private const val LOCATION_REFRESH_TIME: Long = 10000
+        private const val LOCATION_REFRESH_TIME: Long = 5000
 
         fun getInstance(context: Context): LocationHandler {
             return INSTANCE ?: synchronized(this) {
@@ -86,6 +81,9 @@ class LocationHandler private constructor(context: Context) {
 
     fun addListener(listener: LocationListener) {
         listeners.add(listener)
+        if (listeners.size == 1) {
+            startLocationUpdates()
+        }
     }
 
     fun removeListener(listener: LocationListener) {
