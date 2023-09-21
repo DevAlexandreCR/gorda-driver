@@ -51,6 +51,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var playSound: PlaySound
     private lateinit var locationManager: LocationHandler
+    private var haveToUpdate = true
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
@@ -208,10 +209,12 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
     override fun onLocationChanged(location: Location) {
         if (!stoped) {
             lastLocation = location
-            DriverRepository.updateLocation(driverID, object : LocInterface {
+            if (haveToUpdate) DriverRepository.updateLocation(driverID, object : LocInterface {
                 override var lat: Double = location.latitude
                 override var lng: Double = location.longitude
             })
+
+            haveToUpdate = !haveToUpdate
             val broadcast =
                 Intent(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
             broadcast.putExtra(LOCATION_EXTRA, lastLocation)
