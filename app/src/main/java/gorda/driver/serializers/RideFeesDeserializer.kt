@@ -1,6 +1,7 @@
 package gorda.driver.serializers
 
 import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.ktx.getValue
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
@@ -16,7 +17,7 @@ class RideFeesDeserializer : JsonDeserializer<RideFees> {
             val gsonBuilder = GsonBuilder()
             gsonBuilder.registerTypeAdapter(RideFees::class.java, RideFeesDeserializer())
             val gson = gsonBuilder.create()
-            val json = snapshot.value
+            val json = snapshot.getValue<RideFees>() ?: RideFees()
             return  gson.fromJson(gson.toJson(json), RideFees::class.java)
         }
     }
