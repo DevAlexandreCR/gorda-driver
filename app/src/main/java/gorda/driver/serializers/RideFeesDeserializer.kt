@@ -17,7 +17,7 @@ class RideFeesDeserializer : JsonDeserializer<RideFees> {
             val gsonBuilder = GsonBuilder()
             gsonBuilder.registerTypeAdapter(RideFees::class.java, RideFeesDeserializer())
             val gson = gsonBuilder.create()
-            val json = snapshot.getValue<RideFees>() ?: RideFees()
+            val json = snapshot.value ?: RideFees()
             return  gson.fromJson(gson.toJson(json), RideFees::class.java)
         }
     }
