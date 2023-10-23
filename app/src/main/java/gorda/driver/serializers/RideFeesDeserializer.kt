@@ -1,7 +1,6 @@
 package gorda.driver.serializers
 
 import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.ktx.getValue
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
