@@ -83,7 +83,11 @@
     <string name="fare_multiplier">Multiplicador de tarifa</string>
     <string name="fare_minimum">Tarifa mínima</string>
     <string name="finalize_service">Finalizando servicio!</string>
+    <string name="start_ride">Iniciar Viale!</string>
+    <string name="start_ride_message">Modifica el multiplicador si es necesario:</string>
     <string name="finalizing_message">El valor a cobrar es de &lt;big> &lt;b> %s&lt;/b>&lt;/big>, ¿Desea continuar?</string>
     <string name="yes">Si</string>
     <string name="no">No</string>
+    <string name="edit_multiplier">Editar Multiplicador</string>
+    <string name="save">Guardar</string>
 </resources>

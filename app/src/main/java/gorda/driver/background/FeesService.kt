@@ -25,6 +25,7 @@ class FeesService: Service(), LocationListener {
     private var startTime: Long = 0
     private var name: String = ""
     private lateinit var locationManager: LocationHandler
+    private var multiplier = 1.0
 
     companion object {
         const val SERVICE_ID = 101
@@ -35,6 +36,10 @@ class FeesService: Service(), LocationListener {
             locationManager = LocationHandler.getInstance(this)
             locationManager.addListener(this)
             createNotification()
+        }
+
+        intent?.getDoubleExtra(Constants.MULTIPLIER, multiplier)?.also { multi ->
+            multiplier = multi
         }
 
         return START_STICKY
@@ -88,6 +93,14 @@ class FeesService: Service(), LocationListener {
 
     fun getPoints(): ArrayList<LatLng> {
         return points
+    }
+
+    fun getMultiplier(): Double {
+        return multiplier
+    }
+
+    fun setMultiplier(multi: Double) {
+        multiplier = multi
     }
 
     inner class ChronometerBinder: Binder() {

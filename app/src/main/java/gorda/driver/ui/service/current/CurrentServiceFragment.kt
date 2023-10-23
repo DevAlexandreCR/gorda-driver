@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.SystemClock
+import android.text.Editable
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -18,6 +19,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Chronometer
 import android.widget.Chronometer.OnChronometerTickListener
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -72,7 +74,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var startTrip: String
     private lateinit var endTrip: String
     private lateinit var binding: FragmentCurrentServiceBinding
-    private lateinit var feesService: FeesService
+    private var feesService: FeesService = FeesService()
     private lateinit var chronometer: Chronometer
     private var fees: RideFees = RideFees()
     private var totalRide: Double = 0.0
@@ -177,6 +179,23 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             textTimePrice.text = NumberHelper.toCurrency(fees.priceMin)
             textFareMultiplier.text = feeMultiplier.toString()
         }
+
+        textFareMultiplier.setOnClickListener {
+            val builder = AlertDialog.Builder(requireContext())
+            val dialogLayout: View = LayoutInflater.from(activity).inflate(R.layout.multiplier_feed, null)
+            val editFeeMultiplier = dialogLayout.findViewById<EditText>(R.id.dialog_fee_multiplier)
+            editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(feesService.getMultiplier().toString())
+            builder.setTitle(R.string.edit_multiplier)
+                .setView(dialogLayout)
+            builder.setNegativeButton(R.string.cancel) { dialog, _ ->
+                dialog.dismiss()
+            }
+            builder.setPositiveButton(R.string.save) { _, _ ->
+                feesService.setMultiplier(editFeeMultiplier.text.toString().toDouble())
+            }
+            val dialog: AlertDialog = builder.create()
+            dialog.show()
+        }
         return root
     }
 
@@ -217,30 +236,49 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 }
 
                 startTrip -> {
+                    val builder = AlertDialog.Builder(requireContext())
+                    val dialogLayout: View = LayoutInflater.from(activity).inflate(R.layout.multiplier_feed, null)
+                    val editFeeMultiplier = dialogLayout.findViewById<EditText>(R.id.dialog_fee_multiplier)
+                    Log.d("*****", fees.toString())
+                    editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(feeMultiplier.toString())
                     service.metadata.start_trip_at = now
-                    service.updateMetadata()
-                        .addOnSuccessListener {
-                            Intent(requireContext(), FeesService::class.java).also { intentFee ->
-                                intentFee.putExtra(Constants.LOCATION_EXTRA, service.start_loc.name)
-                                if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
-                                    requireContext().startForegroundService(intentFee)
-                                } else {
-                                    requireContext().startService(intentFee)
+                    builder.setTitle(R.string.start_ride)
+                        .setCancelable(false)
+                        .setView(dialogLayout)
+                        .setMessage(R.string.start_ride_message)
+                        .setPositiveButton(R.string.start_ride) { _, _ ->
+                            service.updateMetadata()
+                                .addOnSuccessListener {
+                                    feeMultiplier = editFeeMultiplier.text.toString().toDouble()
+                                    textFareMultiplier.text = feeMultiplier.toString()
+                                    Intent(requireContext(), FeesService::class.java).also { intentFee ->
+                                        intentFee.putExtra(Constants.LOCATION_EXTRA, service.start_loc.name)
+                                        intentFee.putExtra(Constants.MULTIPLIER, feeMultiplier)
+                                        if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
+                                            requireContext().startForegroundService(intentFee)
+                                        } else {
+                                            requireContext().startService(intentFee)
+                                        }
+                                    }
                                 }
-                            }
-                            Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
+                                .addOnFailureListener {
+                                    it.message?.let { message -> Log.e(TAG, message) }
+                                    Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                                    service.metadata.start_trip_at = null
+                                }
                         }
-                        .addOnFailureListener {
-                            it.message?.let { message -> Log.e(TAG, message) }
-                            Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                        .setNegativeButton(R.string.cancel) { dialog, _ ->
+                            dialog.dismiss()
                         }
+                    val dialog: AlertDialog = builder.create()
+                    dialog.show()
                 }
 
                 else -> {
                     if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > 240) {
-                        val builder = AlertDialog.Builder(requireContext())
+                        val builderFinalize = AlertDialog.Builder(requireContext())
                         val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee()))
-                        builder.setTitle(R.string.finalize_service)
+                        builderFinalize.setTitle(R.string.finalize_service)
                             .setCancelable(false)
                             .setMessage(StringHelper.getString(message))
                             .setPositiveButton(R.string.yes) { _, _ ->
@@ -267,7 +305,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             .setNegativeButton(R.string.no) { dialog, _ ->
                                 dialog.dismiss()
                             }
-                        val dialog: AlertDialog = builder.create()
+                        val dialog: AlertDialog = builderFinalize.create()
                         dialog.show()
                     } else {
                         Toast.makeText(
@@ -296,11 +334,12 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         totalDistance = distance
         val timeFee = priceSec * feesService.getElapsedSeconds()
         val distanceFee = distance * priceMeter
-        totalRide = ((distanceFee + timeFee + fees.feesBase) * feeMultiplier) + fees.priceAddFee
+        totalRide = ((distanceFee + timeFee + fees.feesBase) * feesService.getMultiplier()) + fees.priceAddFee
         textTotalFee.text = NumberHelper.toCurrency(totalRide)
         textCurrentDistance.text = String.format("%.2f", totalDistance / 1000)
         textCurrentTimePrice.text = NumberHelper.toCurrency(timeFee)
         textCurrentDistancePrice.text = NumberHelper.toCurrency(distanceFee)
+        textFareMultiplier.text = feesService.getMultiplier().toString()
     }
 
     private fun getFeeMultiplier(fees: RideFees): Double {

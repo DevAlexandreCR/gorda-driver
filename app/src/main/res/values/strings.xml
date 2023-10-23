@@ -90,7 +90,11 @@
     <string name="fare_multiplier">Fare multiplier</string>
     <string name="fare_minimum">Minimum fare</string>
     <string name="finalize_service">Finalizing service!</string>
+    <string name="start_ride">Start Ride!</string>
+    <string name="start_ride_message">Modify multiplier if needed:</string>
     <string name="finalizing_message">Total of ride is &lt;big> &lt;b> %s&lt;/b>&lt;/big>, Do you want to continue?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="edit_multiplier">Edit Multiplier</string>
+    <string name="save">Save</string>
 </resources>
