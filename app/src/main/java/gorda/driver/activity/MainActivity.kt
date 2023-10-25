@@ -192,7 +192,7 @@ class MainActivity : AppCompatActivity() {
 
         observeDriver(navView)
 
-
+        networkMonitor.startMonitoring()
         viewModel.isNetWorkConnected.observe(this) {
             if (!it) {
                 connectionBar.visibility = View.VISIBLE
@@ -264,7 +264,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.isThereCurrentService()
-        networkMonitor.startMonitoring()
         Auth.onAuthChanges { uuid ->
             if (uuid === null) {
                 val intent = Intent(this, StartActivity::class.java)
@@ -284,7 +283,6 @@ class MainActivity : AppCompatActivity() {
             mBound = false
             LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
         }
-        networkMonitor.stopMonitoring()
     }
 
     override fun onResume() {
@@ -450,6 +448,11 @@ class MainActivity : AppCompatActivity() {
         ActivityCompat.requestPermissions(
             this, permissions, LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
         )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        networkMonitor.stopMonitoring()
     }
 
     private fun isLocationEnabled(): Boolean {

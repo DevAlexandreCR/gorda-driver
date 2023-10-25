@@ -13,8 +13,8 @@ android {
         applicationId "gorda.driver"
         minSdk 21
         targetSdk 33
-        versionCode 31
-        versionName "1.1.0"
+        versionCode 32
+        versionName "Beta-1.1.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
