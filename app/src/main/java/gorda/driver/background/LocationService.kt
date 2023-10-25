@@ -42,7 +42,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         const val STOP_SERVICE_MSG = 1
     }
 
-    lateinit var lastLocation: Location
+    private lateinit var lastLocation: Location
     private lateinit var messenger: Messenger
     private var stoped = false
     private var driverID: String = ""
@@ -52,6 +52,8 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
     private lateinit var playSound: PlaySound
     private lateinit var locationManager: LocationHandler
     private var haveToUpdate = true
+    private var listServices: MutableList<DBService> = mutableListOf()
+    private val timer = Timer()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
@@ -66,7 +68,8 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                         if (snapshot.exists()) {
                             val chanel =
                                 sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
-                            snapshot.getValue<gorda.driver.models.Service>()?.let { service ->
+                            snapshot.getValue<DBService>()?.let { service ->
+                                listServices.add(service)
                                 if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + service.start_loc.name)
                                 else playSound.playNewService()
                             }
@@ -79,7 +82,12 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                     ) {
                     }
 
-                    override fun onChildRemoved(snapshot: DataSnapshot) {}
+                    override fun onChildRemoved(snapshot: DataSnapshot) {
+                        snapshot.getValue<DBService>()?.let { service ->
+                            val index = listServices.indexOf(service)
+                            listServices.removeAt(index)
+                        }
+                    }
 
                     override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
 
@@ -117,6 +125,22 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                         }
                     }
                 }
+                timer.scheduleAtFixedRate(object: TimerTask() {
+                    override fun run() {
+                        val currentTime = System.currentTimeMillis()
+
+                        val servicesAddedWithout6Minutes = listServices.filter {
+                            currentTime - (it.created_at * 1000) >= 360000
+                        }
+
+                        servicesAddedWithout6Minutes.forEach { serv ->
+                            val chanel =
+                                sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
+                            if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + serv.start_loc.name)
+                            else playSound.playNewService()
+                        }
+                    }
+                }, 0, 120000)
             }
         }
         return START_STICKY
@@ -161,6 +185,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         locationManager.removeListener(this)
         ServiceRepository.stopListenNewServices()
         stoped = true
+        timer.cancel()
         stopSelf()
         if (toSpeech != null) {
             toSpeech!!.stop()
@@ -187,7 +212,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
 
     private fun speech(text: String) {
         val mute = sharedPreferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
-        if (!toSpeech!!.isSpeaking && !mute) toSpeech!!.speak(
+        if (!mute) toSpeech!!.speak(
             text.lowercase(),
             TextToSpeech.QUEUE_ADD,
             null,
