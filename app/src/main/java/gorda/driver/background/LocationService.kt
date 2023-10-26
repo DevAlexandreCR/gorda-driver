@@ -52,7 +52,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
     private lateinit var playSound: PlaySound
     private lateinit var locationManager: LocationHandler
     private var haveToUpdate = true
-    private var listServices: MutableList<DBService> = mutableListOf()
+    private lateinit var listServices: MutableList<DBService>
     private val timer = Timer()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -63,36 +63,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                 driverID = id
                 locationManager = LocationHandler.getInstance(this)
                 locationManager.addListener(this)
-                ServiceRepository.listenNewServices(object : ChildEventListener {
-                    override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                        if (snapshot.exists()) {
-                            val chanel =
-                                sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
-                            snapshot.getValue<DBService>()?.let { service ->
-                                listServices.add(service)
-                                if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + service.start_loc.name)
-                                else playSound.playNewService()
-                            }
-                        }
-                    }
-
-                    override fun onChildChanged(
-                        snapshot: DataSnapshot,
-                        previousChildName: String?
-                    ) {
-                    }
-
-                    override fun onChildRemoved(snapshot: DataSnapshot) {
-                        snapshot.getValue<DBService>()?.let { service ->
-                            val index = listServices.indexOf(service)
-                            listServices.removeAt(index)
-                        }
-                    }
-
-                    override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
-
-                    override fun onCancelled(error: DatabaseError) {}
-                })
                 ServiceRepository.isThereCurrentService { service ->
                     service?.let { s ->
                         when (s.status) {
@@ -125,22 +95,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                         }
                     }
                 }
-                timer.scheduleAtFixedRate(object: TimerTask() {
-                    override fun run() {
-                        val currentTime = System.currentTimeMillis()
-
-                        val servicesAddedWithout6Minutes = listServices.filter {
-                            currentTime - (it.created_at * 1000) >= 360000
-                        }
-
-                        servicesAddedWithout6Minutes.forEach { serv ->
-                            val chanel =
-                                sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
-                            if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + serv.start_loc.name)
-                            else playSound.playNewService()
-                        }
-                    }
-                }, 0, 120000)
             }
         }
         return START_STICKY
@@ -179,6 +133,9 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         toSpeech = TextToSpeech(this, this)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this@LocationService)
         mediaPlayer = MediaPlayer.create(this, R.raw.new_service)
+        listServices = mutableListOf()
+        startListenNewServices()
+        startTimer()
     }
 
     fun stop() {
@@ -246,5 +203,57 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
             LocalBroadcastManager.getInstance(applicationContext)
                 .sendBroadcast(broadcast)
         }
+    }
+
+    private fun startTimer() {
+        timer.scheduleAtFixedRate(object: TimerTask() {
+            override fun run() {
+                val currentTime = System.currentTimeMillis()
+
+                val servicesAddedWithout6Minutes = listServices.filter {
+                    currentTime - (it.created_at * 1000) >= 360000
+                }
+
+                servicesAddedWithout6Minutes.forEach { serv ->
+                    val chanel =
+                        sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
+                    if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + serv.start_loc.name)
+                    else playSound.playNewService()
+                }
+            }
+        }, 0, 120000)
+    }
+
+    private fun startListenNewServices() {
+        ServiceRepository.listenNewServices(object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                if (snapshot.exists()) {
+                    val chanel =
+                        sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
+                    snapshot.getValue<DBService>()?.let { service ->
+                        listServices.add(service)
+                        if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + service.start_loc.name)
+                        else playSound.playNewService()
+                    }
+                }
+            }
+
+            override fun onChildChanged(
+                snapshot: DataSnapshot,
+                previousChildName: String?
+            ) {
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                snapshot.getValue<DBService>()?.let { service ->
+                    val index = listServices.indexOf(service)
+                    listServices.removeAt(index)
+                }
+            }
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
 }
