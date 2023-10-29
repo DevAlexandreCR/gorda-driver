@@ -211,7 +211,9 @@ class MainActivity : AppCompatActivity() {
             currentService?.status?.let { status ->
                 when (status) {
                     Service.STATUS_IN_PROGRESS -> {
-                        navController.navigate(R.id.nav_current_service)
+                        if (navController.currentDestination?.id != R.id.nav_current_service) {
+                            navController.navigate(R.id.nav_current_service)
+                        }
                     }
 
                     Service.STATUS_CANCELED -> {
@@ -223,9 +225,10 @@ class MainActivity : AppCompatActivity() {
                     else -> {
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
-                        val editor: SharedPreferences.Editor = preferences.edit()
-                        editor.putString(Constants.CURRENT_SERVICE_ID, null)
-                        editor.apply()
+                            preferences.edit().putString(Constants.CURRENT_SERVICE_ID, null).apply()
+                            preferences.edit().remove(Constants.START_TIME).apply()
+                            preferences.edit().remove(Constants.MULTIPLIER).apply()
+                            preferences.edit().remove(Constants.POINTS).apply()
                     }
                 }
             }

@@ -16,6 +16,9 @@ class Constants {
         const val NOTIFICATION_TONE = "gorda.driver.NOTIFICATION_TONE"
         const val NOTIFICATION_MUTE = "gorda.driver.NOTIFICATION_MUTE"
         const val START_TRIP = "gorda.driver.START_TRIP"
+        const val RESTART_TRIP = "gorda.driver.RESTART_TRIP"
+        const val START_TIME = "gorda.driver.START_TIME"
         const val MULTIPLIER = "gorda.driver.MULTIPLIER"
+        const val POINTS = "gorda.driver.POINTS"
     }
 }

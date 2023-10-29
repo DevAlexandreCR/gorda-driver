@@ -97,4 +97,5 @@
     <string name="no">No</string>
     <string name="edit_multiplier">Edit Multiplier</string>
     <string name="save">Save</string>
+    <string name="ride_in_progress">There is a ride in progress, do you wish restore it?</string>
 </resources>

@@ -247,7 +247,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
             override fun onChildRemoved(snapshot: DataSnapshot) {
                 snapshot.getValue<DBService>()?.let { service ->
                     val index = listServices.indexOf(service)
-                    listServices.removeAt(index)
+                    if (index >= 0)listServices.removeAt(index)
                 }
             }
 
