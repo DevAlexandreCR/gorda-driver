@@ -38,7 +38,7 @@ class LocationHandler private constructor(context: Context) {
         @Volatile
         private var INSTANCE: LocationHandler? = null
         const val PERMISSION_REQUEST_ACCESS_LOCATION = 100
-        private const val LOCATION_REFRESH_TIME: Long = 5000
+        private const val LOCATION_REFRESH_TIME: Long = 1000
 
         fun getInstance(context: Context): LocationHandler {
             return INSTANCE ?: synchronized(this) {
