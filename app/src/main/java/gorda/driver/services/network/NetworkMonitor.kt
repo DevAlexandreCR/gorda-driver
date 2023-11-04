@@ -6,6 +6,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import gorda.driver.utils.Utils
 
 class NetworkMonitor(private val context: Context,
                      private val onNetWorkChange: (isConnected: Boolean) -> Unit) {
@@ -26,7 +27,7 @@ class NetworkMonitor(private val context: Context,
 
         fun isOnline(network: Network): Boolean {
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
                 capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
             } else {
                 capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -36,7 +37,7 @@ class NetworkMonitor(private val context: Context,
 
     fun startMonitoring() {
         if (!isMonitoring) {
-            val networkRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val networkRequest = if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
                 NetworkRequest.Builder()
                     .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                     .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)

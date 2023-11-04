@@ -6,6 +6,7 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.media.AudioAttributes
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
@@ -44,7 +45,7 @@ class StartActivity : AppCompatActivity() {
             this.onSignInResult(res)
         }
 
-        if (Utils.isNewerVersion()) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
             val newServiceUri: Uri =
                 Uri.parse(
                     ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName +

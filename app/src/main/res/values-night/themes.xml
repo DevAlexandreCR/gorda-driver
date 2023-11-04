@@ -14,6 +14,14 @@
         <!-- Customize your theme here. -->
         <item name="android:textColor">@color/secondary_light</item>
         <item name="snackbarStyle">@style/Widget.App.Snackbar</item>
+
+        <item name="android:alertDialogTheme">@style/AlertDialogTheme</item>
+    </style>
+
+    <style name="AlertDialogTheme" parent="Theme.MaterialComponents.Light.Dialog.Alert">
+        <item name="android:textColorPrimary">@color/primary_light</item>
+        <item name="android:textColorSecondary">@color/primary_light</item>
+        <item name="android:windowBackground">@color/primary</item>
     </style>
 
     <style name="Widget.App.Snackbar" parent="Widget.MaterialComponents.Snackbar">

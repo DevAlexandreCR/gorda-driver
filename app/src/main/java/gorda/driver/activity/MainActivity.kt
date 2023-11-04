@@ -46,6 +46,7 @@ import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
+import gorda.driver.utils.Utils
 
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -131,7 +132,7 @@ class MainActivity : AppCompatActivity() {
             resources.getString(R.string.connection_lost),
             Snackbar.LENGTH_INDEFINITE
         )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
             snackBar.setTextColor(getColor(R.color.white))
         }
 
@@ -191,7 +192,7 @@ class MainActivity : AppCompatActivity() {
 
         observeDriver(navView)
 
-
+        networkMonitor.startMonitoring()
         viewModel.isNetWorkConnected.observe(this) {
             if (!it) {
                 connectionBar.visibility = View.VISIBLE
@@ -204,11 +205,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        viewModel.getRideFees()
+
         viewModel.currentService.observe(this) { currentService ->
             currentService?.status?.let { status ->
                 when (status) {
                     Service.STATUS_IN_PROGRESS -> {
-                        navController.navigate(R.id.nav_current_service)
+                        if (navController.currentDestination?.id != R.id.nav_current_service) {
+                            navController.navigate(R.id.nav_current_service)
+                        }
                     }
 
                     Service.STATUS_CANCELED -> {
@@ -220,9 +225,10 @@ class MainActivity : AppCompatActivity() {
                     else -> {
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
-                        val editor: SharedPreferences.Editor = preferences.edit()
-                        editor.putString(Constants.CURRENT_SERVICE_ID, null)
-                        editor.apply()
+                            preferences.edit().putString(Constants.CURRENT_SERVICE_ID, null).apply()
+                            preferences.edit().remove(Constants.START_TIME).apply()
+                            preferences.edit().remove(Constants.MULTIPLIER).apply()
+                            preferences.edit().remove(Constants.POINTS).apply()
                     }
                 }
             }
@@ -231,13 +237,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun setIconNotificationButton(isNotificationMute: Boolean) {
         if (isNotificationMute) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
                 notificationButton.backgroundTintList =
                     ColorStateList.valueOf(getColor(R.color.red))
             }
             notificationButton.setImageResource(R.drawable.notifications_off)
         } else {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
                 notificationButton.backgroundTintList =
                     ColorStateList.valueOf(getColor(R.color.secondary_dark))
             }
@@ -256,17 +262,11 @@ class MainActivity : AppCompatActivity() {
                 locationBroadcastReceiver,
                 IntentFilter(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
             )
-        LocationHandler.getLastLocation()?.let {
-            it.addOnSuccessListener { loc ->
-                if (loc != null) viewModel.updateLocation(loc)
-            }
-        }
         Intent(this, LocationService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
         }
 
         viewModel.isThereCurrentService()
-        networkMonitor.startMonitoring()
         Auth.onAuthChanges { uuid ->
             if (uuid === null) {
                 val intent = Intent(this, StartActivity::class.java)
@@ -286,7 +286,6 @@ class MainActivity : AppCompatActivity() {
             mBound = false
             LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
         }
-        networkMonitor.stopMonitoring()
     }
 
     override fun onResume() {
@@ -314,7 +313,7 @@ class MainActivity : AppCompatActivity() {
         val alertDialog: AlertDialog = builder.create()
         alertDialog.setCancelable(false)
         alertDialog.setOnShowListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
                 alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
                     .setTextColor(resources.getColor(R.color.primary_light, null))
                 alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
@@ -422,7 +421,11 @@ class MainActivity : AppCompatActivity() {
     private fun startLocationService() {
         Intent(this, LocationService::class.java).also { intent ->
             intent.putExtra(Driver.DRIVER_KEY, this.driver.id)
-            applicationContext.startService(intent)
+            if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
+                applicationContext.startForegroundService(intent)
+            } else {
+                applicationContext.startService(intent)
+            }
             this.bindService(intent, connection, BIND_NOT_FOREGROUND)
             mBound = true
         }
@@ -438,12 +441,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestPermissions() {
-        ActivityCompat.requestPermissions(
-            this, arrayOf(
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ), LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
+        var permissions: Array<String> = arrayOf(
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION,
         )
+        if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
+            permissions += Manifest.permission.POST_NOTIFICATIONS
+        }
+        ActivityCompat.requestPermissions(
+            this, permissions, LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
+        )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        networkMonitor.stopMonitoring()
     }
 
     private fun isLocationEnabled(): Boolean {

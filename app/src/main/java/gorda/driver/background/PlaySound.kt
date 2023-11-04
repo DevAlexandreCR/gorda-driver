@@ -6,6 +6,7 @@ import android.media.MediaPlayer
 import android.os.Build
 import gorda.driver.R
 import gorda.driver.utils.Constants
+import gorda.driver.utils.Utils
 
 class PlaySound(private val context: Context, private val sharedPreferences: SharedPreferences) {
 
@@ -17,7 +18,7 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
 
         val chanel =
             sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_TONE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.N)) {
             player.reset()
             player.setDataSource(context.resources.openRawResourceFd(R.raw.cancel_service))
             player.prepare()
@@ -35,7 +36,7 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
 
         val chanel =
             sharedPreferences.getString(Constants.NOTIFICATION_ASSIGNED, Constants.NOTIFICATION_TONE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.N)) {
             player.reset()
             player.setDataSource(context.resources.openRawResourceFd(R.raw.assigned_service))
             player.prepare()
@@ -51,7 +52,7 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
         val mute = sharedPreferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
         if (mute) return
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.N)) {
             player.reset()
             player.setDataSource(context.resources.openRawResourceFd(R.raw.new_service))
             player.prepare()
