@@ -135,6 +135,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         mediaPlayer = MediaPlayer.create(this, R.raw.new_service)
         listServices = mutableListOf()
         startListenNewServices()
+        startSyncServices()
         startTimer()
     }
 
@@ -227,6 +228,12 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         }, 0, 120000)
     }
 
+    private fun startSyncServices() {
+        ServiceRepository.getPending { services ->
+            listServices = services
+        }
+    }
+
     private fun startListenNewServices() {
         ServiceRepository.listenNewServices(object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
@@ -234,7 +241,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                     val chanel =
                         sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
                     snapshot.getValue<DBService>()?.let { service ->
-                        listServices.add(service)
                         if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + service.start_loc.name)
                         else playSound.playNewService()
                     }
@@ -247,12 +253,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
             ) {
             }
 
-            override fun onChildRemoved(snapshot: DataSnapshot) {
-                snapshot.getValue<DBService>()?.let { service ->
-                    val index = listServices.indexOf(service)
-                    if (index >= 0)listServices.removeAt(index)
-                }
-            }
+            override fun onChildRemoved(snapshot: DataSnapshot) {}
 
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
 
