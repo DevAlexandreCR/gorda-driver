@@ -15,8 +15,8 @@
     <string name="title_activity_main">MainActivity</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Android Studio</string>
-    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_title">Red Blanca</string>
+    <string name="nav_header_subtitle">driver@redblanca.com.co</string>
     <string name="nav_header_desc">Navigation header</string>
 
     <string name="menu_home">Services</string>
@@ -47,8 +47,8 @@
     <string name="time">Time: </string>
     <string name="cancel">Cancel</string>
     <string name="applying">Applying …</string>
-    <string name="applied">You have been applied successfully  to service</string>
-    <string name="wait_for_assign">Applied success, please wait…</string>
+    <string name="applied">You have been applied successfully to service</string>
+    <string name="wait_for_assign">Applied success to &lt;b> %s &lt;/b>, please wait…</string>
     <string name="cancelApply">The Request has been cancelled</string>
     <string name="service_canceled">Service has been canceled</string>
     <string name="text_connected">You are available to receive services</string>
