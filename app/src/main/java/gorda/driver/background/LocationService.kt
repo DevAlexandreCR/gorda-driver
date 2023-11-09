@@ -169,7 +169,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
             .setContentText(getString(R.string.text_connected))
             .setSound(connectedUri)
             .setContentIntent(pendingIntent)
-        if (Utils.isNewerVersion()) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.N)) {
             startForeground(SERVICE_ID, builder.build())
         }
         toSpeech = TextToSpeech(this, this)

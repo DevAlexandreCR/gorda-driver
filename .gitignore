@@ -9,6 +9,4 @@
 .cxx
 local.properties
 app/release/
-
-# Project exclude paths
-/gradle/
+/app/debug
