@@ -20,6 +20,7 @@ import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
+import gorda.driver.utils.StringHelper
 
 class ApplyFragment : Fragment() {
 
@@ -90,7 +91,8 @@ class ApplyFragment : Fragment() {
                         time = it.time
                         distance = it.distance
                         service.addApplicant(driver, distance, time).addOnSuccessListener {
-                            textView.text = requireActivity().resources.getString(R.string.wait_for_assign)
+                            val applyText = requireActivity().resources.getString(R.string.wait_for_assign, service.start_loc.name)
+                            textView.text = StringHelper.getString(applyText)
                             btnCancel.isEnabled = true
                         }.addOnFailureListener { e ->
                             e.message?.let { message -> Log.e(TAG, message) }
