@@ -15,13 +15,13 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
+import com.google.android.gms.location.LocationListener
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
-import gorda.driver.interfaces.CustomLocationListener
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
@@ -33,15 +33,16 @@ import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 import gorda.driver.utils.Utils
 import java.util.*
+import gorda.driver.models.Service as DBService
 
-class LocationService : Service(), TextToSpeech.OnInitListener {
+class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener {
 
     companion object {
         const val SERVICE_ID = 100
         const val STOP_SERVICE_MSG = 1
     }
 
-    lateinit var lastLocation: Location
+    private lateinit var lastLocation: Location
     private lateinit var messenger: Messenger
     private var stoped = false
     private var driverID: String = ""
@@ -49,6 +50,10 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var playSound: PlaySound
+    private lateinit var locationManager: LocationHandler
+    private var haveToUpdate = 0
+    private lateinit var listServices: MutableList<DBService>
+    private val timer = Timer()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
@@ -56,50 +61,12 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
             stoped = false
             intent.getStringExtra(Driver.DRIVER_KEY)?.let { id ->
                 driverID = id
-                LocationHandler.startListeningUserLocation(this, object : CustomLocationListener {
-                    override fun onLocationChanged(location: Location?) {
-                        if (location !== null && !stoped) {
-                            lastLocation = location
-                            DriverRepository.updateLocation(driverID, object : LocInterface {
-                                override var lat: Double = location.latitude
-                                override var lng: Double = location.longitude
-                            })
-                            val broadcast =
-                                Intent(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
-                            broadcast.putExtra(LOCATION_EXTRA, lastLocation)
-                            LocalBroadcastManager.getInstance(applicationContext)
-                                .sendBroadcast(broadcast)
-                        }
-                    }
-                })
-                ServiceRepository.listenNewServices(object : ChildEventListener {
-                    override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                        if (snapshot.exists()) {
-                            val chanel =
-                                sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
-                            snapshot.getValue<gorda.driver.models.Service>()?.let { service ->
-                                if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + service.start_loc.name)
-                                else playSound.playNewService()
-                            }
-                        }
-                    }
-
-                    override fun onChildChanged(
-                        snapshot: DataSnapshot,
-                        previousChildName: String?
-                    ) {
-                    }
-
-                    override fun onChildRemoved(snapshot: DataSnapshot) {}
-
-                    override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
-
-                    override fun onCancelled(error: DatabaseError) {}
-                })
+                locationManager = LocationHandler.getInstance(this)
+                locationManager.addListener(this)
                 ServiceRepository.isThereCurrentService { service ->
                     service?.let { s ->
                         when (s.status) {
-                            gorda.driver.models.Service.STATUS_IN_PROGRESS -> {
+                            DBService.STATUS_IN_PROGRESS -> {
                                 if (Auth.getCurrentUserUUID() == service.driver_id) {
                                     val notifyId = sharedPreferences.getInt(
                                         Constants.SERVICES_NOTIFICATION_ID,
@@ -109,7 +76,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
                                         playSound.playAssignedSound(service.created_at.toInt())
                                 }
                             }
-                            gorda.driver.models.Service.STATUS_CANCELED -> {
+                            DBService.STATUS_CANCELED -> {
                                 val cancelNotifyId = sharedPreferences.getInt(
                                     Constants.CANCEL_SERVICES_NOTIFICATION_ID,
                                     0
@@ -143,44 +110,40 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         super.onCreate()
         val connectedUri: Uri =
             Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName + "/" + R.raw.assigned_service)
-        val pendingIntent: PendingIntent =
-            Intent(this, StartActivity::class.java).let { notificationIntent ->
-                notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                notificationIntent.putExtra(Constants.DRIVER_ID_EXTRA, driverID)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    PendingIntent.getActivity(
-                        this, 0, notificationIntent,
-                        PendingIntent.FLAG_IMMUTABLE
-                    )
-                } else {
-                    PendingIntent.getActivity(
-                        this, 0, notificationIntent,
-                        Intent.FILL_IN_ACTION
-                    )
-                }
-            }
+        val notificationIntent = Intent(this, StartActivity::class.java)
+            notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            notificationIntent.putExtra(Constants.DRIVER_ID_EXTRA, driverID)
+            val pendingIntent: PendingIntent = PendingIntent.getActivity(
+                    this, 0, notificationIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
         val builder: NotificationCompat.Builder = NotificationCompat.Builder(
             this,
             Constants.LOCATION_NOTIFICATION_CHANNEL_ID
         )
-            .setOngoing(false)
+            .setOngoing(true)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(getString(R.string.status_connected))
             .setContentText(getString(R.string.text_connected))
             .setSound(connectedUri)
             .setContentIntent(pendingIntent)
-        if (Utils.isNewerVersion(Build.VERSION_CODES.N)) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
             startForeground(SERVICE_ID, builder.build())
         }
         toSpeech = TextToSpeech(this, this)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this@LocationService)
         mediaPlayer = MediaPlayer.create(this, R.raw.new_service)
+        listServices = mutableListOf()
+        startListenNewServices()
+        startSyncServices()
+        startTimer()
     }
 
     fun stop() {
-        LocationHandler.stopLocationUpdates()
+        locationManager.removeListener(this)
         ServiceRepository.stopListenNewServices()
         stoped = true
+        timer.cancel()
         stopSelf()
         if (toSpeech != null) {
             toSpeech!!.stop()
@@ -207,7 +170,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
 
     private fun speech(text: String) {
         val mute = sharedPreferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
-        if (!toSpeech!!.isSpeaking && !mute) toSpeech!!.speak(
+        if (!mute) toSpeech!!.speak(
             text.lowercase(),
             TextToSpeech.QUEUE_ADD,
             null,
@@ -224,5 +187,77 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
                 Log.e("TTS", "The Language not supported!")
             }
         }
+    }
+
+    override fun onLocationChanged(location: Location) {
+        if (!stoped) {
+            haveToUpdate++
+            lastLocation = location
+            if (haveToUpdate == 10) {
+                haveToUpdate = 0
+                DriverRepository.updateLocation(driverID, object : LocInterface {
+                    override var lat: Double = location.latitude
+                    override var lng: Double = location.longitude
+                })
+            }
+
+            val broadcast =
+                Intent(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
+            broadcast.putExtra(LOCATION_EXTRA, lastLocation)
+            LocalBroadcastManager.getInstance(applicationContext)
+                .sendBroadcast(broadcast)
+        }
+    }
+
+    private fun startTimer() {
+        timer.scheduleAtFixedRate(object: TimerTask() {
+            override fun run() {
+                val currentTime = System.currentTimeMillis()
+
+                val servicesAddedOutOf6Minutes = listServices.filter {
+                    currentTime - (it.created_at * 1000) >= 360000
+                }
+
+                servicesAddedOutOf6Minutes.forEach { serv ->
+                    val chanel =
+                        sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
+                    if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + serv.start_loc.name)
+                    else playSound.playNewService()
+                }
+            }
+        }, 0, 120000)
+    }
+
+    private fun startSyncServices() {
+        ServiceRepository.getPending { services ->
+            listServices = services
+        }
+    }
+
+    private fun startListenNewServices() {
+        ServiceRepository.listenNewServices(object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                if (snapshot.exists()) {
+                    val chanel =
+                        sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
+                    snapshot.getValue<DBService>()?.let { service ->
+                        if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + service.start_loc.name)
+                        else playSound.playNewService()
+                    }
+                }
+            }
+
+            override fun onChildChanged(
+                snapshot: DataSnapshot,
+                previousChildName: String?
+            ) {
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {}
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
 }
