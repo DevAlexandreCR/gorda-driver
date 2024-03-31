@@ -214,11 +214,11 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
             override fun run() {
                 val currentTime = System.currentTimeMillis()
 
-                val servicesAddedWithout6Minutes = listServices.filter {
+                val servicesAddedOutOf6Minutes = listServices.filter {
                     currentTime - (it.created_at * 1000) >= 360000
                 }
 
-                servicesAddedWithout6Minutes.forEach { serv ->
+                servicesAddedOutOf6Minutes.forEach { serv ->
                     val chanel =
                         sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
                     if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + serv.start_loc.name)
