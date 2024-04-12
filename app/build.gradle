@@ -13,8 +13,8 @@ android {
         applicationId "gorda.driver"
         minSdk 21
         targetSdk 33
-        versionCode 37
-        versionName "Beta-1.1.4"
+        versionCode 39
+        versionName "Beta-1.1.5"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -56,7 +56,7 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment-ktx:2.5.3'
     implementation 'androidx.navigation:navigation-ui-ktx:2.5.3'
     implementation 'com.google.firebase:firebase-database-ktx:20.2.2'
-    implementation 'com.google.firebase:firebase-auth-ktx:22.1.2'
+    implementation 'com.google.firebase:firebase-auth-ktx:22.1.1'
     implementation 'com.firebaseui:firebase-ui-auth:8.0.1'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.6.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1'
