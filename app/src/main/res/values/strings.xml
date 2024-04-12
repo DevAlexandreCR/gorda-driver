@@ -65,6 +65,8 @@
     <string name="version">Version: </string>
     <string name="terms"><a href="https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764">Privacy Police</a></string>
     <string name="service_to">Service to </string>
+    <string name="service_from">Service from %1$s </string>
+    <string name="service_running">Trip running…</string>
     <string name="not_waze">Waze is not installed! </string>
     <string name="navigation">Navigation: </string>
     <!-- Preference Titles -->
@@ -77,4 +79,23 @@
     <string name="sound_assigned">Service assigned</string>
     <string name="tone">Tone</string>
     <string name="none">None</string>
+
+<!--  Base fees-->
+    <string name="km">km</string>
+    <string name="min">min</string>
+    <string name="base">Base fare</string>
+    <string name="fees">Fees</string>
+    <string name="time_fare">Time fare</string>
+    <string name="distance_fare">Distance fare</string>
+    <string name="fare_multiplier">Fare multiplier</string>
+    <string name="fare_minimum">Minimum fare</string>
+    <string name="finalize_service">Finalizing service!</string>
+    <string name="start_ride">Start Ride!</string>
+    <string name="start_ride_message">Modify multiplier if needed:</string>
+    <string name="finalizing_message">Total of ride is &lt;big> &lt;b> %s&lt;/b>&lt;/big>, Do you want to continue?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="edit_multiplier">Edit Multiplier</string>
+    <string name="save">Save</string>
+    <string name="ride_in_progress">There is a ride in progress, do you wish restore it?</string>
 </resources>

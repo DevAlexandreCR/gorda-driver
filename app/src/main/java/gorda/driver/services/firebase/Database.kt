@@ -24,4 +24,8 @@ object Database {
     fun dbOnlineDrivers(): DatabaseReference {
         return reference.child("online_drivers").ref
     }
+
+    fun dbRideFees(): DatabaseReference {
+        return reference.child("settings").child("ride_fees").ref
+    }
 }
