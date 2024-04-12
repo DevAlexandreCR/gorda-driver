@@ -9,6 +9,10 @@ object Database {
         return reference.child("services").ref
     }
 
+    fun dbDriversAssigned(): DatabaseReference {
+        return reference.child("drivers_assigned").ref
+    }
+
     fun dbDrivers(): DatabaseReference {
         return reference.child("drivers").ref
     }
