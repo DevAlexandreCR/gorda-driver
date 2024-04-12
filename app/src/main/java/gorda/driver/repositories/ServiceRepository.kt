@@ -1,5 +1,6 @@
 package gorda.driver.repositories
 
+import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.database.*
@@ -15,6 +16,7 @@ object ServiceRepository {
 
     private var serviceEventListener: ServicesEventListener? = null
     private var newServiceEventListener: ChildEventListener? = null
+    private var currentServiceEventListener: ValueEventListener? = null
 
     fun getPending(listener: (serviceList: MutableList<Service>) -> Unit) {
         serviceEventListener = ServicesEventListener(listener)
@@ -40,30 +42,52 @@ object ServiceRepository {
         }
     }
 
-    fun isThereCurrentService(listener: (service: Service?) -> Unit) {
-        Database.dbServices().orderByChild(Service.DRIVER_ID)
-            .equalTo(Auth.getCurrentUserUUID()).limitToLast(3)
-            .addValueEventListener(object: ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.hasChildren()) {
-                        var lastService: Service? = null
-                        snapshot.children.forEach {
-                            it.getValue<Service>()?.let { service ->
-                                when (service.status) {
-                                    Service.STATUS_IN_PROGRESS -> {
-                                        lastService = service
-                                        return@forEach
-                                    }
-                                    Service.STATUS_CANCELED -> lastService = service
-                                    else -> lastService = null
-                                }
-                            }
+    fun addListenerCurrentService(serviceId: String, listener: (service: Service?) -> Unit) {
+        currentServiceEventListener = object: ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    snapshot.getValue<Service>()?.let { service ->
+                        if (service.status === Service.STATUS_TERMINATED || service.status === Service.STATUS_CANCELED) {
+                            stopListenerCurrentService(service.id)
+                            listener(null)
                         }
-                        listener(lastService)
+                        listener(service)
                     }
                 }
-                override fun onCancelled(error: DatabaseError) {}
-            })
+            }
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(this.javaClass.toString(), error.message)
+            }
+        }
+        currentServiceEventListener?.let {
+            Database.dbServices().child(serviceId).addValueEventListener(it)
+        }
+    }
+
+    fun stopListenerCurrentService(serviceId: String) {
+        currentServiceEventListener?.let {
+            Database.dbServices().child(serviceId).removeEventListener(it)
+        }
+    }
+
+    fun isThereCurrentService(listener: (service: Service?) -> Unit) {
+        Auth.getCurrentUserUUID()?.let {
+            Database.dbDriversAssigned().child(it)
+                .addValueEventListener(object: ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        if (snapshot.exists()) {
+                                snapshot.getValue<String>()?.let { serviceId ->
+                                    addListenerCurrentService(serviceId, listener)
+                                }
+                        } else {
+                            listener(null)
+                        }
+                    }
+                    override fun onCancelled(error: DatabaseError) {
+                        Log.e(this.javaClass.toString(), error.message)
+                    }
+                })
+        }
     }
 
     fun updateMetadata(serviceId: String, metadata: ServiceMetadata, status: String): Task<Void> {
