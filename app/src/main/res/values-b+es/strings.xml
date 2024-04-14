@@ -91,4 +91,5 @@
     <string name="edit_multiplier">Editar Multiplicador</string>
     <string name="save">Guardar</string>
     <string name="ride_in_progress">Actualmente hay un servicio en curso, ¿deseas retomarlo?</string>
+    <string name="action_history">History</string>
 </resources>

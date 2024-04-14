@@ -41,6 +41,11 @@
         android:label="@string/action_settings"
         />
     <fragment
+        android:id="@+id/nav_history"
+        android:name="gorda.driver.ui.history.HistoryFragment"
+        android:label="@string/action_history"
+        />
+    <fragment
         android:id="@+id/nav_apply"
         android:name="gorda.driver.ui.service.apply.ApplyFragment"
         android:label="@string/apply"
