@@ -2,6 +2,7 @@ package gorda.driver.repositories
 
 import android.util.Log
 import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.TaskCompletionSource
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.getValue
@@ -9,8 +10,10 @@ import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
 import gorda.driver.services.firebase.Database
+import gorda.driver.services.firebase.FirestoreDatabase
 import gorda.driver.ui.service.ServicesEventListener
 import java.io.Serializable
+import java.util.Calendar
 
 object ServiceRepository {
 
@@ -115,5 +118,38 @@ object ServiceRepository {
 
     fun getStatusReference(serviceId: String): DatabaseReference {
         return Database.dbServices().child(serviceId).child(Service.STATUS)
+    }
+
+    fun getHistoryFromDriver(): Task<MutableList<Service>> {
+        val taskCompletionSource = TaskCompletionSource<MutableList<Service>>()
+
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        val startOfDayTimestamp = calendar.timeInMillis / 1000
+
+        Auth.getCurrentUserUUID()?.let { driverId ->
+            FirestoreDatabase.fsServices()
+                .whereGreaterThanOrEqualTo(Service.CREATED_AT, startOfDayTimestamp)
+                .whereEqualTo(Service.DRIVER_ID, driverId)
+                .get()
+                .addOnSuccessListener { querySnapshot ->
+                    val services = mutableListOf<Service>()
+                    querySnapshot.documents.forEach { document ->
+                        document.toObject(Service::class.java)?.let { service ->
+                            services.add(service)
+                        }
+                    }
+                    taskCompletionSource.setResult(services)
+                }
+                .addOnFailureListener { exception ->
+                    taskCompletionSource.setException(exception)
+                }
+        } ?: run {
+            taskCompletionSource.setException(IllegalStateException("User UUID is null"))
+        }
+
+        return taskCompletionSource.task
     }
 }

@@ -6,11 +6,11 @@ import android.view.ViewGroup
 import android.widget.TextView
 import gorda.driver.R
 
-import gorda.driver.ui.history.placeholder.PlaceholderContent.PlaceholderItem
 import gorda.driver.databinding.FragmentHistoryBinding
+import gorda.driver.models.Service
 
 class HistoryRecyclerViewAdapter(
-    private val values: List<PlaceholderItem>
+    private val values: MutableList<Service>
 ) : RecyclerView.Adapter<HistoryRecyclerViewAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -26,10 +26,10 @@ class HistoryRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = values[position]
         holder.idView.text = item.id
-        holder.place.text = item.place
-        holder.time.text = item.time
+        holder.place.text = item.start_loc.name
+        holder.time.text = item.created_at.toString()
         holder.status.text = item.status
-        holder.price.text = holder.itemView.context.getString(R.string.AmountCurrency, item.price)
+        holder.price.text = holder.itemView.context.getString(R.string.AmountCurrency, item.amount.toString())
     }
 
     override fun getItemCount(): Int = values.size
