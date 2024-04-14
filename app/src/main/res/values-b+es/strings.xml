@@ -92,4 +92,5 @@
     <string name="save">Guardar</string>
     <string name="ride_in_progress">Actualmente hay un servicio en curso, ¿deseas retomarlo?</string>
     <string name="action_history">History</string>
+    <string name="AmountCurrency">%1$s COP</string>
 </resources>

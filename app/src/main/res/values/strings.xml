@@ -99,4 +99,5 @@
     <string name="save">Save</string>
     <string name="ride_in_progress">There is a ride in progress, do you wish restore it?</string>
     <string name="action_history">History</string>
+    <string name="AmountCurrency">%1$s COP</string>
 </resources>
