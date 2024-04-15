@@ -29,7 +29,10 @@ class HistoryFragment : Fragment() {
         if (view is RecyclerView) {
             with(view) {
                 viewmodel.serviceList.observe(viewLifecycleOwner) {
-                    adapter = HistoryRecyclerViewAdapter(it)
+                    adapter = HistoryRecyclerViewAdapter(it) {service ->
+                        val dialog = ServiceDialogFragment(service)
+                        dialog.show(childFragmentManager, ServiceDialogFragment::javaClass.toString())
+                    }
                 }
                 layoutManager = LinearLayoutManager(context)
             }

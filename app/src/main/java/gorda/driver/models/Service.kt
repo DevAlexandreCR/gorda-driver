@@ -19,7 +19,7 @@ data class Service(
     @SerializedName("end_loc") var end_loc: LocType? = null,
     @SerializedName("phone") var phone: String = "",
     @SerializedName("comment") var comment: String? = null,
-    @SerializedName("amount") var amount: Int? = null,
+    @SerializedName("amount") var amount: Int? = 0,
     @SerializedName("driver_id") var driver_id: String? = null,
     @SerializedName("client_id") var client_id: String? = null,
     @SerializedName("wp_client_id") var wp_client_id: String? = null,

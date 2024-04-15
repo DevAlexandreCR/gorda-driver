@@ -1,17 +1,17 @@
 package gorda.driver.ui.history
 
-import android.content.Context
-import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
-import gorda.driver.R
+import androidx.recyclerview.widget.RecyclerView
 import gorda.driver.databinding.FragmentHistoryBinding
 import gorda.driver.models.Service
-import java.util.Calendar
+import gorda.driver.utils.DateHelper
+import gorda.driver.utils.StringHelper
 
 class HistoryRecyclerViewAdapter(
-    private val values: MutableList<Service>
+    private val values: MutableList<Service>,
+    private val onItemClick: (service: Service) -> Unit
 ) : RecyclerView.Adapter<HistoryRecyclerViewAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -26,23 +26,12 @@ class HistoryRecyclerViewAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = values[position]
-        holder.createdAt.text = formatTimeFromSeconds(item.created_at)
+        holder.createdAt.text = DateHelper.formatTimeFromSeconds(item.created_at)
         holder.place.text = item.start_loc.name
-        holder.status.text = formatStatus(item.status, holder.itemView.context)
-    }
-
-    private fun formatStatus(status: String, context: Context): String {
-        return if (status == Service.STATUS_TERMINATED) context.getString(R.string.completed)
-        else context.getString(R.string.canceled)
-    }
-    private fun formatTimeFromSeconds(currentTimeInSeconds: Long): String {
-        val calendar = Calendar.getInstance()
-        calendar.timeInMillis = currentTimeInSeconds * 1000
-        return "%02d:%02d:%02d".format(
-            calendar.get(Calendar.HOUR_OF_DAY),
-            calendar.get(Calendar.MINUTE),
-            calendar.get(Calendar.SECOND)
-        )
+        holder.status.text = StringHelper.formatStatus(item.status, holder.itemView.context)
+        holder.itemView.setOnClickListener {
+            onItemClick(item)
+        }
     }
 
     override fun getItemCount(): Int = values.size
