@@ -91,6 +91,8 @@
     <string name="edit_multiplier">Editar Multiplicador</string>
     <string name="save">Guardar</string>
     <string name="ride_in_progress">Actualmente hay un servicio en curso, ¿deseas retomarlo?</string>
-    <string name="action_history">History</string>
+    <string name="action_history">Historial</string>
     <string name="AmountCurrency">%1$s COP</string>
+    <string name="completed">Completado</string>
+    <string name="canceled">Cancelado</string>
 </resources>
