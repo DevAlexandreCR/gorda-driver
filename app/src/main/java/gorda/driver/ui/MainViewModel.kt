@@ -34,6 +34,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _isNetWorkConnected = MutableLiveData(true)
     private val _isTripStarted = MutableLiveData(false)
     private val _rideFees = MutableLiveData<RideFees>()
+    private val _isLoading = MutableLiveData(false)
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driverStatus: LiveData<DriverUpdates> = _driverState
@@ -43,6 +44,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val isNetWorkConnected: LiveData<Boolean> = _isNetWorkConnected
     val isTripStarted: LiveData<Boolean> = _isTripStarted
     val rideFees: LiveData<RideFees> = _rideFees
+    val isLoading: LiveData<Boolean> = _isLoading
 
     fun getRideFees() {
         SettingsRepository.getRideFees().addOnSuccessListener { snapshot ->
@@ -51,6 +53,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         .addOnFailureListener { _ ->
             _rideFees.postValue(RideFees())
         }
+    }
+
+    fun setLoading(loading: Boolean) {
+        _isLoading.postValue(loading)
     }
 
     fun changeConnectTripService(connect: Boolean) {

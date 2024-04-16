@@ -24,10 +24,12 @@ class ServiceDialogFragment(private val service: Service): DialogFragment() {
         val status: TextView = view.findViewById(R.id.dialog_status)
         val comment: TextView = view.findViewById(R.id.dialog_comment)
 
+        val fee = service.metadata.trip_fee ?: 0
+
         createdAt.text = DateHelper.formatDateFromSeconds(service.created_at)
         name.text = service.name
         place.text = service.start_loc.name
-        price.text = view.context.getString(R.string.AmountCurrency, service.amount.toString())
+        price.text = view.context.getString(R.string.AmountCurrency, fee.toString())
         status.text = StringHelper.formatStatus(service.status, view.context)
         comment.text = service.comment
 

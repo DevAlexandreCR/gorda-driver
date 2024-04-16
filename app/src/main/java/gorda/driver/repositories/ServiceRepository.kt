@@ -98,10 +98,14 @@ object ServiceRepository {
     }
 
     fun updateMetadata(serviceId: String, metadata: ServiceMetadata, status: String): Task<Void> {
-        val taskMetadata = Database.dbServices().child(serviceId).child("metadata").setValue(metadata)
-        val taskStatus = Database.dbServices().child(serviceId).child("status").setValue(status)
+        val updates = hashMapOf<String, Any>(
+            "metadata" to metadata,
+            "status" to status
+        )
 
-        return Tasks.whenAll(taskMetadata, taskStatus)
+        val taskMetadata = Database.dbServices().child(serviceId).updateChildren(updates)
+
+        return Tasks.whenAll(taskMetadata)
     }
 
     fun addApplicant(id: String, driverId: String, distance: Int, time: Int): Task<Void> {

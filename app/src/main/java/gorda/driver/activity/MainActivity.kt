@@ -218,6 +218,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        viewModel.isLoading.observe(this) {
+            if (it) {
+                connectionBar.visibility = View.VISIBLE
+            } else {
+                connectionBar.visibility = View.GONE
+            }
+        }
+
         viewModel.getRideFees()
 
         viewModel.isThereCurrentService()
