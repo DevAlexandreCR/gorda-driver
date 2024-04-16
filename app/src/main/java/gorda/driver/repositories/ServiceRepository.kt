@@ -4,7 +4,11 @@ import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.TaskCompletionSource
 import com.google.android.gms.tasks.Tasks
-import com.google.firebase.database.*
+import com.google.firebase.database.ChildEventListener
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
@@ -110,10 +114,6 @@ object ServiceRepository {
     fun cancelApply(id: String, driverId: String): Task<Void> {
         return Database.dbServices().child(id).child(Service.APPLICANTS).child(driverId)
             .removeValue()
-    }
-
-    fun onStatusChange(serviceId: String, listener: ValueEventListener) {
-        getStatusReference(serviceId).addValueEventListener(listener)
     }
 
     fun getStatusReference(serviceId: String): DatabaseReference {

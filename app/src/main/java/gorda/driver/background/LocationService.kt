@@ -9,7 +9,12 @@ import android.content.SharedPreferences
 import android.location.Location
 import android.media.MediaPlayer
 import android.net.Uri
-import android.os.*
+import android.os.Build
+import android.os.Handler
+import android.os.IBinder
+import android.os.Looper
+import android.os.Message
+import android.os.Messenger
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -27,12 +32,13 @@ import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
-import gorda.driver.services.firebase.Auth
 import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 import gorda.driver.utils.Utils
-import java.util.*
+import java.util.Locale
+import java.util.Timer
+import java.util.TimerTask
 import gorda.driver.models.Service as DBService
 
 class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener {
@@ -67,14 +73,12 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                     service?.let { s ->
                         when (s.status) {
                             DBService.STATUS_IN_PROGRESS -> {
-                                if (Auth.getCurrentUserUUID() == service.driver_id) {
-                                    val notifyId = sharedPreferences.getInt(
-                                        Constants.SERVICES_NOTIFICATION_ID,
-                                        0
-                                    )
-                                    if (notifyId != service.created_at.toInt())
-                                        playSound.playAssignedSound(service.created_at.toInt())
-                                }
+                                val notifyId = sharedPreferences.getInt(
+                                    Constants.SERVICES_NOTIFICATION_ID,
+                                    0
+                                )
+                                if (notifyId != service.created_at.toInt())
+                                    playSound.playAssignedSound(service.created_at.toInt())
                             }
                             DBService.STATUS_CANCELED -> {
                                 val cancelNotifyId = sharedPreferences.getInt(

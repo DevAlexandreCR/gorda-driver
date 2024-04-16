@@ -7,10 +7,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.google.android.gms.tasks.Task
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.getValue
 import gorda.driver.interfaces.DeviceInterface
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
@@ -72,6 +68,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     fun isThereCurrentService() {
         ServiceRepository.isThereCurrentService { service ->
             _currentService.postValue(service)
+            if (service != null) {
+                _serviceUpdates.postValue(ServiceUpdates.Status(service.status))
+            }
         }
     }
 
@@ -86,24 +85,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     fun setServiceUpdateApply(service: Service) {
         driver.value?.let {
             _serviceUpdates.postValue(ServiceUpdates.setServiceApply(service, it))
-            service.onStatusChange(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val status = snapshot.getValue<String>()
-                    status?.let {
-                        _serviceUpdates.postValue(ServiceUpdates.Status(status))
-                        when (status) {
-                            Service.STATUS_CANCELED,
-                            Service.STATUS_IN_PROGRESS -> {
-                                service.getStatusReference().removeEventListener(this)
-                            }
-                        }
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    Log.e(TAG, error.message)
-                }
-            })
         }
     }
 

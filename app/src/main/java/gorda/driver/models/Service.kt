@@ -52,7 +52,7 @@ data class Service(
     }
 
     fun onStatusChange(listener: ValueEventListener) {
-        ServiceRepository.onStatusChange(this.id, listener)
+//        ServiceRepository.onStatusChange(this.id, listener)
     }
 
     fun getStatusReference(): DatabaseReference {

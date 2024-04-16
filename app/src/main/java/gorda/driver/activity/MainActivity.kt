@@ -2,12 +2,21 @@ package gorda.driver.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.*
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.ServiceConnection
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.location.Location
 import android.location.LocationManager
-import android.os.*
+import android.os.Build
+import android.os.Bundle
+import android.os.IBinder
+import android.os.Message
+import android.os.Messenger
 import android.provider.Settings
 import android.view.View
 import android.widget.ImageView
@@ -24,7 +33,11 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
-import androidx.navigation.ui.*
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.NavigationUI
+import androidx.navigation.ui.navigateUp
+import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -207,6 +220,8 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.getRideFees()
 
+        viewModel.isThereCurrentService()
+
         viewModel.currentService.observe(this) { currentService ->
             currentService?.status?.let { status ->
                 when (status) {
@@ -266,7 +281,6 @@ class MainActivity : AppCompatActivity() {
             bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
         }
 
-        viewModel.isThereCurrentService()
         Auth.onAuthChanges { uuid ->
             if (uuid === null) {
                 val intent = Intent(this, StartActivity::class.java)
