@@ -385,8 +385,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     }
 
     private fun getTotalFee(): Double {
-        return if (totalRide < fees.priceMinFee) {
-            NumberHelper.roundDouble(fees.priceMinFee)
+        return if (totalRide < (fees.priceMinFee * feeMultiplier)) {
+            NumberHelper.roundDouble((fees.priceMinFee * feeMultiplier))
         } else {
             NumberHelper.roundDouble(totalRide)
         }
