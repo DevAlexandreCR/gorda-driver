@@ -97,6 +97,8 @@ class ApplyFragment : Fragment() {
                         }.addOnFailureListener { e ->
                             e.message?.let { message -> Log.e(TAG, message) }
                             Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
+                            if (findNavController().currentDestination?.id == R.id.nav_apply)
+                                findNavController().navigate(R.id.action_cancel_apply)
                         }
                     }
                 }

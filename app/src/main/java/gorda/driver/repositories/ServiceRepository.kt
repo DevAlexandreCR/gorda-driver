@@ -120,6 +120,10 @@ object ServiceRepository {
             .removeValue()
     }
 
+    fun onStatusChange(serviceId: String, listener: ValueEventListener) {
+        getStatusReference(serviceId).addValueEventListener(listener)
+    }
+
     fun getStatusReference(serviceId: String): DatabaseReference {
         return Database.dbServices().child(serviceId).child(Service.STATUS)
     }

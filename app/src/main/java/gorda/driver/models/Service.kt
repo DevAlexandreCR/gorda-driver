@@ -1,7 +1,9 @@
 package gorda.driver.models
 
 import com.google.android.gms.tasks.Task
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.IgnoreExtraProperties
+import com.google.firebase.database.ValueEventListener
 import com.google.gson.annotations.SerializedName
 import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.ServiceMetadata
@@ -47,5 +49,13 @@ data class Service(
 
     fun cancelApplicant(driver: Driver): Task<Void> {
         return ServiceRepository.cancelApply(this.id, driver.id!!)
+    }
+
+    fun onStatusChange(listener: ValueEventListener) {
+        ServiceRepository.onStatusChange(this.id, listener)
+    }
+
+    fun getStatusReference(): DatabaseReference {
+        return ServiceRepository.getStatusReference(this.id)
     }
 }
