@@ -97,6 +97,23 @@ object ServiceRepository {
         }
     }
 
+    fun validateAssignment(serviceId: String): Task<Boolean> {
+        val taskCompletionSource = TaskCompletionSource<Boolean>()
+        Auth.getCurrentUserUUID()?.let {
+            Database.dbServices().child(serviceId).child(Service.DRIVER_ID)
+                .get().addOnSuccessListener { snapshot ->
+                    if (snapshot.exists()) {
+                        val driverId = snapshot.value
+                        taskCompletionSource.setResult(driverId === it)
+                    } else {
+                        taskCompletionSource.setResult(false)
+                    }
+                }.addOnFailureListener { e-> taskCompletionSource.setException(e) }
+        }
+
+        return taskCompletionSource.task
+    }
+
     fun updateMetadata(serviceId: String, metadata: ServiceMetadata, status: String): Task<Void> {
         val updates = hashMapOf<String, Any>(
             "metadata" to metadata,

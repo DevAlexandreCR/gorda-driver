@@ -104,7 +104,14 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                             Service.STATUS_CANCELED,
                             Service.STATUS_IN_PROGRESS -> {
                                 service.getStatusReference().removeEventListener(this)
+                                snapshot.key?.let { key ->
+                                    _isLoading.postValue(true)
+                                    ServiceRepository.validateAssignment(key).addOnCompleteListener {
+                                        _isLoading.postValue(false)
+                                    }
+                                }
                             }
+                            else -> {}
                         }
                     }
                 }
