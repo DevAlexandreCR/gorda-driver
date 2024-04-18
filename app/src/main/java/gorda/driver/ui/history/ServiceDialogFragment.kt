@@ -5,9 +5,6 @@ import android.app.Dialog
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.DialogFragment
@@ -60,19 +57,6 @@ class ServiceDialogFragment(private val service: Service): DialogFragment(), OnM
             }
 
         return builder.create()
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val rootView = inflater.inflate(R.layout.service_history_dialog, container, false)
-        mapView = rootView.findViewById(R.id.dialog_map)
-        mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync(this)
-
-        return rootView
     }
 
     override fun onMapReady(googlemap: GoogleMap) {
