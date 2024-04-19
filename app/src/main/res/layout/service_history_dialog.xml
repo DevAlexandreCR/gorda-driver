@@ -88,6 +88,14 @@
                 android:text="@string/fields_price"
                 android:textSize="16sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textView13"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/fare_multiplier"
+                android:textSize="16sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
@@ -129,6 +137,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/fields_price"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/dialog_multipler"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/fare_multiplier"
                 android:textSize="16sp" />
         </LinearLayout>
     </LinearLayout>

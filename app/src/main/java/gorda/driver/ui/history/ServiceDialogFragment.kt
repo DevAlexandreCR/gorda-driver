@@ -38,6 +38,7 @@ class ServiceDialogFragment(private val service: Service): DialogFragment(), OnM
         val price: TextView = view.findViewById(R.id.dialog_price)
         val status: TextView = view.findViewById(R.id.dialog_status)
         val comment: TextView = view.findViewById(R.id.dialog_comment)
+        val multiplier: TextView = view.findViewById(R.id.dialog_multipler)
 
         val fee = service.metadata.trip_fee ?: 0
         mapView = view.findViewById(R.id.dialog_map)
@@ -50,6 +51,7 @@ class ServiceDialogFragment(private val service: Service): DialogFragment(), OnM
         price.text = view.context.getString(R.string.AmountCurrency, fee.toString())
         status.text = StringHelper.formatStatus(service.status, view.context)
         comment.text = service.comment
+        multiplier.text = service.metadata.trip_multiplier.toString()
 
         builder.setView(view)
             .setPositiveButton("OK") { dialog, _ ->

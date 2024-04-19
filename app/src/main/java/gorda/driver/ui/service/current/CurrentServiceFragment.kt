@@ -298,7 +298,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 }
 
                 else -> {
-                    if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > 240) {
+                    if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > 0) {
                         val builderFinalize = AlertDialog.Builder(requireContext())
                         val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee()))
                         builderFinalize.setTitle(R.string.finalize_service)
@@ -310,6 +310,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                 service.metadata.trip_distance = NumberHelper.roundDouble(totalDistance).toInt()
                                 service.metadata.trip_fee = getTotalFee().toInt()
                                 service.metadata.route = ServiceMetadata.serializeRoute(feesService.getPoints())
+                                service.metadata.trip_multiplier = feeMultiplier
                                 service.updateMetadata()
                                     .addOnSuccessListener {
                                         Intent(
