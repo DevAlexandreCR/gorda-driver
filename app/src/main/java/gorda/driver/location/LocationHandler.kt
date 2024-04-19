@@ -19,7 +19,7 @@ class LocationHandler private constructor(context: Context) {
     private var fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(context)
     private val locationRequest = LocationRequest.Builder(
-        Priority.PRIORITY_HIGH_ACCURACY,
+        Priority.PRIORITY_BALANCED_POWER_ACCURACY,
         LOCATION_REFRESH_TIME
     )
         .build()
