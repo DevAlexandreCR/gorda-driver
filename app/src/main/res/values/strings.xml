@@ -102,7 +102,7 @@
     <string name="AmountCurrency">%1$s COP</string>
     <string name="completed">Completed</string>
     <string name="canceled">Canceled</string>
-    <string name="created_at">creado</string>
+    <string name="created_at">Created</string>
     <string name="fields_created_at">Created At</string>
     <string name="fields_place">Place</string>
     <string name="fields_status">Status</string>
