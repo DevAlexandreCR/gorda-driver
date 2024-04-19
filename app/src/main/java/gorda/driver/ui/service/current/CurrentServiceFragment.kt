@@ -34,6 +34,7 @@ import gorda.driver.R
 import gorda.driver.background.FeesService
 import gorda.driver.databinding.FragmentCurrentServiceBinding
 import gorda.driver.interfaces.RideFees
+import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.maps.Map
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
@@ -308,6 +309,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                 service.status = Service.STATUS_TERMINATED
                                 service.metadata.trip_distance = NumberHelper.roundDouble(totalDistance).toInt()
                                 service.metadata.trip_fee = getTotalFee().toInt()
+                                service.metadata.route = ServiceMetadata.serializeRoute(feesService.getPoints())
+                                service.metadata.trip_multiplier = feeMultiplier
                                 service.updateMetadata()
                                     .addOnSuccessListener {
                                         Intent(
@@ -385,8 +388,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     }
 
     private fun getTotalFee(): Double {
-        return if (totalRide < fees.priceMinFee) {
-            NumberHelper.roundDouble(fees.priceMinFee)
+        return if (totalRide < (fees.priceMinFee * feeMultiplier)) {
+            NumberHelper.roundDouble((fees.priceMinFee * feeMultiplier))
         } else {
             NumberHelper.roundDouble(totalRide)
         }

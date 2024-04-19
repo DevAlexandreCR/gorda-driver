@@ -12,12 +12,12 @@
 
     <string name="status_connected">Connected</string>
     <string name="status_disconnected">Disconnected</string>
-    <string name="title_activity_main">MainActivity</string>
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Red Blanca</string>
-    <string name="nav_header_subtitle">driver@redblanca.com.co</string>
-    <string name="nav_header_desc">Navigation header</string>
+    <string name="title_activity_main" translatable="false">MainActivity</string>
+    <string name="navigation_drawer_open" translatable="false">Open navigation drawer</string>
+    <string name="navigation_drawer_close" translatable="false">Close navigation drawer</string>
+    <string name="nav_header_title" translatable="false">Red Blanca</string>
+    <string name="nav_header_subtitle" translatable="false">driver@redblanca.com.co</string>
+    <string name="nav_header_desc" translatable="false">Navigation header</string>
 
     <string name="menu_home">Services</string>
     <string name="menu_profile">Profile</string>
@@ -98,4 +98,14 @@
     <string name="edit_multiplier">Edit Multiplier</string>
     <string name="save">Save</string>
     <string name="ride_in_progress">There is a ride in progress, do you wish restore it?</string>
+    <string name="action_history">History</string>
+    <string name="AmountCurrency">%1$s COP</string>
+    <string name="completed">Completed</string>
+    <string name="canceled">Canceled</string>
+    <string name="created_at">Created</string>
+    <string name="fields_created_at">Created At</string>
+    <string name="fields_place">Place</string>
+    <string name="fields_status">Status</string>
+    <string name="fields_price">Pricing</string>
+    <string name="fields_comment">Comment</string>
 </resources>

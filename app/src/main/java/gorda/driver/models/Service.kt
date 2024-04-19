@@ -19,13 +19,14 @@ data class Service(
     @SerializedName("end_loc") var end_loc: LocType? = null,
     @SerializedName("phone") var phone: String = "",
     @SerializedName("comment") var comment: String? = null,
-    @SerializedName("amount") var amount: Int? = null,
     @SerializedName("driver_id") var driver_id: String? = null,
     @SerializedName("client_id") var client_id: String? = null,
+    @SerializedName("wp_client_id") var wp_client_id: String? = null,
     @SerializedName("created_at") var created_at: Long = 0,
     @SerializedName("metadata") var metadata: ServiceMetadata = ServiceMetadata()
 ) : Serializable {
     companion object {
+        const val CREATED_AT = "created_at"
         const val STATUS_CANCELED = "canceled"
         const val STATUS_TERMINATED = "terminated"
         const val TAG = "gorda.driver.models.Service"
