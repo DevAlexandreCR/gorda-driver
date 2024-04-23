@@ -19,6 +19,7 @@ import com.google.gson.reflect.TypeToken
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
 import gorda.driver.location.LocationHandler
+import gorda.driver.repositories.ServiceRepository
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
 
@@ -57,9 +58,17 @@ class FeesService: Service(), LocationListener {
             locationManager = LocationHandler.getInstance(this)
             locationManager.addListener(this)
             createNotification()
+            listenService()
         }
 
         return START_STICKY
+    }
+
+    private fun listenService() {
+        ServiceRepository.isThereCurrentService { service ->
+            if (service === null) stopSelf()
+            else if (!service.isInProgress()) stopSelf()
+        }
     }
 
     override fun onCreate() {
