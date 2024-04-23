@@ -228,8 +228,6 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.getRideFees()
 
-        viewModel.isThereCurrentService()
-
         viewModel.currentService.observe(this) { currentService ->
             currentService?.status?.let { status ->
                 when (status) {
@@ -296,6 +294,7 @@ class MainActivity : AppCompatActivity() {
                 finish()
             }
         }
+        viewModel.isThereCurrentService()
     }
 
     override fun onStop() {

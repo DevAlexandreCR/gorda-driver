@@ -166,33 +166,35 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                         Toast.makeText(requireContext(), R.string.not_waze, Toast.LENGTH_SHORT).show()
                     }
                 }
-                if (service.metadata.arrived_at == null) {
-                    btnStatus.text = haveArrived
-                } else if (service.metadata.start_trip_at == null){
-                    btnStatus.text = startTrip
-                } else {
-                    btnStatus.text = endTrip
-                    context?.let {
-                        if (!ServiceHelper.isServiceRunning(it, FeesService::class.java) && !startingRide){
-                            val builder = AlertDialog.Builder(requireContext())
-                            builder.setTitle(R.string.service_start_trip)
-                            builder.setCancelable(false)
-                            builder.setMessage(R.string.ride_in_progress)
-                            builder.setNegativeButton(R.string.no) { dialog, _ ->
-                                dialog.dismiss()
-                                layoutFees.visibility = ConstraintLayout.VISIBLE
-                                startServiceFee(service.start_loc.name)
-                                startingRide = true
+                if (service.isInProgress()) {
+                    if (service.metadata.arrived_at == null) {
+                        btnStatus.text = haveArrived
+                    } else if (service.metadata.start_trip_at == null){
+                        btnStatus.text = startTrip
+                    } else {
+                        btnStatus.text = endTrip
+                        context?.let {
+                            if (!ServiceHelper.isServiceRunning(it, FeesService::class.java) && !startingRide){
+                                val builder = AlertDialog.Builder(requireContext())
+                                builder.setTitle(R.string.service_start_trip)
+                                builder.setCancelable(false)
+                                builder.setMessage(R.string.ride_in_progress)
+                                builder.setNegativeButton(R.string.no) { dialog, _ ->
+                                    dialog.dismiss()
+                                    layoutFees.visibility = ConstraintLayout.VISIBLE
+                                    startServiceFee(service.start_loc.name)
+                                    startingRide = true
+                                }
+                                builder.setPositiveButton(R.string.yes) { _, _ ->
+                                    startServiceFee(service.start_loc.name, true)
+                                    layoutFees.visibility = ConstraintLayout.VISIBLE
+                                    startingRide = false
+                                }
+                                val dialog: AlertDialog = builder.create()
+                                dialog.show()
                             }
-                            builder.setPositiveButton(R.string.yes) { _, _ ->
-                                startServiceFee(service.start_loc.name, true)
-                                layoutFees.visibility = ConstraintLayout.VISIBLE
-                                startingRide = false
-                            }
-                            val dialog: AlertDialog = builder.create()
-                            dialog.show()
+                            layoutFees.visibility = ConstraintLayout.VISIBLE
                         }
-                        layoutFees.visibility = ConstraintLayout.VISIBLE
                     }
                 }
             } else {

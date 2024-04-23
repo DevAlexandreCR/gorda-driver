@@ -57,4 +57,8 @@ data class Service(
     fun getStatusReference(): DatabaseReference {
         return ServiceRepository.getStatusReference(this.id)
     }
+
+    fun isInProgress(): Boolean {
+        return this.status == STATUS_IN_PROGRESS
+    }
 }
