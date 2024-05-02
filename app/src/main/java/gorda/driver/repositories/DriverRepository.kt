@@ -23,11 +23,16 @@ object DriverRepository {
             override var id: String = driver.id!!
             override var location: LocInterface = location
             override var version: String = BuildConfig.VERSION_NAME
-        })
+        }).addOnSuccessListener {
+            Database.dbServices().keepSynced(true)
+        }
     }
 
     fun disconnect(driverId: String): Task<Void> {
         return Database.dbOnlineDrivers().child(driverId).removeValue()
+            .addOnSuccessListener {
+                Database.dbServices().keepSynced(false)
+            }
     }
 
     fun updateLocation(driverId: String, location: LocInterface) {
