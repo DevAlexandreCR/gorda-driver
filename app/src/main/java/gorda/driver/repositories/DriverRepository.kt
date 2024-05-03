@@ -19,20 +19,15 @@ object DriverRepository {
     val TAG = DriverRepository::class.java.toString()
 
     fun connect(driver: DriverInterface, location: LocInterface): Task<Void> {
-        return Database.dbOnlineDrivers().child(driver.id!!).setValue(object : DriverConnected {
-            override var id: String = driver.id!!
+        return Database.dbOnlineDrivers().child(driver.id).setValue(object : DriverConnected {
+            override var id: String = driver.id
             override var location: LocInterface = location
             override var version: String = BuildConfig.VERSION_NAME
-        }).addOnSuccessListener {
-            Database.dbServices().keepSynced(true)
-        }
+        })
     }
 
     fun disconnect(driverId: String): Task<Void> {
         return Database.dbOnlineDrivers().child(driverId).removeValue()
-            .addOnSuccessListener {
-                Database.dbServices().keepSynced(false)
-            }
     }
 
     fun updateLocation(driverId: String, location: LocInterface) {
@@ -40,15 +35,11 @@ object DriverRepository {
     }
 
     fun isConnected(driverId: String, listener: (connected: Boolean) -> Unit) {
-        Database.dbOnlineDrivers().child(driverId).addListenerForSingleValueEvent(object: ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                listener(snapshot.hasChildren())
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Log.e(this.javaClass.toString(), error.message)
-            }
-        })
+        Database.dbOnlineDrivers().child(driverId).get().addOnSuccessListener { snapshot ->
+            listener(snapshot.hasChildren())
+        }.addOnFailureListener {
+            Log.e(TAG, it.message!!)
+        }
     }
 
     fun getDriver(driverId: String, listener: (driver: Driver) -> Unit) {

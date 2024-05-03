@@ -10,7 +10,7 @@ import gorda.driver.repositories.DriverRepository
 import java.io.Serializable
 
 data class Driver(
-    @SerializedName("id") override var id: String? = null,
+    @SerializedName("id") override var id: String = "",
     @SerializedName("name") override var name: String = "",
     @SerializedName("email") override var email: String = "",
     @SerializedName("phone") override var phone: String = "",
@@ -32,6 +32,6 @@ data class Driver(
     }
 
     fun disconnect(): Task<Void> {
-        return DriverRepository.disconnect(this.id!!)
+        return DriverRepository.disconnect(this.id)
     }
 }
