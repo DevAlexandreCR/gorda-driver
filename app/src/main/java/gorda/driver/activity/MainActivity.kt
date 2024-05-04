@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var connectionBar: ProgressBar
     private lateinit var deviceID: String
     private lateinit var deviceName: String
-    private var driver: Driver = Driver()
+    private var driver: Driver? = null
     private lateinit var switchConnect: Switch
     private lateinit var lastLocation: Location
     private val viewModel: MainViewModel by viewModels()
@@ -151,7 +151,7 @@ class MainActivity : AppCompatActivity() {
 
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
-                driver.id?.let { viewModel.disconnect(driver) }
+                driver?.let { viewModel.disconnect(it) }
                 Auth.logOut(this)
             }
             NavigationUI.onNavDestinationSelected(item, navController)
@@ -174,10 +174,12 @@ class MainActivity : AppCompatActivity() {
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
 
         switchConnect.setOnClickListener {
-            if (switchConnect.isChecked) {
-                viewModel.connect(driver)
-            } else {
-                viewModel.disconnect(driver)
+            driver?.let { driver ->
+                if (switchConnect.isChecked) {
+                    viewModel.connect(driver)
+                } else {
+                    viewModel.disconnect(driver)
+                }
             }
         }
 
@@ -205,14 +207,15 @@ class MainActivity : AppCompatActivity() {
 
         observeDriver(navView)
 
-        networkMonitor.startMonitoring()
         viewModel.isNetWorkConnected.observe(this) {
             if (!it) {
                 connectionBar.visibility = View.VISIBLE
                 snackBar.show()
                 viewModel.setConnectedLocal(false)
             } else {
-                driver.id?.let { id -> viewModel.isConnected(id) }
+                driver?.let { d ->
+                    viewModel.isConnected(d.id)
+                }
                 connectionBar.visibility = View.GONE
                 snackBar.dismiss()
             }
@@ -295,6 +298,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         viewModel.isThereCurrentService()
+        networkMonitor.startMonitoring()
     }
 
     override fun onStop() {
@@ -307,6 +311,7 @@ class MainActivity : AppCompatActivity() {
             mBound = false
             LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
         }
+        networkMonitor.stopMonitoring()
     }
 
     override fun onResume() {
@@ -355,12 +360,12 @@ class MainActivity : AppCompatActivity() {
         val nameDrawer = header.findViewById<TextView>(R.id.drawer_name)
         val emailDrawer = header.findViewById<TextView>(R.id.drawer_email)
 
-        nameDrawer.text = driver.name
-        emailDrawer.text = driver.email
-        driver.photoUrl.let { url ->
+        driver?.let { driver ->
+            nameDrawer.text = driver.name
+            emailDrawer.text = driver.email
             Glide
                 .with(this)
-                .load(url)
+                .load(driver.photoUrl)
                 .placeholder(R.mipmap.ic_profile)
                 .into(imageDrawer)
         }
@@ -371,7 +376,7 @@ class MainActivity : AppCompatActivity() {
             when (driverUpdates) {
                 is DriverUpdates.IsConnected -> {
                     switchConnect.isChecked = driverUpdates.connected
-                    switchConnect.isEnabled = true
+                    switchConnect.setEnabled(true)
                     if (driverUpdates.connected) {
                         startLocationService()
                         switchConnect.setText(R.string.status_connected)
@@ -384,10 +389,13 @@ class MainActivity : AppCompatActivity() {
                 is DriverUpdates.Connecting -> {
                     if (driverUpdates.connecting) {
                         switchConnect.setText(R.string.status_connecting)
+                        switchConnect.setEnabled(false)
                     }
                 }
 
-                else -> {}
+                else -> {
+                    switchConnect.setEnabled(true)
+                }
             }
         }
 
@@ -395,8 +403,8 @@ class MainActivity : AppCompatActivity() {
             when (it) {
                 is Driver -> {
                     this.driver = it
-                    if (this.driver.device != null) {
-                        if (this.deviceID != this.driver.device!!.id) {
+                    if (this.driver!!.device != null) {
+                        if (this.deviceID != this.driver!!.device!!.id) {
                             Auth.logOut(this).addOnCompleteListener { completed ->
                                 if (completed.isSuccessful) {
                                     Toast.makeText(
@@ -408,7 +416,7 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     } else {
-                        this.driver.id?.let { it1 ->
+                        this.driver!!.id.let { it1 ->
                             viewModel.updateDriverDevice(it1, object : DeviceInterface {
                                 override var id = deviceID
                                 override var name = deviceName
@@ -419,7 +427,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     switchConnect.isEnabled = true
                     setDrawerHeader(navView)
-                    viewModel.isConnected(it.id!!)
+                    viewModel.isConnected(it.id)
                 }
             }
         }
@@ -441,7 +449,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startLocationService() {
         Intent(this, LocationService::class.java).also { intent ->
-            intent.putExtra(Driver.DRIVER_KEY, this.driver.id)
+            intent.putExtra(Driver.DRIVER_KEY, this.driver?.id)
             if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
                 applicationContext.startForegroundService(intent)
             } else {
@@ -472,11 +480,6 @@ class MainActivity : AppCompatActivity() {
         ActivityCompat.requestPermissions(
             this, permissions, LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
         )
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        networkMonitor.stopMonitoring()
     }
 
     private fun isLocationEnabled(): Boolean {
