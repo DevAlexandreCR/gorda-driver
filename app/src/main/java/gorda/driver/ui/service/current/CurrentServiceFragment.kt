@@ -134,6 +134,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         imgButtonWaze = binding.imgBtnWaze
         chronometer = binding.chronometer
         layoutFees = binding.layoutFees
+        mainViewModel.isLoading.observe(viewLifecycleOwner) { loading ->
+            btnStatus.isEnabled = !loading
+        }
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 setOnClickListener(service)
@@ -328,6 +331,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                         Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
                                     }
                                     .addOnFailureListener {
+                                        service.metadata.end_trip_at = null
+                                        service.status = Service.STATUS_IN_PROGRESS
                                         it.message?.let { message -> Log.e(TAG, message) }
                                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                                     }

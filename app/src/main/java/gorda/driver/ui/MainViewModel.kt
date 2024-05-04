@@ -103,13 +103,13 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                         when (status) {
                             Service.STATUS_CANCELED,
                             Service.STATUS_IN_PROGRESS -> {
-                                service.getStatusReference().removeEventListener(this)
                                 snapshot.key?.let { key ->
                                     _isLoading.postValue(true)
                                     ServiceRepository.validateAssignment(key).addOnCompleteListener {
                                         _isLoading.postValue(false)
                                     }
                                 }
+                                service.getStatusReference().removeEventListener(this)
                             }
                             else -> {}
                         }
@@ -128,7 +128,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun getDriver(driverId: String) {
+        _isLoading.postValue(true)
         DriverRepository.getDriver(driverId) { driver ->
+            _isLoading.postValue(false)
             _driver.postValue(driver)
             savedStateHandle[Driver.TAG] = driver
         }
@@ -136,7 +138,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun isConnected(driverId: String) {
         _driverState.postValue(DriverUpdates.connecting(true))
+        _isLoading.postValue(true)
         DriverRepository.isConnected(driverId) {
+            _isLoading.postValue(false)
             _driverState.postValue(DriverUpdates.connecting(false))
             _driverState.postValue(DriverUpdates.setConnected(it))
         }

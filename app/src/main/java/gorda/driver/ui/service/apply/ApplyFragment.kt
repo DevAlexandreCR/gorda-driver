@@ -90,10 +90,12 @@ class ApplyFragment : Fragment() {
                     if (isAdded) {
                         time = it.time
                         distance = it.distance
+                        mainViewModel.setLoading(true)
                         service.addApplicant(driver, distance, time).addOnSuccessListener {
                             val applyText = requireActivity().resources.getString(R.string.wait_for_assign, service.start_loc.name)
                             textView.text = StringHelper.getString(applyText)
                             btnCancel.isEnabled = true
+                            mainViewModel.setLoading(false)
                         }.addOnFailureListener { e ->
                             e.message?.let { message -> Log.e(TAG, message) }
                             Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
