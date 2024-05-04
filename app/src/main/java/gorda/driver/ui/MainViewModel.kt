@@ -128,7 +128,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun getDriver(driverId: String) {
+        _isLoading.postValue(true)
         DriverRepository.getDriver(driverId) { driver ->
+            _isLoading.postValue(false)
             _driver.postValue(driver)
             savedStateHandle[Driver.TAG] = driver
         }

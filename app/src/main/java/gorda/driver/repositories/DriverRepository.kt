@@ -2,9 +2,6 @@ package gorda.driver.repositories
 
 import android.util.Log
 import com.google.android.gms.tasks.Task
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.BuildConfig
 import gorda.driver.interfaces.DeviceInterface
@@ -43,17 +40,13 @@ object DriverRepository {
     }
 
     fun getDriver(driverId: String, listener: (driver: Driver) -> Unit) {
-        Database.dbDrivers().child(driverId).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                snapshot.getValue<Driver>()?.let {
-                    listener(it)
-                }
+        Database.dbDrivers().child(driverId).get().addOnSuccessListener { snapshot ->
+            snapshot.getValue<Driver>()?.let {
+                listener(it)
             }
-
-            override fun onCancelled(error: DatabaseError) {
-                Log.e(TAG, error.message)
-            }
-        })
+        }.addOnFailureListener {
+            Log.e(TAG, it.message!!)
+        }
     }
 
     fun updateDevice(driverID: String, device: DeviceInterface?): Task<Void> {

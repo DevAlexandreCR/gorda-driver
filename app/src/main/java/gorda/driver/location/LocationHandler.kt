@@ -19,9 +19,11 @@ class LocationHandler private constructor(context: Context) {
     private var fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(context)
     private val locationRequest = LocationRequest.Builder(
-        Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+        Priority.PRIORITY_HIGH_ACCURACY,
         LOCATION_REFRESH_TIME
     )
+        .setMinUpdateIntervalMillis(LOCATION_FASTEST_REFRESH_TIME)
+        .setMinUpdateDistanceMeters(LOCATION_MIN_METERS)
         .build()
 
     private val listeners = mutableListOf<LocationListener>()
@@ -38,7 +40,9 @@ class LocationHandler private constructor(context: Context) {
         @Volatile
         private var INSTANCE: LocationHandler? = null
         const val PERMISSION_REQUEST_ACCESS_LOCATION = 100
-        private const val LOCATION_REFRESH_TIME: Long = 1000
+        private const val LOCATION_REFRESH_TIME: Long = 2000
+        private const val LOCATION_FASTEST_REFRESH_TIME: Long = 1000
+        private const val LOCATION_MIN_METERS: Float = 2.0f
 
         fun getInstance(context: Context): LocationHandler {
             return INSTANCE ?: synchronized(this) {
