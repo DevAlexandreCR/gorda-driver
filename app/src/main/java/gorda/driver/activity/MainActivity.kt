@@ -429,6 +429,9 @@ class MainActivity : AppCompatActivity() {
                     setDrawerHeader(navView)
                     viewModel.isConnected(it.id)
                 }
+                else -> {
+                    Auth.logOut(this)
+                }
             }
         }
     }

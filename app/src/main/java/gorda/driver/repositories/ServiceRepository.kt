@@ -119,10 +119,11 @@ object ServiceRepository {
         return Tasks.whenAll(taskMetadata)
     }
 
-    fun addApplicant(id: String, driverId: String, distance: Int, time: Int): Task<Void> {
+    fun addApplicant(id: String, driverId: String, distance: Int, time: Int, connection: Boolean = false): Task<Void> {
         return Database.dbServices().child(id).child(Service.APPLICANTS).child(driverId).setValue(object: Serializable {
             val distance = distance
             val time = time
+            val connection = connection
         })
     }
 
