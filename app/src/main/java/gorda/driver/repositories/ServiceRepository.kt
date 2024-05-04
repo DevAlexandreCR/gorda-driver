@@ -21,32 +21,26 @@ import java.util.Calendar
 
 object ServiceRepository {
 
-    private var serviceEventListener: ServicesEventListener? = null
-    private var newServiceEventListener: ChildEventListener? = null
     private var currentServiceEventListener: ValueEventListener? = null
 
-    fun getPending(listener: (serviceList: MutableList<Service>) -> Unit) {
-        serviceEventListener = ServicesEventListener(listener)
+    fun getPending(listener: ServicesEventListener) {
         Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING)
-            .addValueEventListener(serviceEventListener!!)
+            .addValueEventListener(listener)
     }
 
     fun listenNewServices(listener: ChildEventListener) {
-        newServiceEventListener = listener
         Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING)
-            .addChildEventListener(newServiceEventListener!!)
+            .addChildEventListener(listener)
     }
 
-    fun stopListenServices() {
-        serviceEventListener?.let { listener ->
-            Database.dbServices().removeEventListener(listener)
-        }
+    fun stopListenServices(listener: ServicesEventListener) {
+        Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING)
+            .removeEventListener(listener)
     }
 
-    fun stopListenNewServices() {
-        newServiceEventListener?.let { listener ->
-            Database.dbServices().removeEventListener(listener)
-        }
+    fun stopListenNewServices(listener: ChildEventListener) {
+        Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING)
+            .removeEventListener(listener)
     }
 
     fun addListenerCurrentService(serviceId: String, listener: (service: Service?) -> Unit) {
