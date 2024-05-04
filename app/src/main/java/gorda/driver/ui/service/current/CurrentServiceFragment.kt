@@ -303,7 +303,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 }
 
                 else -> {
-                    if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > 1) {
+                    if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > 240) {
                         val builderFinalize = AlertDialog.Builder(requireContext())
                         val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee()))
                         builderFinalize.setTitle(R.string.finalize_service)
