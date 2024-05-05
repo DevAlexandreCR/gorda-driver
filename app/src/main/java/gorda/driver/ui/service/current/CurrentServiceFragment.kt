@@ -403,6 +403,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         val timeFee = priceSec * feesService.getElapsedSeconds()
         val distanceFee = distance * priceMeter
         totalRide = ((distanceFee + timeFee + fees.feesBase) * feesService.getMultiplier()) + fees.priceAddFee
+        if (totalRide < (fees.priceMinFee * feeMultiplier)) {
+            totalRide = NumberHelper.roundDouble((fees.priceMinFee * feeMultiplier))
+        }
         textTotalFee.text = NumberHelper.toCurrency(totalRide)
         textCurrentDistance.text = String.format("%.2f", totalDistance / 1000)
         textCurrentTimePrice.text = NumberHelper.toCurrency(timeFee)
