@@ -394,7 +394,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         for (i in 0 until feesService.getPoints().size - 1) {
             distance += Map.calculateDistanceBetween(feesService.getPoints()[i], feesService.getPoints()[i + 1])
         }
-        if (feesService.getElapsedSeconds() > 180 && !toggleFragmentButton.isVisible) {
+        if (feesService.getElapsedSeconds() > 30 && !toggleFragmentButton.isVisible) {
             toggleFragmentButton.visibility = View.VISIBLE
         }
         val priceSec = fees.priceMin / 60

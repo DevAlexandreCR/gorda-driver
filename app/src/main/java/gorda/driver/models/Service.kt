@@ -42,12 +42,12 @@ data class Service(
         return ServiceRepository.updateMetadata(this.id, this.metadata, this.status)
     }
 
-    fun addApplicant(driver: Driver, distance: Int, time: Int): Task<Void> {
-        return ServiceRepository.addApplicant(this.id, driver.id!!, distance, time)
+    fun addApplicant(driver: Driver, distance: Int, time: Int, connection: String? = null): Task<Void> {
+        return ServiceRepository.addApplicant(this.id, driver.id, distance, time, connection)
     }
 
     fun cancelApplicant(driver: Driver): Task<Void> {
-        return ServiceRepository.cancelApply(this.id, driver.id!!)
+        return ServiceRepository.cancelApply(this.id, driver.id)
     }
 
     fun onStatusChange(listener: ValueEventListener) {
