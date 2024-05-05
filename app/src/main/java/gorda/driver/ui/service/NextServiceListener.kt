@@ -7,21 +7,17 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.models.Service
 
-class ServicesEventListener(private val listener: (serviceList: MutableList<Service>) -> Unit) :
-    ValueEventListener {
+class NextServiceListener(private val listener: (service: Service?) -> Unit): ValueEventListener {
 
     override fun onDataChange(snapshot: DataSnapshot) {
-        val list: MutableList<Service> = mutableListOf()
-
-        if (snapshot.hasChildren()) {
-            snapshot.children.forEach { dataSnapshot ->
-                dataSnapshot.getValue<Service>()?.let { service ->
-                    list.add(service)
+        if (snapshot.exists()) {
+            snapshot.getValue<Service>()?.let { service ->
+                if (service.status === Service.STATUS_TERMINATED || service.status === Service.STATUS_CANCELED) {
+                    this.listener(null)
                 }
+                this.listener(service)
             }
         }
-
-        this.listener(list)
     }
 
     override fun onCancelled(error: DatabaseError) {

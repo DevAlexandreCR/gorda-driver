@@ -26,10 +26,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
 import gorda.driver.databinding.FragmentCurrentServiceBinding
@@ -38,6 +42,7 @@ import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.maps.Map
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
+import gorda.driver.ui.home.HomeFragment
 import gorda.driver.utils.Constants
 import gorda.driver.utils.NumberHelper
 import gorda.driver.utils.ServiceHelper
@@ -77,6 +82,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
     private lateinit var endTrip: String
+    private lateinit var toggleFragmentButton: FloatingActionButton
     private lateinit var binding: FragmentCurrentServiceBinding
     private var feesService: FeesService = FeesService()
     private lateinit var chronometer: Chronometer
@@ -86,6 +92,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private var totalDistance = 0.0
     private var startingRide = false
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var fragmentManager: FragmentManager
+    private lateinit var transaction: FragmentTransaction
+    private lateinit var homeFragment: HomeFragment
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as FeesService.ChronometerBinder
@@ -125,6 +134,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         textDistancePrice = binding.textDistanceFare
         textCurrentDistance = binding.textCurrentDistance
         textCurrentDistancePrice = binding.textPriceByDistance
+        toggleFragmentButton = binding.toggleButton
         textTimePrice = binding.textTimeFare
         textCurrentTimePrice = binding.textPriceByTime
         textFareMultiplier = binding.textFareMultiplier
@@ -134,6 +144,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         imgButtonWaze = binding.imgBtnWaze
         chronometer = binding.chronometer
         layoutFees = binding.layoutFees
+        homeFragment = HomeFragment()
+        fragmentManager = childFragmentManager
         mainViewModel.isLoading.observe(viewLifecycleOwner) { loading ->
             btnStatus.isEnabled = !loading
         }
@@ -231,6 +243,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             val dialog: AlertDialog = builder.create()
             dialog.show()
         }
+
+        toggleFragmentButton.setOnClickListener {
+            toggleFragment()
+        }
         return root
     }
 
@@ -251,6 +267,20 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             requireContext().unbindService(serviceConnection)
             mainViewModel.changeConnectTripService(false)
         }
+    }
+
+    private fun toggleFragment() {
+        transaction = fragmentManager.beginTransaction()
+
+        if (homeFragment.isAdded) {
+            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
+            transaction.remove(homeFragment)
+        } else {
+            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+            transaction.replace(binding.root.id, homeFragment)
+        }
+
+        transaction.commit()
     }
 
     private fun setOnClickListener(service: Service) {
@@ -363,6 +393,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         var distance = 0.0
         for (i in 0 until feesService.getPoints().size - 1) {
             distance += Map.calculateDistanceBetween(feesService.getPoints()[i], feesService.getPoints()[i + 1])
+        }
+        if (feesService.getElapsedSeconds() > 180 && !toggleFragmentButton.isVisible) {
+            toggleFragmentButton.visibility = View.VISIBLE
         }
         val priceSec = fees.priceMin / 60
         val priceMeter = fees.priceKm / 1000

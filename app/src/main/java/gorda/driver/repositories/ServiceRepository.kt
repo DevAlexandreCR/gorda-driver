@@ -15,6 +15,7 @@ import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
 import gorda.driver.services.firebase.Database
 import gorda.driver.services.firebase.FirestoreDatabase
+import gorda.driver.ui.service.NextServiceListener
 import gorda.driver.ui.service.ServicesEventListener
 import java.io.Serializable
 import java.util.Calendar
@@ -36,6 +37,16 @@ object ServiceRepository {
     fun stopListenServices(listener: ServicesEventListener) {
         Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING)
             .removeEventListener(listener)
+    }
+
+    fun startListenNextService(serviceId: String, listener: NextServiceListener) {    fun startListenNextService(serviceId: String, listener: ValueEventListener) {
+        Database.dbServices().child(serviceId).addValueEventListener(listener)
+    }
+        Database.dbServices().child(serviceId).addValueEventListener(listener)
+    }
+
+    fun stopListenNextService(serviceId: String, listener: NextServiceListener) {
+        Database.dbServices().child(serviceId).removeEventListener(listener)
     }
 
     fun stopListenNewServices(listener: ChildEventListener) {

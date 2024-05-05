@@ -35,6 +35,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _driver: MutableLiveData<Driver?> = savedStateHandle.getLiveData(Driver.TAG)
     private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
     private val _currentService = MutableLiveData<Service?>()
+    private val _nextService = MutableLiveData<Service?>()
     private val _isNetWorkConnected = MutableLiveData(true)
     private val _isTripStarted = MutableLiveData(false)
     private val _rideFees = MutableLiveData<RideFees>()
@@ -45,6 +46,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     var driver: LiveData<Driver?> = _driver
     var serviceUpdates: LiveData<ServiceUpdates> = _serviceUpdates
     val currentService: LiveData<Service?> = _currentService
+    val nextService: LiveData<Service?> = _nextService
     val isNetWorkConnected: LiveData<Boolean> = _isNetWorkConnected
     val isTripStarted: LiveData<Boolean> = _isTripStarted
     val rideFees: LiveData<RideFees> = _rideFees

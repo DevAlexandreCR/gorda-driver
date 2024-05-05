@@ -8,6 +8,20 @@
     tools:context=".ui.service.current.CurrentServiceFragment">
 
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/toggle_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:clickable="true"
+        android:contentDescription="@string/services_list"
+        android:focusable="true"
+        android:src="@drawable/service_list_24"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/layoutFees"
         android:layout_width="match_parent"
@@ -33,6 +47,7 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <TableLayout
+            android:id="@+id/tableLayout"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_marginStart="8dp"
@@ -156,6 +171,7 @@
                     android:textAlignment="textEnd"
                     android:textSize="20sp" />
             </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -178,6 +194,7 @@
                     android:textAlignment="textEnd"
                     android:textSize="20sp" />
             </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
