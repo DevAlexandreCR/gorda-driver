@@ -109,6 +109,8 @@ object ServiceRepository {
                             snapshot.getValue<String>()?.let { serviceId ->
                                 startListenNextService(serviceId, listener)
                             }
+                        } else {
+                            listener.setNull()
                         }
                     }
                     override fun onCancelled(error: DatabaseError) {

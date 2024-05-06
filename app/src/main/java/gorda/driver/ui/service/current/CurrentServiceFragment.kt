@@ -42,7 +42,9 @@ import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.maps.Map
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
+import gorda.driver.ui.history.ServiceDialogFragment
 import gorda.driver.ui.home.HomeFragment
+import gorda.driver.ui.service.ConnectionServiceDialog
 import gorda.driver.utils.Constants
 import gorda.driver.utils.NumberHelper
 import gorda.driver.utils.ServiceHelper
@@ -83,6 +85,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var startTrip: String
     private lateinit var endTrip: String
     private lateinit var toggleFragmentButton: FloatingActionButton
+    private lateinit var connectionServiceButton: FloatingActionButton
+    private var connectionDialog: ConnectionServiceDialog? = null
     private lateinit var binding: FragmentCurrentServiceBinding
     private var feesService: FeesService = FeesService()
     private lateinit var chronometer: Chronometer
@@ -124,10 +128,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(it)
         }
         requireActivity().onBackPressedDispatcher.addCallback(this) {}
-        textName = binding.currentServiceName
-        textPhone = binding.currentPhone
-        textAddress = binding.currentAddress
-        textComment = binding.serviceComment
+        textName = binding.serviceLayout.currentServiceName
+        textPhone = binding.serviceLayout.currentPhone
+        textAddress = binding.serviceLayout.currentAddress
+        textComment = binding.serviceLayout.serviceComment
         textPriceBase = binding.textBaseFare
         textPriceMinFee = binding.textFareMin
         textPriceAddFee = binding.textFees
@@ -139,13 +143,14 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         textCurrentTimePrice = binding.textPriceByTime
         textFareMultiplier = binding.textFareMultiplier
         textTotalFee = binding.textPrice
-        btnStatus = binding.btnServiceStatus
-        imgBtnMaps = binding.imgBtnMaps
-        imgButtonWaze = binding.imgBtnWaze
+        btnStatus = binding.serviceLayout.btnServiceStatus
+        imgBtnMaps = binding.serviceLayout.imgBtnMaps
+        imgButtonWaze = binding.serviceLayout.imgBtnWaze
         chronometer = binding.chronometer
         layoutFees = binding.layoutFees
         homeFragment = HomeFragment()
         fragmentManager = childFragmentManager
+        connectionServiceButton = binding.connectedServiceButton
         mainViewModel.isLoading.observe(viewLifecycleOwner) { loading ->
             btnStatus.isEnabled = !loading
         }
@@ -225,6 +230,25 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             textDistancePrice.text = NumberHelper.toCurrency(fees.priceKm)
             textTimePrice.text = NumberHelper.toCurrency(fees.priceMin)
             textFareMultiplier.text = feeMultiplier.toString()
+        }
+        mainViewModel.nextService.observe(viewLifecycleOwner) { service ->
+            if (service != null) {
+                connectionDialog = ConnectionServiceDialog(service)
+                connectionServiceButton.visibility = ConstraintLayout.VISIBLE
+            } else {
+                connectionDialog = null
+                connectionServiceButton.visibility = ConstraintLayout.INVISIBLE
+            }
+        }
+
+        connectionServiceButton.setOnClickListener {
+            connectionDialog?.let { dialog ->
+                if (dialog.isAdded) {
+                    dialog.dismiss()
+                } else {
+                    dialog.show(childFragmentManager, ServiceDialogFragment::javaClass.toString())
+                }
+            }
         }
 
         textFareMultiplier.setOnClickListener {

@@ -23,4 +23,8 @@ class NextServiceListener(private val listener: (service: Service?) -> Unit): Va
     override fun onCancelled(error: DatabaseError) {
         Log.e(this.javaClass.toString(), error.message)
     }
+
+    fun setNull() {
+        this.listener(null)
+    }
 }

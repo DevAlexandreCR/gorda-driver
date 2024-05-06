@@ -108,4 +108,5 @@
     <string name="fields_status">Status</string>
     <string name="fields_price">Pricing</string>
     <string name="fields_comment">Comment</string>
+    <string name="next_service">Next Service</string>
 </resources>
