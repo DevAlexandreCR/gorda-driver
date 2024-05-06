@@ -39,9 +39,7 @@ object ServiceRepository {
             .removeEventListener(listener)
     }
 
-    fun startListenNextService(serviceId: String, listener: NextServiceListener) {    fun startListenNextService(serviceId: String, listener: ValueEventListener) {
-        Database.dbServices().child(serviceId).addValueEventListener(listener)
-    }
+    fun startListenNextService(serviceId: String, listener: NextServiceListener) {
         Database.dbServices().child(serviceId).addValueEventListener(listener)
     }
 
@@ -93,6 +91,24 @@ object ServiceRepository {
                                 }
                         } else {
                             listener(null)
+                        }
+                    }
+                    override fun onCancelled(error: DatabaseError) {
+                        Log.e(this.javaClass.toString(), error.message)
+                    }
+                })
+        }
+    }
+
+    fun isThereConnectionService(listener: NextServiceListener) {
+        Auth.getCurrentUserUUID()?.let {
+            Database.dbServiceConnections().child(it)
+                .addValueEventListener(object: ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        if (snapshot.exists()) {
+                            snapshot.getValue<String>()?.let { serviceId ->
+                                startListenNextService(serviceId, listener)
+                            }
                         }
                     }
                     override fun onCancelled(error: DatabaseError) {

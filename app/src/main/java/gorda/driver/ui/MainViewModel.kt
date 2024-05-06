@@ -22,6 +22,7 @@ import gorda.driver.repositories.ServiceRepository
 import gorda.driver.repositories.SettingsRepository
 import gorda.driver.serializers.RideFeesDeserializer
 import gorda.driver.ui.driver.DriverUpdates
+import gorda.driver.ui.service.NextServiceListener
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 
@@ -40,6 +41,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _isTripStarted = MutableLiveData(false)
     private val _rideFees = MutableLiveData<RideFees>()
     private val _isLoading = MutableLiveData(false)
+    private val nextServiceListener = NextServiceListener { service ->
+        _nextService.postValue(service)
+    }
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driverStatus: LiveData<DriverUpdates> = _driverState
@@ -83,6 +87,16 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             if (service != null) {
                 _serviceUpdates.postValue(ServiceUpdates.Status(service.status))
             }
+        }
+    }
+
+    fun isThereConnectionService() {
+        ServiceRepository.isThereConnectionService(nextServiceListener)
+    }
+
+    fun stopNextServiceListener() {
+        _nextService.value?.let { service ->
+            ServiceRepository.stopListenNextService(service.id, nextServiceListener)
         }
     }
 

@@ -298,6 +298,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         viewModel.isThereCurrentService()
+        viewModel.isThereConnectionService()
         networkMonitor.startMonitoring()
     }
 
@@ -312,6 +313,7 @@ class MainActivity : AppCompatActivity() {
             LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
         }
         networkMonitor.stopMonitoring()
+        viewModel.stopNextServiceListener()
     }
 
     override fun onResume() {

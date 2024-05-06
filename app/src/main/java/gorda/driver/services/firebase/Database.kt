@@ -13,6 +13,10 @@ object Database {
         return reference.child("drivers_assigned").ref
     }
 
+    fun dbServiceConnections(): DatabaseReference {
+        return reference.child("service_connections").ref
+    }
+
     fun dbDrivers(): DatabaseReference {
         return reference.child("drivers").ref
     }
