@@ -281,6 +281,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         haveArrived = getString(R.string.service_have_arrived)
         startTrip = getString(R.string.service_start_trip)
         endTrip = getString(R.string.service_end_trip)
+        toggleFragmentButton.setImageResource(R.drawable.service_list_24)
         if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java) && !startingRide) {
             Intent(requireContext(), FeesService::class.java).also { intentFee ->
                 requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
@@ -301,10 +302,12 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
 
     override fun onPause() {
         if (homeFragment.isAdded) {
+            toggleFragmentButton.setImageResource(R.drawable.current_return_24)
             transaction = fragmentManager.beginTransaction()
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
             transaction.remove(homeFragment)
             transaction.commit()
+
         }
         super.onPause()
     }
@@ -315,9 +318,11 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         if (homeFragment.isAdded) {
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
             transaction.remove(homeFragment)
+            toggleFragmentButton.setImageResource(R.drawable.service_list_24)
         } else {
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
             transaction.replace(binding.root.id, homeFragment)
+            toggleFragmentButton.setImageResource(R.drawable.current_return_24)
         }
 
         transaction.commit()
