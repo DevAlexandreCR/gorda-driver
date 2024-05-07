@@ -65,6 +65,18 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
     private val listener: ServicesEventListener = ServicesEventListener { services ->
         listServices = services
     }
+    private var nextService: gorda.driver.models.Service? = null
+    private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
+        if (service == null) {
+            if (nextService != null) {
+                playSound.playCancelSound(nextService!!.created_at.toInt())
+                nextService = null
+            }
+        } else {
+            nextService = service
+            playSound.playAssignedSound(nextService!!.created_at.toInt())
+        }
+    }
     private val currentServiceListener: ServiceEventListener = ServiceEventListener { service ->
         service?.let { s ->
             when (s.status) {
@@ -171,6 +183,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         startListenNewServices()
         startSyncServices()
         startTimer()
+        startListenNextService()
     }
 
     fun stop() {
@@ -269,5 +282,9 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
 
     private fun startListenNewServices() {
         ServiceRepository.listenNewServices(listenerNewServices)
+    }
+
+    private fun startListenNextService() {
+        ServiceRepository.isThereConnectionService(nextServiceListener)
     }
 }

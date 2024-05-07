@@ -35,11 +35,13 @@ class FeesService: Service(), LocationListener {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var currentServiceListener: ServiceEventListener
     private var count = 0
+    private lateinit var playSound: PlaySound
 
     companion object {
         const val SERVICE_ID = 101
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        playSound = PlaySound(this, sharedPreferences)
         intent?.let {
             if (it.getBooleanExtra(Constants.RESTART_TRIP, false)) {
                 restoreStartTime()
