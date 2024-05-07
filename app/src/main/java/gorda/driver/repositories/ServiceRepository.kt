@@ -15,14 +15,12 @@ import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
 import gorda.driver.services.firebase.Database
 import gorda.driver.services.firebase.FirestoreDatabase
-import gorda.driver.ui.service.NextServiceListener
+import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.ServicesEventListener
 import java.io.Serializable
 import java.util.Calendar
 
 object ServiceRepository {
-
-    private var currentServiceEventListener: ValueEventListener? = null
 
     fun getPending(listener: ServicesEventListener) {
         Database.dbServices().orderByChild(Service.STATUS).equalTo(Service.STATUS_PENDING)
@@ -39,12 +37,14 @@ object ServiceRepository {
             .removeEventListener(listener)
     }
 
-    fun startListenNextService(serviceId: String, listener: NextServiceListener) {
-        Database.dbServices().child(serviceId).addValueEventListener(listener)
+    fun startListenNextService(serviceId: String, listener: ServiceEventListener) {
+        val ref: DatabaseReference = Database.dbServices().child(serviceId)
+        listener.setRef(ref)
+        listener.reference?.addValueEventListener(listener)
     }
 
-    fun stopListenNextService(serviceId: String, listener: NextServiceListener) {
-        Database.dbServices().child(serviceId).removeEventListener(listener)
+    fun stopListenNextService(listener: ServiceEventListener) {
+//        listener.setNull()
     }
 
     fun stopListenNewServices(listener: ChildEventListener) {
@@ -52,71 +52,48 @@ object ServiceRepository {
             .removeEventListener(listener)
     }
 
-    fun addListenerCurrentService(serviceId: String, listener: (service: Service?) -> Unit) {
-        currentServiceEventListener = object: ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    snapshot.getValue<Service>()?.let { service ->
-                        if (service.status === Service.STATUS_TERMINATED || service.status === Service.STATUS_CANCELED) {
-                            stopListenerCurrentService(service.id)
-                            listener(null)
+    fun addListenerCurrentService(serviceId: String, listener: ServiceEventListener) {
+        val ref: DatabaseReference = Database.dbServices().child(serviceId)
+        listener.setRef(ref)
+        listener.reference?.addValueEventListener(listener)
+    }
+
+    fun isThereCurrentService(listener: ServiceEventListener) {
+        Auth.getCurrentUserUUID()?.let {
+            Database.dbDriversAssigned().child(it).addValueEventListener(object: ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        snapshot.getValue<String>()?.let { serviceId ->
+                            addListenerCurrentService(serviceId, listener)
                         }
-                        listener(service)
+                    } else {
+                        listener.setNull()
                     }
                 }
-            }
-            override fun onCancelled(error: DatabaseError) {
-                Log.e(this.javaClass.toString(), error.message)
-            }
-        }
-        currentServiceEventListener?.let {
-            Database.dbServices().child(serviceId).addValueEventListener(it)
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(this.javaClass.toString(), error.message)
+                    listener.setNull()
+                }
+            })
         }
     }
 
-    fun stopListenerCurrentService(serviceId: String) {
-        currentServiceEventListener?.let {
-            Database.dbServices().child(serviceId).removeEventListener(it)
-        }
-    }
-
-    fun isThereCurrentService(listener: (service: Service?) -> Unit) {
+    fun isThereConnectionService(listener: ServiceEventListener) {
         Auth.getCurrentUserUUID()?.let {
-            Database.dbDriversAssigned().child(it)
-                .addValueEventListener(object: ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (snapshot.exists()) {
-                                snapshot.getValue<String>()?.let { serviceId ->
-                                    addListenerCurrentService(serviceId, listener)
-                                }
-                        } else {
-                            listener(null)
+            Database.dbServiceConnections().child(it).addValueEventListener(object: ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        snapshot.getValue<String>()?.let { serviceId ->
+                            startListenNextService(serviceId, listener)
                         }
+                    } else {
+                        listener.setNull()
                     }
-                    override fun onCancelled(error: DatabaseError) {
-                        Log.e(this.javaClass.toString(), error.message)
-                    }
-                })
-        }
-    }
-
-    fun isThereConnectionService(listener: NextServiceListener) {
-        Auth.getCurrentUserUUID()?.let {
-            Database.dbServiceConnections().child(it)
-                .addValueEventListener(object: ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (snapshot.exists()) {
-                            snapshot.getValue<String>()?.let { serviceId ->
-                                startListenNextService(serviceId, listener)
-                            }
-                        } else {
-                            listener.setNull()
-                        }
-                    }
-                    override fun onCancelled(error: DatabaseError) {
-                        Log.e(this.javaClass.toString(), error.message)
-                    }
-                })
+                }
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(this.javaClass.toString(), error.message)
+                }
+            })
         }
     }
 

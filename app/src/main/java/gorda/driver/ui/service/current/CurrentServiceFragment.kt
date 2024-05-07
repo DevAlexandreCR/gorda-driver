@@ -189,32 +189,34 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 if (service.isInProgress()) {
                     if (service.metadata.arrived_at == null) {
                         btnStatus.text = haveArrived
-                    } else if (service.metadata.start_trip_at == null){
+                        layoutFees.visibility = ConstraintLayout.INVISIBLE
+                        stopFeeService()
+                    } else if (service.metadata.start_trip_at == null) {
                         btnStatus.text = startTrip
+                        layoutFees.visibility = ConstraintLayout.INVISIBLE
+                        stopFeeService()
                     } else {
                         btnStatus.text = endTrip
-                        context?.let {
-                            if (!ServiceHelper.isServiceRunning(it, FeesService::class.java) && !startingRide){
-                                val builder = AlertDialog.Builder(requireContext())
-                                builder.setTitle(R.string.service_start_trip)
-                                builder.setCancelable(false)
-                                builder.setMessage(R.string.ride_in_progress)
-                                builder.setNegativeButton(R.string.no) { dialog, _ ->
-                                    dialog.dismiss()
-                                    layoutFees.visibility = ConstraintLayout.VISIBLE
-                                    startServiceFee(service.start_loc.name)
-                                    startingRide = true
-                                }
-                                builder.setPositiveButton(R.string.yes) { _, _ ->
-                                    startServiceFee(service.start_loc.name, true)
-                                    layoutFees.visibility = ConstraintLayout.VISIBLE
-                                    startingRide = false
-                                }
-                                val dialog: AlertDialog = builder.create()
-                                dialog.show()
+                        if (!ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java) && !startingRide){
+                            val builder = AlertDialog.Builder(requireContext())
+                            builder.setTitle(R.string.service_start_trip)
+                            builder.setCancelable(false)
+                            builder.setMessage(R.string.ride_in_progress)
+                            builder.setNegativeButton(R.string.no) { dialog, _ ->
+                                dialog.dismiss()
+                                layoutFees.visibility = ConstraintLayout.VISIBLE
+                                startServiceFee(service.start_loc.name)
+                                startingRide = true
                             }
-                            layoutFees.visibility = ConstraintLayout.VISIBLE
+                            builder.setPositiveButton(R.string.yes) { _, _ ->
+                                startServiceFee(service.start_loc.name, true)
+                                layoutFees.visibility = ConstraintLayout.VISIBLE
+                                startingRide = false
+                            }
+                            val dialog: AlertDialog = builder.create()
+                            dialog.show()
                         }
+                        layoutFees.visibility = ConstraintLayout.VISIBLE
                     }
                 }
             } else {
@@ -279,9 +281,13 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         haveArrived = getString(R.string.service_have_arrived)
         startTrip = getString(R.string.service_start_trip)
         endTrip = getString(R.string.service_end_trip)
-        Intent(requireContext(), FeesService::class.java).also { intentFee ->
-            requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
-            mainViewModel.changeConnectTripService(true)
+        if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java) && !startingRide) {
+            Intent(requireContext(), FeesService::class.java).also { intentFee ->
+                requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
+                mainViewModel.changeConnectTripService(true)
+            }
+        } else {
+            mainViewModel.changeConnectTripService(false)
         }
     }
 
@@ -291,6 +297,16 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             requireContext().unbindService(serviceConnection)
             mainViewModel.changeConnectTripService(false)
         }
+    }
+
+    override fun onPause() {
+        if (homeFragment.isAdded) {
+            transaction = fragmentManager.beginTransaction()
+            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
+            transaction.remove(homeFragment)
+            transaction.commit()
+        }
+        super.onPause()
     }
 
     private fun toggleFragment() {
@@ -372,15 +388,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                 service.metadata.trip_multiplier = feeMultiplier
                                 service.updateMetadata()
                                     .addOnSuccessListener {
-                                        Intent(
-                                            requireContext(),
-                                            FeesService::class.java
-                                        ).also { intentFee ->
-                                            requireContext().stopService(intentFee)
-                                        }
-                                        sharedPreferences.edit().remove(Constants.MULTIPLIER).apply()
-                                        sharedPreferences.edit().remove(Constants.POINTS).apply()
-                                        sharedPreferences.edit().remove(Constants.START_TIME).apply()
+                                        stopFeeService()
                                         mainViewModel.completeCurrentService()
                                         Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
                                     }
@@ -406,6 +414,21 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 }
             }
         }
+    }
+
+    private fun stopFeeService() {
+        if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
+            Intent(
+                requireContext(),
+                FeesService::class.java
+            ).also { intentFee ->
+                requireContext().stopService(intentFee)
+            }
+            requireContext().unbindService(serviceConnection)
+        }
+        sharedPreferences.edit().remove(Constants.MULTIPLIER).apply()
+        sharedPreferences.edit().remove(Constants.POINTS).apply()
+        sharedPreferences.edit().remove(Constants.START_TIME).apply()
     }
 
     override fun onDestroyView() {
@@ -476,8 +499,12 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             intentFee.putExtra(Constants.RESTART_TRIP, restart)
             if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
                 requireContext().startForegroundService(intentFee)
+                requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
+                mainViewModel.changeConnectTripService(true)
             } else {
                 requireContext().startService(intentFee)
+                requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
+                mainViewModel.changeConnectTripService(true)
             }
         }
     }

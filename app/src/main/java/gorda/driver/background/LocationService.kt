@@ -33,6 +33,7 @@ import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
 import gorda.driver.ui.service.LocationBroadcastReceiver
+import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.ServicesEventListener
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
@@ -63,6 +64,36 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
     private val timer = Timer()
     private val listener: ServicesEventListener = ServicesEventListener { services ->
         listServices = services
+    }
+    private val currentServiceListener: ServiceEventListener = ServiceEventListener { service ->
+        service?.let { s ->
+            when (s.status) {
+                DBService.STATUS_IN_PROGRESS -> {
+                    val notifyId = sharedPreferences.getInt(
+                        Constants.SERVICES_NOTIFICATION_ID,
+                        0
+                    )
+                    if (notifyId != service.created_at.toInt())
+                        playSound.playAssignedSound(service.created_at.toInt())
+                }
+                DBService.STATUS_CANCELED -> {
+                    val cancelNotifyId = sharedPreferences.getInt(
+                        Constants.CANCEL_SERVICES_NOTIFICATION_ID,
+                        0
+                    )
+                    if (cancelNotifyId != service.created_at.toInt()) {
+                        val chanel =
+                            sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_VOICE)
+                        if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_canceled))
+                        else playSound.playCancelSound(service.created_at.toInt())
+
+                        val editor: SharedPreferences.Editor = sharedPreferences.edit()
+                        editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, service.created_at.toInt())
+                        editor.apply()
+                    }
+                }
+            }
+        }
     }
     private val listenerNewServices: ChildEventListener = object : ChildEventListener {
         override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
@@ -97,36 +128,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                 driverID = id
                 locationManager = LocationHandler.getInstance(this)
                 locationManager.addListener(this)
-                ServiceRepository.isThereCurrentService { service ->
-                    service?.let { s ->
-                        when (s.status) {
-                            DBService.STATUS_IN_PROGRESS -> {
-                                val notifyId = sharedPreferences.getInt(
-                                    Constants.SERVICES_NOTIFICATION_ID,
-                                    0
-                                )
-                                if (notifyId != service.created_at.toInt())
-                                    playSound.playAssignedSound(service.created_at.toInt())
-                            }
-                            DBService.STATUS_CANCELED -> {
-                                val cancelNotifyId = sharedPreferences.getInt(
-                                    Constants.CANCEL_SERVICES_NOTIFICATION_ID,
-                                    0
-                                )
-                                if (cancelNotifyId != service.created_at.toInt()) {
-                                    val chanel =
-                                        sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_VOICE)
-                                    if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_canceled))
-                                    else playSound.playCancelSound(service.created_at.toInt())
-
-                                    val editor: SharedPreferences.Editor = sharedPreferences.edit()
-                                    editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, service.created_at.toInt())
-                                    editor.apply()
-                                }
-                            }
-                        }
-                    }
-                }
+                ServiceRepository.isThereCurrentService(currentServiceListener)
             }
         }
         return START_STICKY
@@ -177,11 +179,11 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         ServiceRepository.stopListenServices(listener)
         stoped = true
         timer.cancel()
-        stopSelf()
         if (toSpeech != null) {
             toSpeech!!.stop()
             toSpeech!!.shutdown()
         }
+        stopSelf()
     }
 
     override fun onDestroy() {

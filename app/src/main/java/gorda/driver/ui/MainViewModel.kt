@@ -22,7 +22,7 @@ import gorda.driver.repositories.ServiceRepository
 import gorda.driver.repositories.SettingsRepository
 import gorda.driver.serializers.RideFeesDeserializer
 import gorda.driver.ui.driver.DriverUpdates
-import gorda.driver.ui.service.NextServiceListener
+import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 
@@ -41,8 +41,31 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _isTripStarted = MutableLiveData(false)
     private val _rideFees = MutableLiveData<RideFees>()
     private val _isLoading = MutableLiveData(false)
-    private val nextServiceListener = NextServiceListener { service ->
-        _nextService.postValue(service)
+    private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
+        if (service == null) {
+            _nextService.postValue(null)
+        } else {
+            driver.value?.let {
+                if (it.id == service.driver_id && currentService.value?.id != service.id) {
+                    _nextService.postValue(service)
+                } else {
+                    _nextService.postValue(null)
+                }
+            }
+        }
+    }
+    private val currentServiceListener: ServiceEventListener = ServiceEventListener { service ->
+        if (service == null) {
+            _currentService.postValue(null)
+        } else {
+            driver.value?.let {
+                if (it.id == service.driver_id) {
+                    _currentService.postValue(service)
+                } else {
+                    _currentService.postValue(null)
+                }
+            }
+        }
     }
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
@@ -82,12 +105,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun isThereCurrentService() {
-        ServiceRepository.isThereCurrentService { service ->
-            _currentService.postValue(service)
-            if (service != null) {
-                _serviceUpdates.postValue(ServiceUpdates.Status(service.status))
-            }
-        }
+        ServiceRepository.isThereCurrentService(currentServiceListener)
     }
 
     fun isThereConnectionService() {
@@ -95,8 +113,8 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun stopNextServiceListener() {
-        _nextService.value?.let { service ->
-            ServiceRepository.stopListenNextService(service.id, nextServiceListener)
+        _nextService.value?.let { _ ->
+            ServiceRepository.stopListenNextService(nextServiceListener)
         }
     }
 
