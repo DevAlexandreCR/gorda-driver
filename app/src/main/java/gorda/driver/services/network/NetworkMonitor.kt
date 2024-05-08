@@ -5,13 +5,12 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.os.Build
 
 class NetworkMonitor(private val context: Context,
                      private val onNetWorkChange: (isConnected: Boolean) -> Unit) {
 
     private val connectivityManager =
-        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        this.context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private var isMonitoring = false
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -26,30 +25,17 @@ class NetworkMonitor(private val context: Context,
 
         fun isOnline(network: Network): Boolean {
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-            } else {
-                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            }
+            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         }
     }
 
     fun startMonitoring() {
         if (!isMonitoring) {
-            val networkRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val networkRequest =
                 NetworkRequest.Builder()
                     .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                    .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
                     .build()
-            } else {
-                NetworkRequest.Builder()
-                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                    .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
-                    .build()
-            }
+
             connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
             isMonitoring = true
         }
