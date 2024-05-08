@@ -232,31 +232,31 @@ class MainActivity : AppCompatActivity() {
         viewModel.getRideFees()
 
         viewModel.currentService.observe(this) { currentService ->
-            currentService?.status?.let { status ->
-                when (status) {
+            if (currentService == null) {
+                removeFeeServiceData()
+            } else {
+                when (currentService.status) {
                     Service.STATUS_IN_PROGRESS -> {
                         if (navController.currentDestination?.id != R.id.nav_current_service) {
                             navController.navigate(R.id.nav_current_service)
                         }
                     }
-
-                    Service.STATUS_CANCELED -> {
+                    else -> {
                         viewModel.completeCurrentService()
                         if (navController.currentDestination?.id == R.id.nav_current_service)
                             navController.navigate(R.id.nav_home)
-                    }
-
-                    else -> {
-                        if (navController.currentDestination?.id == R.id.nav_current_service)
-                            navController.navigate(R.id.nav_home)
-                            preferences.edit().putString(Constants.CURRENT_SERVICE_ID, null).apply()
-                            preferences.edit().remove(Constants.START_TIME).apply()
-                            preferences.edit().remove(Constants.MULTIPLIER).apply()
-                            preferences.edit().remove(Constants.POINTS).apply()
+                        removeFeeServiceData()
                     }
                 }
             }
         }
+    }
+
+    private fun removeFeeServiceData() {
+        preferences.edit().putString(Constants.CURRENT_SERVICE_ID, null).apply()
+        preferences.edit().remove(Constants.START_TIME).apply()
+        preferences.edit().remove(Constants.MULTIPLIER).apply()
+        preferences.edit().remove(Constants.POINTS).apply()
     }
 
     private fun setIconNotificationButton(isNotificationMute: Boolean) {
@@ -298,6 +298,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         viewModel.isThereCurrentService()
+        viewModel.isThereConnectionService()
         networkMonitor.startMonitoring()
     }
 
@@ -312,6 +313,7 @@ class MainActivity : AppCompatActivity() {
             LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
         }
         networkMonitor.stopMonitoring()
+        viewModel.stopNextServiceListener()
     }
 
     override fun onResume() {
@@ -429,6 +431,9 @@ class MainActivity : AppCompatActivity() {
                     setDrawerHeader(navView)
                     viewModel.isConnected(it.id)
                 }
+                else -> {
+                    Auth.logOut(this)
+                }
             }
         }
     }
@@ -441,7 +446,7 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION) {
-            if (grantResults.isEmpty() && grantResults[0] == PackageManager.PERMISSION_DENIED) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_DENIED) {
                 finish()
             }
         }

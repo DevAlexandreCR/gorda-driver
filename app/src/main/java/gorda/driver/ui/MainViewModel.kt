@@ -22,6 +22,7 @@ import gorda.driver.repositories.ServiceRepository
 import gorda.driver.repositories.SettingsRepository
 import gorda.driver.serializers.RideFeesDeserializer
 import gorda.driver.ui.driver.DriverUpdates
+import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 
@@ -32,19 +33,47 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     private val _lastLocation = MutableLiveData<LocationUpdates>()
     private val _driverState = MutableLiveData<DriverUpdates>()
-    private val _driver = savedStateHandle.getLiveData<Driver>(Driver.TAG)
+    private val _driver: MutableLiveData<Driver?> = savedStateHandle.getLiveData(Driver.TAG)
     private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
     private val _currentService = MutableLiveData<Service?>()
+    private val _nextService = MutableLiveData<Service?>()
     private val _isNetWorkConnected = MutableLiveData(true)
     private val _isTripStarted = MutableLiveData(false)
     private val _rideFees = MutableLiveData<RideFees>()
     private val _isLoading = MutableLiveData(false)
+    private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
+        if (service == null) {
+            _nextService.postValue(null)
+        } else {
+            driver.value?.let {
+                if (it.id == service.driver_id && currentService.value?.id != service.id) {
+                    _nextService.postValue(service)
+                } else {
+                    _nextService.postValue(null)
+                }
+            }
+        }
+    }
+    private val currentServiceListener: ServiceEventListener = ServiceEventListener { service ->
+        if (service == null) {
+            _currentService.postValue(null)
+        } else {
+            driver.value?.let {
+                if (it.id == service.driver_id) {
+                    _currentService.postValue(service)
+                } else {
+                    _currentService.postValue(null)
+                }
+            }
+        }
+    }
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driverStatus: LiveData<DriverUpdates> = _driverState
-    var driver: LiveData<Driver> = _driver
+    var driver: LiveData<Driver?> = _driver
     var serviceUpdates: LiveData<ServiceUpdates> = _serviceUpdates
     val currentService: LiveData<Service?> = _currentService
+    val nextService: LiveData<Service?> = _nextService
     val isNetWorkConnected: LiveData<Boolean> = _isNetWorkConnected
     val isTripStarted: LiveData<Boolean> = _isTripStarted
     val rideFees: LiveData<RideFees> = _rideFees
@@ -76,11 +105,16 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun isThereCurrentService() {
-        ServiceRepository.isThereCurrentService { service ->
-            _currentService.postValue(service)
-            if (service != null) {
-                _serviceUpdates.postValue(ServiceUpdates.Status(service.status))
-            }
+        ServiceRepository.isThereCurrentService(currentServiceListener)
+    }
+
+    fun isThereConnectionService() {
+        ServiceRepository.isThereConnectionService(nextServiceListener)
+    }
+
+    fun stopNextServiceListener() {
+        _nextService.value?.let { _ ->
+            ServiceRepository.stopListenNextService(nextServiceListener)
         }
     }
 

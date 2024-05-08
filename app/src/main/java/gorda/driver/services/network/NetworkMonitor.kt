@@ -31,9 +31,11 @@ class NetworkMonitor(private val context: Context,
 
     fun startMonitoring() {
         if (!isMonitoring) {
-            val networkRequest = NetworkRequest.Builder()
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                .build()
+            val networkRequest =
+                NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build()
+
             connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
             isMonitoring = true
         }

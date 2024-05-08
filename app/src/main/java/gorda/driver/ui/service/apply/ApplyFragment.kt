@@ -91,7 +91,11 @@ class ApplyFragment : Fragment() {
                         time = it.time
                         distance = it.distance
                         mainViewModel.setLoading(true)
-                        service.addApplicant(driver, distance, time).addOnSuccessListener {
+                        var connection: String? = null
+                        mainViewModel.currentService.value?.let {_ ->
+                            connection = service.id
+                        }
+                        service.addApplicant(driver, distance, time, connection).addOnSuccessListener {
                             val applyText = requireActivity().resources.getString(R.string.wait_for_assign, service.start_loc.name)
                             textView.text = StringHelper.getString(applyText)
                             btnCancel.isEnabled = true

@@ -20,6 +20,7 @@ import gorda.driver.R
 import gorda.driver.activity.StartActivity
 import gorda.driver.location.LocationHandler
 import gorda.driver.repositories.ServiceRepository
+import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
 
@@ -32,12 +33,15 @@ class FeesService: Service(), LocationListener {
     private lateinit var locationManager: LocationHandler
     private var multiplier = 1.0
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var currentServiceListener: ServiceEventListener
     private var count = 0
+    private lateinit var playSound: PlaySound
 
     companion object {
         const val SERVICE_ID = 101
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        playSound = PlaySound(this, sharedPreferences)
         intent?.let {
             if (it.getBooleanExtra(Constants.RESTART_TRIP, false)) {
                 restoreStartTime()
@@ -65,10 +69,15 @@ class FeesService: Service(), LocationListener {
     }
 
     private fun listenService() {
-        ServiceRepository.isThereCurrentService { service ->
-            if (service === null) stopSelf()
-            else if (!service.isInProgress()) stopSelf()
+        currentServiceListener = ServiceEventListener { service ->
+            if (service == null || !service.isInProgress()) {
+                sharedPreferences.edit().putLong(Constants.START_TIME, startTime).apply()
+                sharedPreferences.edit().remove(Constants.MULTIPLIER).apply()
+                sharedPreferences.edit().remove(Constants.POINTS).apply()
+                stopSelf()
+            }
         }
+        ServiceRepository.isThereCurrentService(currentServiceListener)
     }
 
     override fun onCreate() {

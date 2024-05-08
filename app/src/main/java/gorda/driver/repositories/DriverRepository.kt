@@ -39,12 +39,11 @@ object DriverRepository {
         }
     }
 
-    fun getDriver(driverId: String, listener: (driver: Driver) -> Unit) {
+    fun getDriver(driverId: String, listener: (driver: Driver?) -> Unit) {
         Database.dbDrivers().child(driverId).get().addOnSuccessListener { snapshot ->
-            snapshot.getValue<Driver>()?.let {
-                listener(it)
-            }
+            listener(snapshot.getValue<Driver?>())
         }.addOnFailureListener {
+            listener(null)
             Log.e(TAG, it.message!!)
         }
     }

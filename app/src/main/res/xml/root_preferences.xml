@@ -1,26 +1,37 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory app:title="@string/notifications">
+    <PreferenceCategory
+        app:title="@string/notifications"
+        app:key="gorda.driver.PARENT"
+        >
 
         <ListPreference
             app:defaultValue="gorda.driver.NOTIFICATION_VOICE"
             app:entries="@array/notify_entries"
             app:entryValues="@array/notify_values"
-            app:key="gorda.driver.NOTIFICATIONS"
             app:icon="@drawable/add_24"
+            app:key="gorda.driver.NOTIFICATIONS"
             app:title="@string/sound"
             app:useSimpleSummaryProvider="true" />
+
+        <Preference
+            app:allowDividerAbove="false"
+            app:allowDividerBelow="false"
+            app:icon="@drawable/audiotrack_24"
+            app:key="gorda.driver.NOTIFICATION_RINGTONE"
+            app:title="@string/new_service_select_tone"
+            app:useSimpleSummaryProvider="true" />
+
 
         <ListPreference
             app:defaultValue="gorda.driver.NOTIFICATION_TONE"
             app:entries="@array/notify_assigned_entries"
             app:entryValues="@array/notify_assigned_values"
-            app:key="gorda.driver.NOTIFICATION_ASSIGNED"
             app:icon="@drawable/assign_24"
+            app:key="gorda.driver.NOTIFICATION_ASSIGNED"
             app:title="@string/sound_assigned"
             app:useSimpleSummaryProvider="true" />
-
         <ListPreference
             app:defaultValue="gorda.driver.NOTIFICATION_TONE"
             app:entries="@array/notify_canceled_entries"

@@ -33,6 +33,8 @@ import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
 import gorda.driver.ui.service.LocationBroadcastReceiver
+import gorda.driver.ui.service.ServiceEventListener
+import gorda.driver.ui.service.ServicesEventListener
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 import gorda.driver.utils.Utils
@@ -60,6 +62,75 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
     private var haveToUpdate = 0
     private lateinit var listServices: MutableList<DBService>
     private val timer = Timer()
+    private val listener: ServicesEventListener = ServicesEventListener { services ->
+        listServices = services
+    }
+    private var nextService: gorda.driver.models.Service? = null
+    private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
+        if (service == null) {
+            if (nextService != null) {
+                playSound.playCancelSound(nextService!!.created_at.toInt())
+                nextService = null
+            }
+        } else {
+            nextService = service
+            playSound.playAssignedSound(nextService!!.created_at.toInt())
+        }
+    }
+    private val currentServiceListener: ServiceEventListener = ServiceEventListener { service ->
+        service?.let { s ->
+            when (s.status) {
+                DBService.STATUS_IN_PROGRESS -> {
+                    val notifyId = sharedPreferences.getInt(
+                        Constants.SERVICES_NOTIFICATION_ID,
+                        0
+                    )
+                    if (notifyId != service.created_at.toInt())
+                        playSound.playAssignedSound(service.created_at.toInt())
+                }
+                DBService.STATUS_CANCELED -> {
+                    val cancelNotifyId = sharedPreferences.getInt(
+                        Constants.CANCEL_SERVICES_NOTIFICATION_ID,
+                        0
+                    )
+                    if (cancelNotifyId != service.created_at.toInt()) {
+                        val chanel =
+                            sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_VOICE)
+                        if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_canceled))
+                        else playSound.playCancelSound(service.created_at.toInt())
+
+                        val editor: SharedPreferences.Editor = sharedPreferences.edit()
+                        editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, service.created_at.toInt())
+                        editor.apply()
+                    }
+                }
+            }
+        }
+    }
+    private val listenerNewServices: ChildEventListener = object : ChildEventListener {
+        override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+            if (snapshot.exists()) {
+                val chanel =
+                    sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
+                snapshot.getValue<DBService>()?.let { service ->
+                    if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + service.start_loc.name)
+                    else playSound.playNewService()
+                }
+            }
+        }
+
+        override fun onChildChanged(
+            snapshot: DataSnapshot,
+            previousChildName: String?
+        ) {
+        }
+
+        override fun onChildRemoved(snapshot: DataSnapshot) {}
+
+        override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
+
+        override fun onCancelled(error: DatabaseError) {}
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
@@ -69,36 +140,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
                 driverID = id
                 locationManager = LocationHandler.getInstance(this)
                 locationManager.addListener(this)
-                ServiceRepository.isThereCurrentService { service ->
-                    service?.let { s ->
-                        when (s.status) {
-                            DBService.STATUS_IN_PROGRESS -> {
-                                val notifyId = sharedPreferences.getInt(
-                                    Constants.SERVICES_NOTIFICATION_ID,
-                                    0
-                                )
-                                if (notifyId != service.created_at.toInt())
-                                    playSound.playAssignedSound(service.created_at.toInt())
-                            }
-                            DBService.STATUS_CANCELED -> {
-                                val cancelNotifyId = sharedPreferences.getInt(
-                                    Constants.CANCEL_SERVICES_NOTIFICATION_ID,
-                                    0
-                                )
-                                if (cancelNotifyId != service.created_at.toInt()) {
-                                    val chanel =
-                                        sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_VOICE)
-                                    if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_canceled))
-                                    else playSound.playCancelSound(service.created_at.toInt())
-
-                                    val editor: SharedPreferences.Editor = sharedPreferences.edit()
-                                    editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, service.created_at.toInt())
-                                    editor.apply()
-                                }
-                            }
-                        }
-                    }
-                }
+                ServiceRepository.isThereCurrentService(currentServiceListener)
             }
         }
         return START_STICKY
@@ -141,18 +183,20 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         startListenNewServices()
         startSyncServices()
         startTimer()
+        startListenNextService()
     }
 
     fun stop() {
         locationManager.removeListener(this)
-        ServiceRepository.stopListenNewServices()
+        ServiceRepository.stopListenNewServices(listenerNewServices)
+        ServiceRepository.stopListenServices(listener)
         stoped = true
         timer.cancel()
-        stopSelf()
         if (toSpeech != null) {
             toSpeech!!.stop()
             toSpeech!!.shutdown()
         }
+        stopSelf()
     }
 
     override fun onDestroy() {
@@ -233,35 +277,14 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
     }
 
     private fun startSyncServices() {
-        ServiceRepository.getPending { services ->
-            listServices = services
-        }
+        ServiceRepository.getPending(listener)
     }
 
     private fun startListenNewServices() {
-        ServiceRepository.listenNewServices(object : ChildEventListener {
-            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                if (snapshot.exists()) {
-                    val chanel =
-                        sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
-                    snapshot.getValue<DBService>()?.let { service ->
-                        if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + service.start_loc.name)
-                        else playSound.playNewService()
-                    }
-                }
-            }
+        ServiceRepository.listenNewServices(listenerNewServices)
+    }
 
-            override fun onChildChanged(
-                snapshot: DataSnapshot,
-                previousChildName: String?
-            ) {
-            }
-
-            override fun onChildRemoved(snapshot: DataSnapshot) {}
-
-            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
-
-            override fun onCancelled(error: DatabaseError) {}
-        })
+    private fun startListenNextService() {
+        ServiceRepository.isThereConnectionService(nextServiceListener)
     }
 }
