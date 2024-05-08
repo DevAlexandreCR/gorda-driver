@@ -11,4 +11,6 @@ data class RideFees (
     @SerializedName("fees_night") var priceNightFee: Double = 0.0,
     @SerializedName("fees_DxF") var priceFestive: Double = 0.0,
     @SerializedName("fees_night_DxF") var priceFestiveNight: Double = 0.0,
+    @SerializedName("timeout_to_complete") var timeoutToComplete: Int = 240,
+    @SerializedName("timeout_to_connection") var timeoutToConnection: Int = 120,
 )

@@ -44,7 +44,7 @@ object ServiceRepository {
     }
 
     fun stopListenNextService(listener: ServiceEventListener) {
-//        listener.setNull()
+        listener.setNull()
     }
 
     fun stopListenNewServices(listener: ChildEventListener) {
