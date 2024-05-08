@@ -77,4 +77,5 @@
     <string name="sound_assigned">Service assigned</string>
     <string name="tone">Tone</string>
     <string name="none">None</string>
+    <string name="new_service_select_tone">Select ringtone</string>
 </resources>

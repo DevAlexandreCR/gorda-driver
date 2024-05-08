@@ -70,4 +70,5 @@
     <string name="sound_assigned">Servicio asignado</string>
     <string name="tone">Tono</string>
     <string name="none">Ninguno</string>
+    <string name="new_service_select_tone">Seleccionar tono</string>
 </resources>
