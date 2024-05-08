@@ -7,6 +7,8 @@ import android.os.Build
 import gorda.driver.R
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
+import io.sentry.Sentry
+import android.media.RingtoneManager
 
 class PlaySound(private val context: Context, private val sharedPreferences: SharedPreferences) {
 
@@ -52,11 +54,15 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
         val mute = sharedPreferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
         if (mute) return
 
-        if (Utils.isNewerVersion(Build.VERSION_CODES.N)) {
+        try {
+            val source = sharedPreferences.getString(Constants.NOTIFICATION_RINGTONE,
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION).toString())
             player.reset()
-            player.setDataSource(context.resources.openRawResourceFd(R.raw.new_service))
+            player.setDataSource(context, Uri.parse(source))
             player.prepare()
+            if (!player.isPlaying) player.start()
+        } catch (e: Exception)  {
+            Sentry.captureException(e)
         }
-        if (!player.isPlaying) player.start()
     }
 }

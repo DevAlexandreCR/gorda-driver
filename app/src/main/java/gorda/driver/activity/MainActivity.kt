@@ -446,7 +446,7 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION) {
-            if (grantResults.isEmpty() && grantResults[0] == PackageManager.PERMISSION_DENIED) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_DENIED) {
                 finish()
             }
         }

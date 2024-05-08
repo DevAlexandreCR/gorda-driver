@@ -102,4 +102,5 @@
     <string name="fields_price">Precio</string>
     <string name="fields_comment">Comentario</string>
     <string name="next_service">Siguiente Servicio</string>
+    <string name="new_service_select_tone">Seleccionar tono</string>
 </resources>

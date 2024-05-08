@@ -13,8 +13,8 @@ android {
         applicationId "gorda.driver"
         minSdk 21
         targetSdk 33
-        versionCode 42
-        versionName "Beta-1.1.8"
+        versionCode 44
+        versionName "Beta-1.1.9"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -39,7 +39,6 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.recyclerview:recyclerview:1.3.0'
     modules {
         module("org.jetbrains.kotlin:kotlin-stdlib-jdk7") {
             replacedBy("org.jetbrains.kotlin:kotlin-stdlib", "kotlin-stdlib-jdk7 is now part of kotlin-stdlib")
@@ -57,7 +56,6 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment-ktx:2.5.3'
     implementation 'androidx.navigation:navigation-ui-ktx:2.5.3'
     implementation 'com.google.firebase:firebase-database-ktx:20.2.2'
-    implementation 'com.google.firebase:firebase-firestore-ktx:24.11.1'
     implementation 'com.google.firebase:firebase-auth-ktx:22.1.1'
     implementation 'com.firebaseui:firebase-ui-auth:8.0.1'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.6.1'
