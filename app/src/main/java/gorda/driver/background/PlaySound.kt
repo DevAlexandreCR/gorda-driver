@@ -3,12 +3,13 @@ package gorda.driver.background
 import android.content.Context
 import android.content.SharedPreferences
 import android.media.MediaPlayer
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import gorda.driver.R
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
 import io.sentry.Sentry
-import android.media.RingtoneManager
 
 class PlaySound(private val context: Context, private val sharedPreferences: SharedPreferences) {
 
