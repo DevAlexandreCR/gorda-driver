@@ -265,6 +265,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             }
             builder.setPositiveButton(R.string.save) { _, _ ->
                 feesService.setMultiplier(editFeeMultiplier.text.toString().toDouble())
+                this.feeMultiplier = editFeeMultiplier.text.toString().toDouble()
             }
             val dialog: AlertDialog = builder.create()
             dialog.show()
