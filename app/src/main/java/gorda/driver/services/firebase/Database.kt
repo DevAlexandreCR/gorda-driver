@@ -13,6 +13,10 @@ object Database {
         return reference.child("drivers_assigned").ref
     }
 
+    fun dbServiceConnections(): DatabaseReference {
+        return reference.child("service_connections").ref
+    }
+
     fun dbDrivers(): DatabaseReference {
         return reference.child("drivers").ref
     }
@@ -23,5 +27,9 @@ object Database {
 
     fun dbOnlineDrivers(): DatabaseReference {
         return reference.child("online_drivers").ref
+    }
+
+    fun dbRideFees(): DatabaseReference {
+        return reference.child("settings").child("ride_fees").ref
     }
 }

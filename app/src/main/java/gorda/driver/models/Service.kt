@@ -19,13 +19,14 @@ data class Service(
     @SerializedName("end_loc") var end_loc: LocType? = null,
     @SerializedName("phone") var phone: String = "",
     @SerializedName("comment") var comment: String? = null,
-    @SerializedName("amount") var amount: Int? = null,
     @SerializedName("driver_id") var driver_id: String? = null,
     @SerializedName("client_id") var client_id: String? = null,
+    @SerializedName("wp_client_id") var wp_client_id: String? = null,
     @SerializedName("created_at") var created_at: Long = 0,
     @SerializedName("metadata") var metadata: ServiceMetadata = ServiceMetadata()
 ) : Serializable {
     companion object {
+        const val CREATED_AT = "created_at"
         const val STATUS_CANCELED = "canceled"
         const val STATUS_TERMINATED = "terminated"
         const val TAG = "gorda.driver.models.Service"
@@ -41,12 +42,12 @@ data class Service(
         return ServiceRepository.updateMetadata(this.id, this.metadata, this.status)
     }
 
-    fun addApplicant(driver: Driver, distance: Int, time: Int): Task<Void> {
-        return ServiceRepository.addApplicant(this.id, driver.id!!, distance, time)
+    fun addApplicant(driver: Driver, distance: Int, time: Int, connection: String? = null): Task<Void> {
+        return ServiceRepository.addApplicant(this.id, driver.id, distance, time, connection)
     }
 
     fun cancelApplicant(driver: Driver): Task<Void> {
-        return ServiceRepository.cancelApply(this.id, driver.id!!)
+        return ServiceRepository.cancelApply(this.id, driver.id)
     }
 
     fun onStatusChange(listener: ValueEventListener) {
@@ -55,5 +56,9 @@ data class Service(
 
     fun getStatusReference(): DatabaseReference {
         return ServiceRepository.getStatusReference(this.id)
+    }
+
+    fun isInProgress(): Boolean {
+        return this.status == STATUS_IN_PROGRESS
     }
 }

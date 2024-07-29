@@ -1,7 +1,7 @@
 package gorda.driver.interfaces
 
 interface DriverInterface {
-    var id: String?
+    var id: String
     var name: String
     var email: String
     var phone: String

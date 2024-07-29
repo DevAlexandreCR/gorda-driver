@@ -7,14 +7,9 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.models.Service
 
-class ServicesEventListener(listener: (serviceList: MutableList<Service>) -> Unit) :
+class ServicesEventListener(private val listener: (serviceList: MutableList<Service>) -> Unit) :
     ValueEventListener {
 
-    private val listener: (serviceList: MutableList<Service>) -> Unit
-
-    init {
-        this.listener = listener
-    }
     override fun onDataChange(snapshot: DataSnapshot) {
         val list: MutableList<Service> = mutableListOf()
 

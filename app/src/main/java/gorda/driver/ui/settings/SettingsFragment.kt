@@ -75,6 +75,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
         if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
             permissions = permissions.plus(Manifest.permission.READ_MEDIA_AUDIO)
         }
+
+        if (Utils.isNewerVersion(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)) {
+            permissions += Manifest.permission.FOREGROUND_SERVICE_LOCATION
+        }
         permissions.iterator().forEach { permission ->
             if (ActivityCompat.checkSelfPermission(
                     requireContext(),

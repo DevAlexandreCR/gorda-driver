@@ -2,6 +2,8 @@ package gorda.driver.ui.service
 
 import android.content.pm.PackageManager
 import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
@@ -9,18 +11,26 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.*
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.android.gms.maps.model.MarkerOptions
 import gorda.driver.R
 import gorda.driver.databinding.FragmentMapBinding
 import gorda.driver.interfaces.LocType
-import gorda.driver.maps.*
+import gorda.driver.maps.InfoWindowData
 import gorda.driver.maps.Map
+import gorda.driver.maps.MapApiService
+import gorda.driver.maps.OnDirectionCompleteListener
+import gorda.driver.maps.WindowAdapter
 import gorda.driver.services.retrofit.RetrofitBase
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.dataclasses.LocationUpdates
@@ -81,9 +91,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 MarkerOptions()
                     .position(driverLatLng)
                     .icon(
-                        BitmapDescriptorFactory.defaultMarker(
-                            BitmapDescriptorFactory.HUE_GREEN
-                        )
+                        BitmapDescriptorFactory.fromBitmap(getResizedBitmap(R.mipmap.ic_car))
                     )
             )
             driverMarker?.tag = makeInfoWindowData("A")
@@ -91,9 +99,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 MarkerOptions()
                     .position(startLatLng)
                     .icon(
-                        BitmapDescriptorFactory.defaultMarker(
-                            BitmapDescriptorFactory.HUE_GREEN
-                        )
+                        BitmapDescriptorFactory.fromBitmap(getResizedBitmap(R.mipmap.ic_loc_a_light ))
                     )
                     .title(statLoc!!.name)
             )
@@ -103,18 +109,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 .include(startLatLng)
                 .include(driverLatLng)
                 .build()
-            val paddingInPixels = (requireView().width.coerceAtMost(requireView().height) * 0.1).toInt()
+            val paddingInPixels = resources.getDimensionPixelSize(R.dimen.map_margin_big)
             googleMap.animateCamera(
                 CameraUpdateFactory.newLatLngBounds(
                     bounds,
                     paddingInPixels
                 )
-            )
-            val mapService = Map()
-            val url = mapService.getDirectionURL(
-                driverLatLng,
-                startLatLng,
-                getApiKey()
             )
             val distance = Map.calculateDistance(statLoc!!, location!!)
             val time = Map.calculateTime(distance)
@@ -132,6 +132,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         } else {
             println(statLoc.toString() + location.toString())
         }
+    }
+
+    private fun getResizedBitmap(drawableId: Int): Bitmap {
+        val bitmapDrawable = ResourcesCompat.getDrawable(resources, drawableId, null) as BitmapDrawable
+        val bitmap = bitmapDrawable.bitmap
+        return Bitmap.createScaledBitmap(bitmap, 100, 100, false)
     }
 
     private fun getDirections(url: String, listener: OnDirectionCompleteListener) {

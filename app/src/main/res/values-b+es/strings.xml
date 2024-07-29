@@ -58,6 +58,8 @@
     <string name="title_activity_start">Cargando…</string>
     <string name="terms"><a href="https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764\">Política de privacidad</a></string>
     <string name="service_to">Servicio para </string>
+    <string name="service_from">Servicio de %1$s </string>
+    <string name="service_running">Viaje iniciado…</string>
     <string name="not_waze">Waze no está instalado! </string>
     <string name="navigation">Navegar: </string>
     <!-- Preference Titles -->
@@ -70,5 +72,35 @@
     <string name="sound_assigned">Servicio asignado</string>
     <string name="tone">Tono</string>
     <string name="none">Ninguno</string>
+
+    <!--  Base fees-->
+    <string name="km">km</string>
+    <string name="min">min</string>
+    <string name="base">Tarifa base</string>
+    <string name="fees">Tarifa adicional</string>
+    <string name="time_fare">Precio por minuto</string>
+    <string name="distance_fare">Precio por kilómetro</string>
+    <string name="fare_multiplier">Multiplicador de tarifa</string>
+    <string name="fare_minimum">Tarifa mínima</string>
+    <string name="finalize_service">Finalizando servicio!</string>
+    <string name="start_ride">Iniciar Viale!</string>
+    <string name="start_ride_message">Modifica el multiplicador si es necesario:</string>
+    <string name="finalizing_message">El valor a cobrar es de &lt;big> &lt;b> %s&lt;/b>&lt;/big>, ¿Desea continuar?</string>
+    <string name="yes">Si</string>
+    <string name="no">No</string>
+    <string name="edit_multiplier">Editar Multiplicador</string>
+    <string name="save">Guardar</string>
+    <string name="ride_in_progress">Actualmente hay un servicio en curso, ¿deseas retomarlo?</string>
+    <string name="action_history">Historial</string>
+    <string name="AmountCurrency">%1$s COP</string>
+    <string name="completed">Completado</string>
+    <string name="canceled">Cancelado</string>
+    <string name="created_at">Creado</string>
+    <string name="fields_created_at">Creado</string>
+    <string name="fields_place">Lugar</string>
+    <string name="fields_status">Estado</string>
+    <string name="fields_price">Precio</string>
+    <string name="fields_comment">Comentario</string>
+    <string name="next_service">Siguiente Servicio</string>
     <string name="new_service_select_tone">Seleccionar tono</string>
 </resources>

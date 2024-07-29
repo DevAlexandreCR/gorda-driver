@@ -13,10 +13,17 @@ class Map {
             val location = Location("last")
             location.latitude = starLoc.lat
             location.longitude = starLoc.lng
-            var distance = 0
-            distance = endLoc.distanceTo(location).toInt()
+            return endLoc.distanceTo(location).toInt()
+        }
 
-            return distance
+        fun calculateDistanceBetween(latLng1: LatLng, latLng2: LatLng): Double {
+            val startLoc = Location("last")
+            startLoc.latitude = latLng1.latitude
+            startLoc.longitude = latLng1.longitude
+            val endLoc = Location("last")
+            endLoc.latitude = latLng2.latitude
+            endLoc.longitude = latLng2.longitude
+            return startLoc.distanceTo(endLoc).toDouble()
         }
 
         fun distanceToString(distance: Int): String {
