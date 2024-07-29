@@ -11,15 +11,18 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
-import gorda.driver.interfaces.Device
 import gorda.driver.interfaces.DeviceInterface
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
+import gorda.driver.interfaces.RideFees
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
+import gorda.driver.repositories.SettingsRepository
+import gorda.driver.serializers.RideFeesDeserializer
 import gorda.driver.ui.driver.DriverUpdates
+import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 
@@ -30,17 +33,68 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     private val _lastLocation = MutableLiveData<LocationUpdates>()
     private val _driverState = MutableLiveData<DriverUpdates>()
-    private val _driver = savedStateHandle.getLiveData<Driver>(Driver.TAG)
+    private val _driver: MutableLiveData<Driver?> = savedStateHandle.getLiveData(Driver.TAG)
     private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
     private val _currentService = MutableLiveData<Service?>()
+    private val _nextService = MutableLiveData<Service?>()
     private val _isNetWorkConnected = MutableLiveData(true)
+    private val _isTripStarted = MutableLiveData(false)
+    private val _rideFees = MutableLiveData<RideFees>()
+    private val _isLoading = MutableLiveData(false)
+    private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
+        if (service == null) {
+            _nextService.postValue(null)
+        } else {
+            driver.value?.let {
+                if (it.id == service.driver_id && currentService.value?.id != service.id) {
+                    _nextService.postValue(service)
+                } else {
+                    _nextService.postValue(null)
+                }
+            }
+        }
+    }
+    private val currentServiceListener: ServiceEventListener = ServiceEventListener { service ->
+        if (service == null) {
+            _currentService.postValue(null)
+        } else {
+            driver.value?.let {
+                if (it.id == service.driver_id) {
+                    _currentService.postValue(service)
+                } else {
+                    _currentService.postValue(null)
+                }
+            }
+        }
+    }
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driverStatus: LiveData<DriverUpdates> = _driverState
-    var driver: LiveData<Driver> = _driver
+    var driver: LiveData<Driver?> = _driver
     var serviceUpdates: LiveData<ServiceUpdates> = _serviceUpdates
     val currentService: LiveData<Service?> = _currentService
+    val nextService: LiveData<Service?> = _nextService
     val isNetWorkConnected: LiveData<Boolean> = _isNetWorkConnected
+    val isTripStarted: LiveData<Boolean> = _isTripStarted
+    val rideFees: LiveData<RideFees> = _rideFees
+    val isLoading: LiveData<Boolean> = _isLoading
+
+    fun getRideFees() {
+        SettingsRepository.getRideFees().addOnSuccessListener { snapshot ->
+            _rideFees.postValue(RideFeesDeserializer.getRideFees(snapshot))
+        }
+        .addOnFailureListener { _ ->
+            _rideFees.postValue(RideFees())
+        }
+    }
+
+    fun setLoading(loading: Boolean) {
+        _isLoading.postValue(loading)
+    }
+
+    fun changeConnectTripService(connect: Boolean) {
+        _isTripStarted.postValue(connect)
+    }
 
     fun changeNetWorkStatus(isConnected: Boolean) {
         _isNetWorkConnected.postValue(isConnected)
@@ -51,8 +105,16 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun isThereCurrentService() {
-        ServiceRepository.isThereCurrentService { service ->
-            _currentService.postValue(service)
+        ServiceRepository.isThereCurrentService(currentServiceListener)
+    }
+
+    fun isThereConnectionService() {
+        ServiceRepository.isThereConnectionService(nextServiceListener)
+    }
+
+    fun stopNextServiceListener() {
+        _nextService.value?.let { _ ->
+            ServiceRepository.stopListenNextService(nextServiceListener)
         }
     }
 
@@ -75,8 +137,15 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                         when (status) {
                             Service.STATUS_CANCELED,
                             Service.STATUS_IN_PROGRESS -> {
+                                snapshot.key?.let { key ->
+                                    _isLoading.postValue(true)
+                                    ServiceRepository.validateAssignment(key).addOnCompleteListener {
+                                        _isLoading.postValue(false)
+                                    }
+                                }
                                 service.getStatusReference().removeEventListener(this)
                             }
+                            else -> {}
                         }
                     }
                 }
@@ -93,7 +162,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun getDriver(driverId: String) {
+        _isLoading.postValue(true)
         DriverRepository.getDriver(driverId) { driver ->
+            _isLoading.postValue(false)
             _driver.postValue(driver)
             savedStateHandle[Driver.TAG] = driver
         }
@@ -101,7 +172,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun isConnected(driverId: String) {
         _driverState.postValue(DriverUpdates.connecting(true))
+        _isLoading.postValue(true)
         DriverRepository.isConnected(driverId) {
+            _isLoading.postValue(false)
             _driverState.postValue(DriverUpdates.connecting(false))
             _driverState.postValue(DriverUpdates.setConnected(it))
         }

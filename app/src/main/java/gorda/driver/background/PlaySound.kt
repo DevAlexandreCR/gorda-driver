@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import gorda.driver.R
 import gorda.driver.utils.Constants
+import gorda.driver.utils.Utils
 import io.sentry.Sentry
 
 class PlaySound(private val context: Context, private val sharedPreferences: SharedPreferences) {
@@ -20,11 +21,9 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
 
         val chanel =
             sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_TONE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             player.reset()
             player.setDataSource(context.resources.openRawResourceFd(R.raw.cancel_service))
             player.prepare()
-        }
         if (!player.isPlaying && chanel == Constants.NOTIFICATION_TONE) player.start()
 
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
@@ -37,12 +36,10 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
         if (mute) return
 
         val chanel =
-            sharedPreferences.getString(Constants.NOTIFICATION_ASSIGNED, Constants.NOTIFICATION_TONE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            player.reset()
-            player.setDataSource(context.resources.openRawResourceFd(R.raw.assigned_service))
-            player.prepare()
-        }
+        sharedPreferences.getString(Constants.NOTIFICATION_ASSIGNED, Constants.NOTIFICATION_TONE)
+        player.reset()
+        player.setDataSource(context.resources.openRawResourceFd(R.raw.assigned_service))
+        player.prepare()
         if (!player.isPlaying && chanel == Constants.NOTIFICATION_TONE) player.start()
 
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
@@ -64,6 +61,5 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
         } catch (e: Exception)  {
             Sentry.captureException(e)
         }
-
     }
 }

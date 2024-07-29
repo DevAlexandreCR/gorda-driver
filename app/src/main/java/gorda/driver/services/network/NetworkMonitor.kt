@@ -7,7 +7,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 
 class NetworkMonitor(private val context: Context,
-                     private val onNetWorkChange: (isConnected: Boolean) -> Unit) {
+                     private val onNetworkChange: (isConnected: Boolean) -> Unit) {
 
     private val connectivityManager =
         this.context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -16,11 +16,11 @@ class NetworkMonitor(private val context: Context,
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             val connected: Boolean = isOnline(network)
-            onNetWorkChange.invoke(connected)
+            onNetworkChange.invoke(connected)
         }
 
         override fun onLost(network: Network) {
-            onNetWorkChange.invoke(false)
+            onNetworkChange.invoke(false)
         }
 
         fun isOnline(network: Network): Boolean {
@@ -45,7 +45,7 @@ class NetworkMonitor(private val context: Context,
         if (isMonitoring) {
             connectivityManager.unregisterNetworkCallback(networkCallback)
             isMonitoring = false
-            onNetWorkChange.invoke(false)
+            onNetworkChange.invoke(false)
         }
     }
 }
