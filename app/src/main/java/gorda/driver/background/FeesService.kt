@@ -107,9 +107,8 @@ class FeesService: Service(), LocationListener {
             .setContentTitle(getString(R.string.service_running))
             .setContentText(getString(R.string.service_from, name))
             .setContentIntent(pendingIntent)
-        if (Utils.isNewerVersion(Build.VERSION_CODES.N)) {
-            builder.priority = NotificationManager.IMPORTANCE_HIGH
-        }
+        builder.priority = NotificationManager.IMPORTANCE_HIGH
+
         if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
             startForeground(SERVICE_ID, builder.build())
         }

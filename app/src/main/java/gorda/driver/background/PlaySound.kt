@@ -21,11 +21,9 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
 
         val chanel =
             sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_TONE)
-        if (Utils.isNewerVersion(Build.VERSION_CODES.N)) {
             player.reset()
             player.setDataSource(context.resources.openRawResourceFd(R.raw.cancel_service))
             player.prepare()
-        }
         if (!player.isPlaying && chanel == Constants.NOTIFICATION_TONE) player.start()
 
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
@@ -38,12 +36,10 @@ class PlaySound(private val context: Context, private val sharedPreferences: Sha
         if (mute) return
 
         val chanel =
-            sharedPreferences.getString(Constants.NOTIFICATION_ASSIGNED, Constants.NOTIFICATION_TONE)
-        if (Utils.isNewerVersion(Build.VERSION_CODES.N)) {
-            player.reset()
-            player.setDataSource(context.resources.openRawResourceFd(R.raw.assigned_service))
-            player.prepare()
-        }
+        sharedPreferences.getString(Constants.NOTIFICATION_ASSIGNED, Constants.NOTIFICATION_TONE)
+        player.reset()
+        player.setDataSource(context.resources.openRawResourceFd(R.raw.assigned_service))
+        player.prepare()
         if (!player.isPlaying && chanel == Constants.NOTIFICATION_TONE) player.start()
 
         val editor: SharedPreferences.Editor = sharedPreferences.edit()

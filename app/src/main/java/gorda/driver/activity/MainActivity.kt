@@ -145,9 +145,8 @@ class MainActivity : AppCompatActivity() {
             resources.getString(R.string.connection_lost),
             Snackbar.LENGTH_INDEFINITE
         )
-        if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
-            snackBar.setTextColor(getColor(R.color.white))
-        }
+
+        snackBar.setTextColor(getColor(R.color.white))
 
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.logout) {
@@ -261,16 +260,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun setIconNotificationButton(isNotificationMute: Boolean) {
         if (isNotificationMute) {
-            if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
-                notificationButton.backgroundTintList =
-                    ColorStateList.valueOf(getColor(R.color.red))
-            }
+            notificationButton.backgroundTintList =
+                ColorStateList.valueOf(getColor(R.color.red))
             notificationButton.setImageResource(R.drawable.notifications_off)
         } else {
-            if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
-                notificationButton.backgroundTintList =
-                    ColorStateList.valueOf(getColor(R.color.secondary_dark))
-            }
+            notificationButton.backgroundTintList =
+                ColorStateList.valueOf(getColor(R.color.secondary_dark))
             notificationButton.setImageResource(R.drawable.notifications_active)
         }
     }
@@ -341,12 +336,10 @@ class MainActivity : AppCompatActivity() {
         val alertDialog: AlertDialog = builder.create()
         alertDialog.setCancelable(false)
         alertDialog.setOnShowListener {
-            if (Utils.isNewerVersion(Build.VERSION_CODES.M)) {
-                alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                    .setTextColor(resources.getColor(R.color.primary_light, null))
-                alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-                    .setTextColor(resources.getColor(R.color.primary_light, null))
-            }
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setTextColor(resources.getColor(R.color.primary_light, null))
+            alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                .setTextColor(resources.getColor(R.color.primary_light, null))
         }
         alertDialog.show()
     }
