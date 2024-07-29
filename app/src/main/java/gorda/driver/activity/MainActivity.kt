@@ -380,8 +380,12 @@ class MainActivity : AppCompatActivity() {
                     switchConnect.isChecked = driverUpdates.connected
                     switchConnect.setEnabled(true)
                     if (driverUpdates.connected) {
-                        startLocationService()
-                        switchConnect.setText(R.string.status_connected)
+                        if (!LocationHandler.checkPermissions(this)) {
+                            DriverUpdates.setConnected(false)
+                        } else {
+                            startLocationService()
+                            switchConnect.setText(R.string.status_connected)
+                        }
                     } else {
                         switchConnect.setText(R.string.status_disconnected)
                         stopLocationService()
@@ -482,6 +486,11 @@ class MainActivity : AppCompatActivity() {
         if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
             permissions += Manifest.permission.POST_NOTIFICATIONS
         }
+
+        if (Utils.isNewerVersion(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)) {
+            permissions += Manifest.permission.FOREGROUND_SERVICE_LOCATION
+        }
+
         ActivityCompat.requestPermissions(
             this, permissions, LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
         )

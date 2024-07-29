@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -53,7 +54,26 @@ class LocationHandler private constructor(context: Context) {
         }
 
         fun checkPermissions(context: Context): Boolean {
-            return if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
+            return if (Utils.isNewerVersion(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)) {
+                (
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED &&
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ) == PackageManager.PERMISSION_GRANTED &&
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED &&
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.FOREGROUND_SERVICE_LOCATION
+                        ) == PackageManager.PERMISSION_GRANTED
+                    )
+            } else if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
                 (
                     ContextCompat.checkSelfPermission(
                         context,
