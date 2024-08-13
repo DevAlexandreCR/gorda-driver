@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.ServiceInfo
 import android.location.Location
 import android.os.Binder
 import android.os.Build
@@ -109,7 +110,9 @@ class FeesService: Service(), LocationListener {
             .setContentIntent(pendingIntent)
         builder.priority = NotificationManager.IMPORTANCE_HIGH
 
-        if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.Q)) {
+            startForeground(SERVICE_ID, builder.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+        } else {
             startForeground(SERVICE_ID, builder.build())
         }
     }
