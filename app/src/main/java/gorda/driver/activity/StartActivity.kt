@@ -80,8 +80,8 @@ class StartActivity : AppCompatActivity() {
         Sentry.init(BuildConfig.SENTRY_DSN);
     }
 
-    override fun onStart() {
-        super.onStart()
+    override fun onResume() {
+        super.onResume()
         Auth.onAuthChanges { uuid ->
             if (uuid === null) {
                 launchLogin()

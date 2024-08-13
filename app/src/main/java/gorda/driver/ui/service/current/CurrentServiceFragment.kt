@@ -99,8 +99,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var fragmentManager: FragmentManager
     private lateinit var transaction: FragmentTransaction
     private lateinit var homeFragment: HomeFragment
+    private var isServiceBound = false
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            isServiceBound = true
             val binder = service as FeesService.ChronometerBinder
             feesService = binder.getService()
             mainViewModel.changeConnectTripService(true)
@@ -110,6 +112,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
+            isServiceBound = false
             mainViewModel.changeConnectTripService(false)
             chronometer.base = SystemClock.elapsedRealtime()
             chronometer.stop()
@@ -296,8 +299,11 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     override fun onStop() {
         super.onStop()
         if (mainViewModel.isTripStarted.value == true) {
-            requireContext().unbindService(serviceConnection)
             mainViewModel.changeConnectTripService(false)
+        }
+        if (isServiceBound) {
+            isServiceBound = false
+            requireContext().unbindService(serviceConnection)
         }
     }
 

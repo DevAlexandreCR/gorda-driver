@@ -12,5 +12,6 @@
         android:layout_marginEnd="@dimen/activity_horizontal_margin"
         android:ems="10"
         android:inputType="numberDecimal"
-        android:textAlignment="center" />
+        android:textAlignment="center"
+        android:textColor="@color/secondary_light" />
 </androidx.appcompat.widget.LinearLayoutCompat>
