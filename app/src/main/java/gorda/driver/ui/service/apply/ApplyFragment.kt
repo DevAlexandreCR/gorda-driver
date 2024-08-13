@@ -58,7 +58,9 @@ class ApplyFragment : Fragment() {
             button.isEnabled = false
             cancelApply().addOnSuccessListener {
                 button.isEnabled = true
-                findNavController().navigate(R.id.action_cancel_apply)
+                if (isAdded && findNavController().currentDestination?.id == R.id.nav_apply) {
+                    findNavController().navigate(R.id.action_cancel_apply)
+                }
                 Toast.makeText(requireContext(), R.string.cancelApply, Toast.LENGTH_SHORT).show()
             }. addOnFailureListener { e ->
                 button.isEnabled = true
@@ -72,8 +74,10 @@ class ApplyFragment : Fragment() {
             arguments?.let { bundle ->
                 service = bundle.getSerializable("service") as Service
                 apply()
-                findNavController().addOnDestinationChangedListener { _, _, _ ->
-                    cancelApply()
+                if (isAdded) {
+                    findNavController().addOnDestinationChangedListener { _, _, _ ->
+                        cancelApply()
+                    }
                 }
             }
         }
