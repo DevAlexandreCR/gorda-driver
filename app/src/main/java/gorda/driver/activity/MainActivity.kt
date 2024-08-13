@@ -450,6 +450,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startLocationService() {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.S) && !Utils.isAppInForeground(this)) {
+            return
+        }
         Intent(this, LocationService::class.java).also { intent ->
             intent.putExtra(Driver.DRIVER_KEY, this.driver?.id)
             if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
