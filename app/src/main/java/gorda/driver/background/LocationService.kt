@@ -6,6 +6,7 @@ import android.app.Service
 import android.content.ContentResolver
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.ServiceInfo
 import android.location.Location
 import android.media.MediaPlayer
 import android.net.Uri
@@ -171,7 +172,9 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
             .setContentText(getString(R.string.text_connected))
             .setSound(connectedUri)
             .setContentIntent(pendingIntent)
-        if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.Q)) {
+            startForeground(SERVICE_ID, builder.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+        } else {
             startForeground(SERVICE_ID, builder.build())
         }
         toSpeech = TextToSpeech(this, this)
