@@ -138,8 +138,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
             stoped = false
             intent.getStringExtra(Driver.DRIVER_KEY)?.let { id ->
                 driverID = id
-                locationManager = LocationHandler.getInstance(this)
-                locationManager.addListener(this)
                 ServiceRepository.isThereCurrentService(currentServiceListener)
             }
         }
@@ -180,6 +178,8 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this@LocationService)
         mediaPlayer = MediaPlayer.create(this, R.raw.new_service)
         listServices = mutableListOf()
+        locationManager = LocationHandler.getInstance(this)
+        locationManager.addListener(this)
         startListenNewServices()
         startSyncServices()
         startTimer()
