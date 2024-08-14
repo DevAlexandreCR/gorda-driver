@@ -13,5 +13,6 @@
         android:ems="10"
         android:inputType="numberDecimal"
         android:textAlignment="center"
-        android:textColor="@color/secondary_light" />
+        android:textColor="@color/secondary_variant"
+        />
 </androidx.appcompat.widget.LinearLayoutCompat>
