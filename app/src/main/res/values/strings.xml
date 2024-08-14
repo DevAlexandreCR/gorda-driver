@@ -16,7 +16,7 @@
     <string name="navigation_drawer_open" translatable="false">Open navigation drawer</string>
     <string name="navigation_drawer_close" translatable="false">Close navigation drawer</string>
     <string name="nav_header_title" translatable="false">Go! Drive</string>
-    <string name="nav_header_subtitle" translatable="false">driver@redblanca.com.co</string>
+    <string name="nav_header_subtitle" translatable="false">driver@go.com</string>
     <string name="nav_header_desc" translatable="false">Navigation header</string>
 
     <string name="menu_home">Services</string>
@@ -110,4 +110,5 @@
     <string name="fields_comment">Comment</string>
     <string name="next_service">Next Service</string>
     <string name="new_service_select_tone">Select ringtone</string>
+    <string name="login_error">Login failed. Please try again.</string>
 </resources>

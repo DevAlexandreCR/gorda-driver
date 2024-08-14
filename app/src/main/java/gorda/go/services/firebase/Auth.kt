@@ -15,7 +15,9 @@ object Auth {
     }
 
     fun onAuthChanges(listener: (uuid: String?) -> Unit) {
-        auth.addAuthStateListener { p0 -> listener(p0.uid) }
+        auth.addAuthStateListener { p0 ->
+            listener(p0.currentUser?.uid)
+        }
     }
 
     fun launchLogin(): Intent {

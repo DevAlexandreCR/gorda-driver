@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.appcompat.app.AppCompatActivity
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
@@ -83,9 +84,12 @@ class StartActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         Auth.onAuthChanges { uuid ->
-            if (uuid === null) {
+            Log.d(TAG, "uuid: $uuid")
+            if (Auth.getCurrentUserUUID() == null) {
+                Log.e(TAG, "User is not Authenticated")
                 launchLogin()
             } else {
+                Log.e(TAG, "uuid: $uuid")
                 launchMain(uuid.toString())
             }
         }
@@ -110,8 +114,9 @@ class StartActivity : AppCompatActivity() {
     private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
         loginLaunched = false
         if (result.resultCode != RESULT_OK) {
-            val msg = "error while login ${result.resultCode}"
+            val msg = "error while login ${result.resultCode} ${result.idpResponse}"
             Log.e(TAG, msg)
+            Toast.makeText(this, R.string.login_error, Toast.LENGTH_SHORT).show()
             launchLogin()
         }
     }

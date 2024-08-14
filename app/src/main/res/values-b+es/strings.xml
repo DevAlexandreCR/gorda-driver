@@ -103,4 +103,5 @@
     <string name="fields_comment">Comentario</string>
     <string name="next_service">Siguiente Servicio</string>
     <string name="new_service_select_tone">Seleccionar tono</string>
+    <string name="login_error">Error al iniciar sesión, por favor intenta de nuevo.</string>
 </resources>
