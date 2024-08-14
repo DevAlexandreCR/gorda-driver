@@ -3,7 +3,7 @@
 
     <PreferenceCategory
         app:title="@string/notifications"
-        app:key="gorda.driver.PARENT"
+        app:key="gorda.go.PARENT"
         >
 
         <ListPreference
