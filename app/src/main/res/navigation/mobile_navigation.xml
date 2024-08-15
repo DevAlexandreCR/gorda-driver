@@ -7,53 +7,53 @@
 
     <fragment
         android:id="@+id/nav_home"
-        android:name="gorda.driver.ui.home.HomeFragment"
+        android:name="gorda.go.ui.home.HomeFragment"
         android:label="@string/menu_home"
         tools:layout="@layout/fragment_home" />
 
     <fragment
         android:id="@+id/nav_profile"
-        android:name="gorda.driver.ui.profile.ProfileFragment"
+        android:name="gorda.go.ui.profile.ProfileFragment"
         android:label="@string/menu_profile"
         tools:layout="@layout/fragment_profile" />
 
     <fragment
         android:id="@+id/nav_current_service"
-        android:name="gorda.driver.ui.service.current.CurrentServiceFragment"
+        android:name="gorda.go.ui.service.current.CurrentServiceFragment"
         android:label="@string/menu_current_service"
         tools:layout="@layout/fragment_current_service" />
 
     <fragment
         android:id="@+id/nav_map"
-        android:name="gorda.driver.ui.service.MapFragment"
+        android:name="gorda.go.ui.service.MapFragment"
         android:label="@string/map"
         tools:layout="@layout/fragment_map"
         />
     <fragment
         android:id="@+id/nav_about"
-        android:name="gorda.driver.ui.about.AboutFragment"
+        android:name="gorda.go.ui.about.AboutFragment"
         android:label="@string/about"
         tools:layout="@layout/fragment_about"
         />
     <fragment
         android:id="@+id/nav_settings"
-        android:name="gorda.driver.ui.settings.SettingsFragment"
+        android:name="gorda.go.ui.settings.SettingsFragment"
         android:label="@string/action_settings"
         />
     <fragment
         android:id="@+id/nav_history"
-        android:name="gorda.driver.ui.history.HistoryFragment"
+        android:name="gorda.go.ui.history.HistoryFragment"
         android:label="@string/action_history"
         />
     <fragment
         android:id="@+id/nav_apply"
-        android:name="gorda.driver.ui.service.apply.ApplyFragment"
+        android:name="gorda.go.ui.service.apply.ApplyFragment"
         android:label="@string/apply"
         tools:layout="@layout/fragment_apply"
         >
         <argument
             android:name="service"
-            app:argType="gorda.driver.models.Service" />
+            app:argType="gorda.go.models.Service" />
         <action
             android:id="@+id/action_cancel_apply"
             app:destination="@id/nav_home"

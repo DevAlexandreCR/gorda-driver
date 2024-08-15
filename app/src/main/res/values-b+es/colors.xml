@@ -5,11 +5,11 @@
     <color name="red">#F44336</color>
     <color name="primary">#292929</color>
     <color name="primary_light">#BCBBBB</color>
-    <color name="primary_dark">#202020</color>
-    <color name="primary_variant">#000000</color>
+    <color name="primary_dark">#000000</color>
+    <color name="primary_variant">#202020</color>
     <color name="secondary">#B1946D</color>
-    <color name="secondary_light">#E1E1E1</color>
-    <color name="secondary_dark">#79654B</color>
+    <color name="secondary_light">#C1232F</color>
+    <color name="secondary_dark">#A02233</color>
     <color name="secondary_variant">#E8E8E8</color>
     <color name="light_blue_600">#FF039BE5</color>
     <color name="light_blue_900">#FF01579B</color>

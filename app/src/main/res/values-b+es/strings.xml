@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Red Blanca Conductor</string>
+    <string name="app_name">Go</string>
     <string name="action_settings">Configuraciones</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">Primer Fragmento</string>
@@ -46,11 +46,11 @@
     <string name="service_canceled">El servicio ha sido cancelado</string>
     <string name="text_connected">Estás disponible para recibir servicios</string>
     <string name="connection_lost">Sin internet. Conectando…</string>
-    <string name="text_disclosure">Red Blanca Conductor necesita conocer tu ubicación para habilitar la función de "Conectado" y asignarte servicios cercanos incluso cuando la app está cerrada o no está en uso. \nPermite Red Blanca Conductor usar tu ubicación en tiempo real</string>
+    <string name="text_disclosure">Go! Drive necesita conocer tu ubicación para habilitar la función de "Conectado" y asignarte servicios cercanos incluso cuando la app está cerrada o no está en uso. \nPermite Go! Drive usar tu ubicación en tiempo real</string>
     <string name="allow">Permitir</string>
     <string name="disallow">Denegar</string>
     <string name="disclosure_title">Usa tu ubicación</string>
-    <string name="firebase_notification">gorda.driver.services</string>
+    <string name="firebase_notification">gorda.go.services</string>
     <string name="new_service_title">Nuevo Servico!</string>
     <string name="new_service_text">Se te ha asignado un nuevo servicio!!!</string>
     <string name="about">Acerca de</string>
@@ -83,7 +83,7 @@
     <string name="fare_multiplier">Multiplicador de tarifa</string>
     <string name="fare_minimum">Tarifa mínima</string>
     <string name="finalize_service">Finalizando servicio!</string>
-    <string name="start_ride">Iniciar Viale!</string>
+    <string name="start_ride">Iniciar Viaje!</string>
     <string name="start_ride_message">Modifica el multiplicador si es necesario:</string>
     <string name="finalizing_message">El valor a cobrar es de &lt;big> &lt;b> %s&lt;/b>&lt;/big>, ¿Desea continuar?</string>
     <string name="yes">Si</string>
@@ -103,4 +103,5 @@
     <string name="fields_comment">Comentario</string>
     <string name="next_service">Siguiente Servicio</string>
     <string name="new_service_select_tone">Seleccionar tono</string>
+    <string name="login_error">Error al iniciar sesión, por favor intenta de nuevo.</string>
 </resources>

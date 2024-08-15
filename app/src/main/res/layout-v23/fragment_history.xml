@@ -22,7 +22,6 @@
         android:singleLine="true"
         android:textAlignment="viewStart"
         android:textAppearance="?attr/textAppearanceListItem"
-        android:textColor="@color/secondary_light"
         android:textSize="16sp"
         android:textStyle="bold" />
 
@@ -36,7 +35,7 @@
         android:singleLine="true"
         android:textAlignment="viewStart"
         android:textAppearance="?attr/textAppearanceListItem"
-        android:textColor="@color/secondary_light" />
+        />
 
     <TextView
         android:id="@+id/status"
@@ -51,6 +50,6 @@
         android:singleLine="true"
         android:textAlignment="viewEnd"
         android:textAppearance="?attr/textAppearanceListItem"
-        android:textColor="@color/secondary_light" />
+        />
 
 </LinearLayout>

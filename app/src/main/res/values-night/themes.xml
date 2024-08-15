@@ -12,7 +12,7 @@
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
-        <item name="android:textColor">@color/secondary_light</item>
+        <item name="android:textColor">@color/secondary_variant</item>
         <item name="snackbarStyle">@style/Widget.App.Snackbar</item>
 
         <item name="android:alertDialogTheme">@style/AlertDialogTheme</item>
