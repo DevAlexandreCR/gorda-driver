@@ -21,7 +21,9 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
+import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationListener
+import com.google.android.gms.location.LocationResult
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -44,7 +46,7 @@ import java.util.Timer
 import java.util.TimerTask
 import gorda.driver.models.Service as DBService
 
-class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener {
+class LocationService : Service(), TextToSpeech.OnInitListener {
 
     companion object {
         const val SERVICE_ID = 100
@@ -67,6 +69,30 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         listServices = services
     }
     private var nextService: gorda.driver.models.Service? = null
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            super.onLocationResult(locationResult)
+            for (location in locationResult.locations) {
+                if (!stoped) {
+                    haveToUpdate++
+                    lastLocation = location
+                    if (haveToUpdate == 10) {
+                        haveToUpdate = 0
+                        DriverRepository.updateLocation(driverID, object : LocInterface {
+                            override var lat: Double = location.latitude
+                            override var lng: Double = location.longitude
+                        })
+                    }
+
+                    val broadcast =
+                        Intent(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
+                    broadcast.putExtra(LOCATION_EXTRA, lastLocation)
+                    LocalBroadcastManager.getInstance(applicationContext)
+                        .sendBroadcast(broadcast)
+                }
+            }
+        }
+    }
     private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
         if (service == null) {
             if (nextService != null) {
@@ -182,7 +208,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
         mediaPlayer = MediaPlayer.create(this, R.raw.new_service)
         listServices = mutableListOf()
         locationManager = LocationHandler.getInstance(this)
-        locationManager.addListener(this)
+        locationManager.addListener(locationCallback)
         startListenNewServices()
         startSyncServices()
         startTimer()
@@ -190,7 +216,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
     }
 
     fun stop() {
-        locationManager.removeListener(this)
+        locationManager.removeListener(locationCallback)
         ServiceRepository.stopListenNewServices(listenerNewServices)
         ServiceRepository.stopListenServices(listener)
         stoped = true
@@ -237,26 +263,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener, LocationListener
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 Log.e("TTS", "The Language not supported!")
             }
-        }
-    }
-
-    override fun onLocationChanged(location: Location) {
-        if (!stoped) {
-            haveToUpdate++
-            lastLocation = location
-            if (haveToUpdate == 10) {
-                haveToUpdate = 0
-                DriverRepository.updateLocation(driverID, object : LocInterface {
-                    override var lat: Double = location.latitude
-                    override var lng: Double = location.longitude
-                })
-            }
-
-            val broadcast =
-                Intent(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
-            broadcast.putExtra(LOCATION_EXTRA, lastLocation)
-            LocalBroadcastManager.getInstance(applicationContext)
-                .sendBroadcast(broadcast)
         }
     }
 
