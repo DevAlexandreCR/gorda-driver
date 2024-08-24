@@ -23,7 +23,7 @@ data class Driver(
     @SerializedName("vehicle") override var vehicle: Vehicle = Vehicle(),
 ): DriverInterface, Serializable {
     companion object {
-        const val TAG = "gorda.driver.models.Driver"
+        const val TAG = "gorda.go.models.Driver"
         const val DRIVER_KEY = "driver_id"
     }
 

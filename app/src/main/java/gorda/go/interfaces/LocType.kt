@@ -9,6 +9,6 @@ data class LocType(
     @SerializedName("lng") var lng: Double = 0.0
 ): Serializable {
     companion object {
-        const val TAG = "gorda.driver.interfaces.locType"
+        const val TAG = "gorda.go.interfaces.locType"
     }
 }
