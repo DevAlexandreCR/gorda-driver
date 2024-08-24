@@ -46,11 +46,11 @@
     <string name="service_canceled">El servicio ha sido cancelado</string>
     <string name="text_connected">Estás disponible para recibir servicios</string>
     <string name="connection_lost">Sin internet. Conectando…</string>
-    <string name="text_disclosure">Go! Drive necesita conocer tu ubicación para habilitar la función de "Conectado" y asignarte servicios cercanos incluso cuando la app está cerrada o no está en uso. \nPermite Go! Drive usar tu ubicación en tiempo real</string>
+    <string name="text_disclosure">Go! Driver necesita conocer tu ubicación para habilitar la función de "Conectado" y asignarte servicios cercanos incluso cuando la app está cerrada o no está en uso. \nPermite Go! Drive usar tu ubicación en tiempo real</string>
     <string name="allow">Permitir</string>
     <string name="disallow">Denegar</string>
     <string name="disclosure_title">Usa tu ubicación</string>
-    <string name="firebase_notification">gorda.go.services</string>
+    <string name="firebase_notification">gorda.godriver.services</string>
     <string name="new_service_title">Nuevo Servico!</string>
     <string name="new_service_text">Se te ha asignado un nuevo servicio!!!</string>
     <string name="about">Acerca de</string>

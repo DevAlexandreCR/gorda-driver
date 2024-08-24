@@ -29,7 +29,7 @@
         <meta-data android:name="io.sentry.traces.sample-rate" android:value="0.8" />
         <meta-data android:name="io.sentry.traces.user-interaction.enable" android:value="true" />
         <activity
-            android:name="gorda.go.activity.StartActivity"
+            android:name="gorda.godriver.activity.StartActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="true"
             android:launchMode="singleInstance"
@@ -58,21 +58,21 @@
         </activity>
 
         <service
-            android:name="gorda.go.background.LocationService"
+            android:name="gorda.godriver.background.LocationService"
             android:enabled="true"
             android:exported="false"
             android:permission="android.permission.FOREGROUND_SERVICE_LOCATION"
             android:foregroundServiceType="location" />
         <service
-            android:name="gorda.go.background.FeesService"
+            android:name="gorda.godriver.background.FeesService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="location" />
         <service
-            android:name="gorda.go.background.NotificationService"
+            android:name="gorda.godriver.background.NotificationService"
             android:exported="false">
             <meta-data
-                android:name="gorda.go.firebase.messaging"
+                android:name="gorda.godriver.firebase.messaging"
                 android:value="@string/firebase_notification" />
 
             <intent-filter>

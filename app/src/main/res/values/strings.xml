@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Go! Drive</string>
+    <string name="app_name">Go! Driver</string>
     <string name="action_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
@@ -15,7 +15,7 @@
     <string name="title_activity_main" translatable="false">MainActivity</string>
     <string name="navigation_drawer_open" translatable="false">Open navigation drawer</string>
     <string name="navigation_drawer_close" translatable="false">Close navigation drawer</string>
-    <string name="nav_header_title" translatable="false">Go! Drive</string>
+    <string name="nav_header_title" translatable="false">Go! Driver</string>
     <string name="nav_header_subtitle" translatable="false">driver@go.com</string>
     <string name="nav_header_desc" translatable="false">Navigation header</string>
 
@@ -53,11 +53,11 @@
     <string name="service_canceled">Service has been canceled</string>
     <string name="text_connected">You are available to receive services</string>
     <string name="connection_lost"><strong>Network lost!</strong> Connecting…</string>
-    <string name="text_disclosure">Go! Drive needs to know your location to enable the "Connected" feature and assign nearby services to you even when the app is closed or not in use. \nAllows Red Blanca Conductor to use your real-time location</string>
+    <string name="text_disclosure">Go! Driver needs to know your location to enable the "Connected" feature and assign nearby services to you even when the app is closed or not in use. \nAllows Red Blanca Conductor to use your real-time location</string>
     <string name="allow">Allow</string>
     <string name="disallow">Denny</string>
     <string name="disclosure_title">Use your location</string>
-    <string name="firebase_notification">gorda.go.services</string>
+    <string name="firebase_notification">gorda.godriver.services</string>
     <string name="title_activity_start">Loading…</string>
     <string name="new_service_title">New Service!</string>
     <string name="new_service_text">You have been assigned to new service</string>

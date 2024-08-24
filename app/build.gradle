@@ -10,7 +10,7 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "gorda.go"
+        applicationId "gorda.godriver"
         minSdk 24
         targetSdk 34
         versionCode 48
@@ -35,7 +35,7 @@ android {
     buildFeatures {
         viewBinding true
     }
-    namespace 'gorda.go'
+    namespace 'gorda.godriver'
 }
 
 dependencies {
