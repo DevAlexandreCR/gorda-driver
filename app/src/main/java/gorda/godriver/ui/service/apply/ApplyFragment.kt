@@ -100,15 +100,19 @@ class ApplyFragment : Fragment() {
                             connection = service.id
                         }
                         service.addApplicant(driver, distance, time, connection).addOnSuccessListener {
-                            val applyText = requireActivity().resources.getString(R.string.wait_for_assign, service.start_loc.name)
-                            textView.text = StringHelper.getString(applyText)
-                            btnCancel.isEnabled = true
-                            mainViewModel.setLoading(false)
+                            if (isAdded) {
+                                val applyText = requireActivity().resources.getString(R.string.wait_for_assign, service.start_loc.name)
+                                textView.text = StringHelper.getString(applyText)
+                                btnCancel.isEnabled = true
+                                mainViewModel.setLoading(false)
+                            }
                         }.addOnFailureListener { e ->
-                            e.message?.let { message -> Log.e(TAG, message) }
-                            Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
-                            if (findNavController().currentDestination?.id == R.id.nav_apply)
-                                findNavController().navigate(R.id.action_cancel_apply)
+                            if (isAdded) {
+                                e.message?.let { message -> Log.e(TAG, message) }
+                                Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
+                                if (findNavController().currentDestination?.id == R.id.nav_apply)
+                                    findNavController().navigate(R.id.action_cancel_apply)
+                            }
                         }
                     }
                 }
