@@ -28,23 +28,13 @@ class ServiceAdapter(
     var lastLocation: Location? = null
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val textAddress: TextView
-        val textName: TextView
-        val textDis: TextView
-        val textComment: TextView
-        val serviceTimer: Chronometer
-        val btnShowMap: Button
-        val btnApply: Button
-
-        init {
-            textAddress = view.findViewById(R.id.service_address)
-            textDis = view.findViewById(R.id.textDis)
-            textName = view.findViewById(R.id.text_user_name)
-            textComment = view.findViewById(R.id.text_comment)
-            serviceTimer = view.findViewById(R.id.service_timer)
-            btnShowMap = view.findViewById(R.id.btn_show_map)
-            btnApply = view.findViewById(R.id.btn_apply)
-        }
+        val textAddress: TextView = view.findViewById(R.id.service_address)
+        val textName: TextView = view.findViewById(R.id.text_user_name)
+        val textDis: TextView = view.findViewById(R.id.textDis)
+        val textComment: TextView = view.findViewById(R.id.text_comment)
+        val serviceTimer: Chronometer = view.findViewById(R.id.service_timer)
+        val btnShowMap: Button = view.findViewById(R.id.btn_show_map)
+        val btnApply: Button = view.findViewById(R.id.btn_apply)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -59,7 +49,9 @@ class ServiceAdapter(
             showMap(getItem(position).start_loc)
         }
         holder.btnApply.setOnClickListener {
-            apply(getItem(position), getItem(position).start_loc)
+            if (position < itemCount) {
+                apply(getItem(position), getItem(position).start_loc)
+            }
         }
         val service = getItem(position)
         val time = Date().time - (service.created_at * 1000)
