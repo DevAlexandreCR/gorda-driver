@@ -29,6 +29,10 @@ object Auth {
             .createSignInIntentBuilder()
             .setAvailableProviders(providers)
             .setIsSmartLockEnabled(false)
+            .setTosAndPrivacyPolicyUrls(
+                "https://www.termsfeed.com/live/696f216f-d044-4a33-b925-9604bb26b823",
+                "https://www.termsfeed.com/live/4f59772d-e5cb-49d0-abe2-a29ecf9c022c"
+            )
             .setTheme(R.style.AuthUI)
             .setLogo(R.drawable.ic_launcher_foreground)
             .build()

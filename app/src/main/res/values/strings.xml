@@ -63,7 +63,7 @@
     <string name="new_service_text">You have been assigned to new service</string>
     <string name="about">About</string>
     <string name="version">Version: </string>
-    <string name="terms"><a href="https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764">Privacy Police</a></string>
+    <string name="terms"><a href="https://www.termsfeed.com/live/4f59772d-e5cb-49d0-abe2-a29ecf9c022c">Privacy Police</a></string>
     <string name="service_to">Service to </string>
     <string name="service_from">Service from %1$s </string>
     <string name="service_running">Trip running…</string>
