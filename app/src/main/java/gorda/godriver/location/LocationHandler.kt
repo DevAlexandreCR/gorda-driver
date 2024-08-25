@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
+import android.os.Looper
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -26,7 +27,7 @@ class LocationHandler private constructor(context: Context) {
         .setMinUpdateDistanceMeters(LOCATION_MIN_METERS)
         .build()
 
-    private val listeners = mutableListOf<LocationListener>()
+    private val listeners = mutableListOf<LocationCallback>()
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             val location = locationResult.lastLocation
@@ -102,14 +103,14 @@ class LocationHandler private constructor(context: Context) {
         }
     }
 
-    fun addListener(listener: LocationListener) {
+    fun addListener(listener: LocationCallback) {
         listeners.add(listener)
         if (listeners.size == 1) {
             startLocationUpdates()
         }
     }
 
-    fun removeListener(listener: LocationListener) {
+    fun removeListener(listener: LocationCallback) {
         listeners.remove(listener)
         if (listeners.isEmpty()) {
             stopLocationUpdates()
@@ -118,7 +119,7 @@ class LocationHandler private constructor(context: Context) {
 
     private fun startLocationUpdates() {
         try {
-            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
         } catch (e: SecurityException) {
             e.printStackTrace()
         }
@@ -130,8 +131,8 @@ class LocationHandler private constructor(context: Context) {
     }
 
     private fun notifyListeners(location: Location) {
-        for (listener in listeners) {
-            listener.onLocationChanged(location)
+        listeners.forEach {
+            it.onLocationResult(LocationResult.create(listOf(location)))
         }
     }
 }

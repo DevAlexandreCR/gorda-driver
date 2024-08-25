@@ -6,14 +6,14 @@ import android.app.Service
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
-import android.location.Location
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.preference.PreferenceManager
-import com.google.android.gms.location.LocationListener
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -25,7 +25,7 @@ import gorda.godriver.ui.service.ServiceEventListener
 import gorda.godriver.utils.Constants
 import gorda.godriver.utils.Utils
 
-class FeesService: Service(), LocationListener {
+class FeesService: Service() {
 
     private val binder = ChronometerBinder()
     private var points = ArrayList<LatLng>()
@@ -37,6 +37,21 @@ class FeesService: Service(), LocationListener {
     private lateinit var currentServiceListener: ServiceEventListener
     private var count = 0
     private lateinit var playSound: PlaySound
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            super.onLocationResult(locationResult)
+            for (location in locationResult.locations) {
+                LatLng(location.latitude, location.longitude).also {
+                    points.add(it)
+                    count++
+                    if (count == 5) {
+                        savePoints()
+                        count = 0
+                    }
+                }
+            }
+        }
+    }
 
     companion object {
         const val SERVICE_ID = 101
@@ -61,7 +76,7 @@ class FeesService: Service(), LocationListener {
                 name = locationName
             }
             locationManager = LocationHandler.getInstance(this)
-            locationManager.addListener(this)
+            locationManager.addListener(locationCallback)
             createNotification()
             listenService()
         }
@@ -75,6 +90,7 @@ class FeesService: Service(), LocationListener {
                 sharedPreferences.edit().putLong(Constants.START_TIME, startTime).apply()
                 sharedPreferences.edit().remove(Constants.MULTIPLIER).apply()
                 sharedPreferences.edit().remove(Constants.POINTS).apply()
+                locationManager.removeListener(locationCallback)
                 stopSelf()
             }
         }
@@ -114,17 +130,6 @@ class FeesService: Service(), LocationListener {
             startForeground(SERVICE_ID, builder.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
         } else {
             startForeground(SERVICE_ID, builder.build())
-        }
-    }
-
-    override fun onLocationChanged(location: Location) {
-        LatLng(location.latitude, location.longitude).also {
-            points.add(it)
-            count++
-            if (count == 5) {
-                savePoints()
-                count = 0
-            }
         }
     }
 
