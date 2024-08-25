@@ -36,7 +36,7 @@
 
     <style name="AuthUI" parent="FirebaseUI">
         <item name="windowActionBar">true</item>
-        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimary">@color/secondary_variant</item>
         <item name="colorPrimaryVariant">@color/primary_variant</item>
         <item name="colorOnPrimary">@color/white</item>
         <!-- Secondary brand color. -->
@@ -46,7 +46,7 @@
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
-        <item name="android:textColor">@color/secondary_light</item>
+        <item name="android:textColor">@color/secondary_variant</item>
     </style>
 
     <style name="Theme.GordaDriver.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
@@ -58,7 +58,7 @@
     <style name="FirebaseUI.Text">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/secondary_light</item>
+        <item name="android:textColor">@color/secondary_variant</item>
     </style>
 
     <style name="ThemeOverlay.GordaDriver.FullscreenContainer" parent="">
