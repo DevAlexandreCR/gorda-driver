@@ -168,27 +168,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                     val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + service.phone))
                     startActivity(intent)
                 }
-                imgBtnMaps.setOnClickListener {
-                    val uri: String = String.format(Locale.ENGLISH, "google.navigation:q=%f,%f",
-                        service.start_loc.lat, service.start_loc.lng)
-                    val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
-                    mapIntent.setPackage("com.google.android.apps.maps")
-                    activity?.let { fragmentActivity ->
-                        mapIntent.resolveActivity(fragmentActivity.packageManager)?.let {
-                            startActivity(mapIntent)
-                        }
-                    }
-                }
-                imgButtonWaze.setOnClickListener {
-                    val uri: String = String.format(Locale.ENGLISH, "waze://?ll=%f,%f&navigate=yes",
-                        service.start_loc.lat, service.start_loc.lng)
-                    val wazeIntent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
-                    try {
-                        startActivity(wazeIntent)
-                    } catch (e: ActivityNotFoundException) {
-                        Toast.makeText(requireContext(), R.string.not_waze, Toast.LENGTH_SHORT).show()
-                    }
-                }
+                setNavigationLocation(service.start_loc.lat, service.start_loc.lng)
                 if (service.isInProgress()) {
                     if (service.metadata.arrived_at == null) {
                         btnStatus.text = haveArrived
@@ -199,6 +179,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                         layoutFees.visibility = ConstraintLayout.INVISIBLE
                         stopFeeService()
                     } else {
+                        if (service.end_loc != null) {
+                            textAddress.text = service.end_loc!!.name
+                            setNavigationLocation(service.end_loc!!.lat, service.end_loc!!.lng)
+                        }
                         btnStatus.text = endTrip
                         if (!ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java) && !startingRide){
                             val builder = AlertDialog.Builder(requireContext())
@@ -517,6 +501,30 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 requireContext().startService(intentFee)
                 requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
                 mainViewModel.changeConnectTripService(true)
+            }
+        }
+    }
+
+    private fun setNavigationLocation(lat: Double, lng: Double) {
+        imgBtnMaps.setOnClickListener {
+            val uri: String = String.format(Locale.ENGLISH, "google.navigation:q=%f,%f",
+                lat, lng)
+            val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+            mapIntent.setPackage("com.google.android.apps.maps")
+            activity?.let { fragmentActivity ->
+                mapIntent.resolveActivity(fragmentActivity.packageManager)?.let {
+                    startActivity(mapIntent)
+                }
+            }
+        }
+        imgButtonWaze.setOnClickListener {
+            val uri: String = String.format(Locale.ENGLISH, "waze://?ll=%f,%f&navigate=yes",
+                lat, lng)
+            val wazeIntent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+            try {
+                startActivity(wazeIntent)
+            } catch (e: ActivityNotFoundException) {
+                Toast.makeText(requireContext(), R.string.not_waze, Toast.LENGTH_SHORT).show()
             }
         }
     }
