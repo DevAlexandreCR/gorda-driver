@@ -17,15 +17,25 @@
         android:id="@+id/service_address"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:textColor="@color/secondary_variant"
         android:textSize="20sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toStartOf="@+id/btn_show_map"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/imageView2"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/service_destination"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/secondary_variant"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@+id/imageB"
+        app:layout_constraintTop_toBottomOf="@+id/service_address" />
 
     <Chronometer
         android:id="@+id/service_timer"
@@ -34,7 +44,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/service_address" />
+        app:layout_constraintTop_toBottomOf="@+id/service_destination" />
 
     <Button
         android:id="@+id/btn_apply"
@@ -89,6 +99,26 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="8dp"
         app:layout_constraintStart_toEndOf="@+id/service_timer"
-        app:layout_constraintTop_toBottomOf="@+id/service_address" />
+        app:layout_constraintTop_toBottomOf="@+id/service_destination" />
+
+    <ImageView
+        android:id="@+id/imageView2"
+        android:layout_width="12dp"
+        android:layout_height="12dp"
+        android:layout_marginStart="8dp"
+        app:layout_constraintBottom_toBottomOf="@+id/service_address"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/service_address"
+        app:srcCompat="@mipmap/ic_loc_a" />
+
+    <ImageView
+        android:id="@+id/imageB"
+        android:layout_width="12dp"
+        android:layout_height="12dp"
+        android:layout_marginStart="8dp"
+        app:layout_constraintBottom_toBottomOf="@+id/service_destination"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/service_destination"
+        app:srcCompat="@mipmap/ic_loc_b" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

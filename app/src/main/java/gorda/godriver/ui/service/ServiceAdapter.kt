@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Chronometer
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -29,6 +30,8 @@ class ServiceAdapter(
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textAddress: TextView = view.findViewById(R.id.service_address)
+        val textDestination: TextView = view.findViewById(R.id.service_destination)
+        val imageB: ImageView = view.findViewById(R.id.imageB)
         val textName: TextView = view.findViewById(R.id.text_user_name)
         val textDis: TextView = view.findViewById(R.id.textDis)
         val textComment: TextView = view.findViewById(R.id.text_comment)
@@ -45,6 +48,12 @@ class ServiceAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.textAddress.text = getItem(position).start_loc.name
+        if (getItem(position).end_loc != null) {
+            holder.textDestination.text = getItem(position).end_loc!!.name
+        } else {
+            holder.textDestination.visibility = View.GONE
+            holder.imageB.visibility = View.GONE
+        }
         holder.btnShowMap.setOnClickListener {
             showMap(getItem(position).start_loc)
         }
