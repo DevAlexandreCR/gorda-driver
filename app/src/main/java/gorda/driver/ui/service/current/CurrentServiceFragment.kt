@@ -441,6 +441,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         sharedPreferences.edit().remove(Constants.MULTIPLIER).apply()
         sharedPreferences.edit().remove(Constants.POINTS).apply()
         sharedPreferences.edit().remove(Constants.START_TIME).apply()
+        totalRide = 0.0
     }
 
     override fun onDestroyView() {
