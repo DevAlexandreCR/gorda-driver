@@ -4,18 +4,23 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import gorda.driver.R
+import gorda.driver.databinding.FragmentHistoryBinding
 import gorda.driver.ui.MainViewModel
+import gorda.driver.utils.NumberHelper
 
 class HistoryFragment : Fragment() {
 
+    private var _binding: FragmentHistoryBinding? = null
     private val viewmodel: HistoryViewModel by viewModels()
     private val mainViewModel: MainViewModel by activityViewModels()
+    private lateinit var textSummary: TextView
+    private val binding get() = _binding!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,20 +33,30 @@ class HistoryFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.fragment_history_list, container, false)
+    ): View {
+        _binding = FragmentHistoryBinding.inflate(inflater, container, false)
+        val root: View = binding.root
+        val historyList: RecyclerView = binding.historyList
+        textSummary = binding.textSummary
 
-        if (view is RecyclerView) {
-            with(view) {
-                viewmodel.serviceList.observe(viewLifecycleOwner) {
-                    adapter = HistoryRecyclerViewAdapter(it) {service ->
-                        val dialog = ServiceDialogFragment(service)
-                        dialog.show(childFragmentManager, ServiceDialogFragment::javaClass.toString())
-                    }
-                }
-                layoutManager = LinearLayoutManager(context)
-            }
+        viewmodel.summary.observe(viewLifecycleOwner) {
+            textSummary.text = NumberHelper.toCurrency(it, true)
         }
-        return view
+
+        with(historyList) {
+            viewmodel.serviceList.observe(viewLifecycleOwner) {
+                adapter = HistoryRecyclerViewAdapter(it) {service ->
+                    val dialog = ServiceDialogFragment(service)
+                    dialog.show(childFragmentManager, ServiceDialogFragment::javaClass.toString())
+                }
+            }
+            layoutManager = LinearLayoutManager(context)
+        }
+        return root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

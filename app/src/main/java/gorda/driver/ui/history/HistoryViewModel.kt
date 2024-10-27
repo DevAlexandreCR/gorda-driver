@@ -12,12 +12,25 @@ import gorda.driver.repositories.ServiceRepository
 class HistoryViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private var _serviceList = MutableLiveData<MutableList<Service>>()
+    private var _summary = MutableLiveData<Double>()
 
     val serviceList: LiveData<MutableList<Service>> = _serviceList
+    val summary: LiveData<Double> = _summary
+
+    private fun setSummary(summary: Double) {
+        _summary.postValue(summary)
+    }
 
     fun getServices(): Task<MutableList<Service>> {
         return ServiceRepository.getHistoryFromDriver().addOnSuccessListener { services ->
             _serviceList.postValue(services)
+            var totalAmount = 0.0
+            services.forEach { service ->
+                if (service.metadata.trip_fee != null) {
+                    totalAmount += service.metadata.trip_fee!!
+                }
+            }
+            setSummary(totalAmount)
         }.addOnFailureListener {
             Log.e(HistoryFragment::javaClass.toString(), "Error getting services", it)
         }
