@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:animateLayoutChanges="true"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp">
+
+    <TextView
+        android:id="@+id/time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="@dimen/text_margin"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="@dimen/text_margin"
+        android:layout_weight="0"
+        android:singleLine="true"
+        android:textAlignment="viewStart"
+        android:textAppearance="?attr/textAppearanceListItem"
+        android:textColor="@color/secondary_light"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/place"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/text_margin"
+        android:layout_weight="2"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textAlignment="viewStart"
+        android:textAppearance="?attr/textAppearanceListItem"
+        android:textColor="@color/secondary_light" />
+
+    <TextView
+        android:id="@+id/status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/text_margin"
+        android:layout_marginTop="@dimen/text_margin"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="@dimen/text_margin"
+        android:layout_weight="0"
+        android:ellipsize="none"
+        android:singleLine="true"
+        android:textAlignment="viewEnd"
+        android:textAppearance="?attr/textAppearanceListItem"
+        android:textColor="@color/secondary_light" />
+
+</LinearLayout>

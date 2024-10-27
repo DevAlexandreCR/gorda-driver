@@ -4,7 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import gorda.driver.databinding.FragmentHistoryBinding
+import gorda.driver.databinding.HistoryLayoutBinding
 import gorda.driver.models.Service
 import gorda.driver.utils.DateHelper
 import gorda.driver.utils.StringHelper
@@ -16,7 +16,7 @@ class HistoryRecyclerViewAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(
-            FragmentHistoryBinding.inflate(
+            HistoryLayoutBinding.inflate(
                 LayoutInflater.from(parent.context),
                 parent,
                 false
@@ -36,7 +36,7 @@ class HistoryRecyclerViewAdapter(
 
     override fun getItemCount(): Int = values.size
 
-    inner class ViewHolder(binding: FragmentHistoryBinding) :
+    inner class ViewHolder(binding: HistoryLayoutBinding) :
         RecyclerView.ViewHolder(binding.root) {
         val createdAt: TextView = binding.time
         val place: TextView = binding.place
