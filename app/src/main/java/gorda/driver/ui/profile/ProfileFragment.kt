@@ -14,6 +14,7 @@ import gorda.driver.R
 import gorda.driver.databinding.FragmentProfileBinding
 import gorda.driver.models.Driver
 import gorda.driver.ui.MainViewModel
+import gorda.driver.utils.NumberHelper
 
 class ProfileFragment : Fragment() {
 
@@ -22,6 +23,7 @@ class ProfileFragment : Fragment() {
     private lateinit var textEmail: TextView
     private lateinit var textPhone: TextView
     private lateinit var textPlate: TextView
+    private lateinit var textBalance: TextView
     private lateinit var image: ImageView
     private val mainViewModel: MainViewModel by activityViewModels()
     private val viewModel: ProfileViewModel by viewModels()
@@ -43,6 +45,7 @@ class ProfileFragment : Fragment() {
         textEmail = binding.profileEmail
         textPhone = binding.profilePhone
         textPlate = binding.profileVehiclePlate
+        textBalance = binding.profileBalance
         image = binding.imageProfile
 
         mainViewModel.driver.observe(viewLifecycleOwner) { driver ->
@@ -66,7 +69,8 @@ class ProfileFragment : Fragment() {
         textEmail.text = driver.email
         textPhone.text = driver.phone
         textPlate.text = driver.vehicle.plate
-        driver.photoUrl?.let { url ->
+        textBalance.text = getString(R.string.driver_balance, NumberHelper.toCurrency(driver.balance))
+        driver.photoUrl.let { url ->
             Glide
                 .with(this)
                 .load(url)

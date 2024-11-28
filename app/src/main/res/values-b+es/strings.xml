@@ -104,4 +104,6 @@
     <string name="next_service">Siguiente Servicio</string>
     <string name="new_service_select_tone">Seleccionar tono</string>
     <string name="summary_text">Hoy has ganado:</string>
+    <string name="fields_balance">Saldo</string>
+    <string name="driver_balance">Saldo: <big> <b> %s</b></big> </string>
 </resources>

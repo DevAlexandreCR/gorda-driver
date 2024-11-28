@@ -21,6 +21,7 @@ data class Driver(
     @SerializedName("created_at") override var created_at: Int = 0,
     @SerializedName("device") override var device: Device? = null,
     @SerializedName("vehicle") override var vehicle: Vehicle = Vehicle(),
+    @SerializedName("balance") override var balance: Double = 0.0,
 ): DriverInterface, Serializable {
     companion object {
         const val TAG = "gorda.driver.models.Driver"

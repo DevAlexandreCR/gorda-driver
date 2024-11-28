@@ -111,4 +111,6 @@
     <string name="next_service">Next Service</string>
     <string name="new_service_select_tone">Select ringtone</string>
     <string name="summary_text">Today you have won:\n</string>
+    <string name="fields_balance">Balance</string>
+    <string name="driver_balance">Balance: <big> <b> %s</b></big> </string>
 </resources>
