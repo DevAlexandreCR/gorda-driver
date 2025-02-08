@@ -12,4 +12,5 @@ interface DriverInterface {
     var enabled_at: Int
     var created_at: Int
     var device: Device?
+    var balance: Double
 }

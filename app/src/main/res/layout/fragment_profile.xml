@@ -60,6 +60,12 @@
             android:layout_height="wrap_content"
             android:text="@string/fields_plate"
             android:textSize="20sp" />
+        <TextView
+            android:id="@+id/profile_balance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/fields_balance"
+            android:textSize="20sp" />
 
     </LinearLayout>
 
