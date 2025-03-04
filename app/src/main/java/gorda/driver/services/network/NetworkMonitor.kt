@@ -15,17 +15,19 @@ class NetworkMonitor(private val context: Context,
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            val connected: Boolean = isOnline(network)
-            onNetworkChange.invoke(connected)
+            if (isMobileDataConnected(network)) {
+                onNetworkChange.invoke(true)
+            }
         }
 
         override fun onLost(network: Network) {
             onNetworkChange.invoke(false)
         }
 
-        fun isOnline(network: Network): Boolean {
+        private fun isMobileDataConnected(network: Network): Boolean {
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         }
     }
 
@@ -33,6 +35,7 @@ class NetworkMonitor(private val context: Context,
         if (!isMonitoring) {
             val networkRequest =
                 NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
                     .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                     .build()
 
