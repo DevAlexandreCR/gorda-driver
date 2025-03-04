@@ -36,6 +36,21 @@ android {
         viewBinding true
     }
     namespace 'gorda.driver'
+
+    flavorDimensions += "brand"
+
+    productFlavors {
+        create("Gorda") {
+            dimension = "brand"
+            applicationIdSuffix = ".gorda"
+            resValue("string", "app_name", "Gorda")
+        }
+        create("RedBlanca") {
+            dimension = "brand"
+            applicationIdSuffix = ".redblanca"
+            resValue("string", "app_name", "Red Blanca")
+        }
+    }
 }
 
 dependencies {
