@@ -49,7 +49,7 @@ object DriverRepository {
         }.addOnFailureListener {
             listener(null)
             Log.e(TAG, it.message!!)
-        }.withTimeout {
+        }.withTimeout(7000) {
             listener(null)
             Log.e(TAG, "Timeout getting driver")
         }
