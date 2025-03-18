@@ -339,20 +339,25 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private fun setOnClickListener(service: Service) {
         btnStatus.setOnClickListener {
             val now = Date().time / 1000
-
+            mainViewModel.setLoading(true)
             when (btnStatus.text) {
                 haveArrived -> {
                     service.metadata.arrived_at = now
                     service.updateMetadata()
                         .addOnSuccessListener {
+                            mainViewModel.setLoading(false)
                             Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener {
+                            mainViewModel.setLoading(false)
+                            btnStatus.text = haveArrived
                             it.message?.let { message -> Log.e(TAG, message) }
                             Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                         }.withTimeout {
+                            mainViewModel.setLoading(false)
                             service.metadata.arrived_at = null
                             mainViewModel.setErrorTimeout(true)
+                            btnStatus.text = haveArrived
                         }
                 }
 
@@ -370,16 +375,21 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             startingRide = true
                             service.updateMetadata()
                                 .addOnSuccessListener {
+                                    mainViewModel.setLoading(false)
                                     feeMultiplier = editFeeMultiplier.text.toString().toDouble()
                                     textFareMultiplier.text = feeMultiplier.toString()
                                     sharedPreferences.edit().putString(Constants.MULTIPLIER, feeMultiplier.toString()).apply()
                                     startServiceFee(service.start_loc.name)
                                 }
                                 .addOnFailureListener {
+                                    btnStatus.text = startTrip
+                                    mainViewModel.setLoading(false)
                                     it.message?.let { message -> Log.e(TAG, message) }
                                     Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                                     service.metadata.start_trip_at = null
                                 }.withTimeout {
+                                    btnStatus.text = startTrip
+                                    mainViewModel.setLoading(false)
                                     service.metadata.start_trip_at = null
                                     mainViewModel.setErrorTimeout(true)
                                 }
@@ -408,10 +418,13 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                 service.updateMetadata()
                                     .addOnSuccessListener {
                                         stopFeeService()
+                                        mainViewModel.setLoading(false)
                                         mainViewModel.completeCurrentService()
                                         Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
                                     }
                                     .addOnFailureListener {
+                                        mainViewModel.setLoading(false)
+                                        btnStatus.text = endTrip
                                         service.metadata.end_trip_at = null
                                         service.status = Service.STATUS_IN_PROGRESS
                                         service.metadata.trip_distance = null
@@ -420,6 +433,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                         it.message?.let { message -> Log.e(TAG, message) }
                                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                                     }.withTimeout {
+                                        btnStatus.text = endTrip
+                                        mainViewModel.setLoading(false)
                                         service.metadata.end_trip_at = null
                                         service.metadata.trip_distance = null
                                         service.metadata.trip_fee = null
@@ -439,6 +454,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             R.string.cannot_complete_service_yet,
                             Toast.LENGTH_SHORT
                         ).show()
+                        mainViewModel.setLoading(false)
                     }
                 }
             }
