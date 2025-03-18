@@ -37,6 +37,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
 import gorda.driver.databinding.FragmentCurrentServiceBinding
+import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.RideFees
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.maps.Map
@@ -349,6 +350,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                         .addOnFailureListener {
                             it.message?.let { message -> Log.e(TAG, message) }
                             Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                        }.withTimeout {
+                            service.metadata.arrived_at = null
+                            mainViewModel.setErrorTimeout(true)
                         }
                 }
 
@@ -375,6 +379,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                     it.message?.let { message -> Log.e(TAG, message) }
                                     Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                                     service.metadata.start_trip_at = null
+                                }.withTimeout {
+                                    service.metadata.start_trip_at = null
+                                    mainViewModel.setErrorTimeout(true)
                                 }
                         }
                         .setNegativeButton(R.string.cancel) { dialog, _ ->
@@ -407,8 +414,18 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                     .addOnFailureListener {
                                         service.metadata.end_trip_at = null
                                         service.status = Service.STATUS_IN_PROGRESS
+                                        service.metadata.trip_distance = null
+                                        service.metadata.trip_fee = null
+                                        service.metadata.route = null
                                         it.message?.let { message -> Log.e(TAG, message) }
                                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                                    }.withTimeout {
+                                        service.metadata.end_trip_at = null
+                                        service.metadata.trip_distance = null
+                                        service.metadata.trip_fee = null
+                                        service.metadata.route = null
+                                        service.status = Service.STATUS_IN_PROGRESS
+                                        mainViewModel.setErrorTimeout(true)
                                     }
                             }
                             .setNegativeButton(R.string.no) { dialog, _ ->
