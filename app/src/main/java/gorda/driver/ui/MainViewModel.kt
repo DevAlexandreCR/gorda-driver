@@ -11,6 +11,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
+import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.DeviceInterface
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
@@ -193,6 +194,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             _driverState.postValue(DriverUpdates.setConnected(false))
             _driverState.postValue(DriverUpdates.connecting(false))
             e.message?.let { message -> Log.e(TAG, message) }
+        }.withTimeout {
+            _driverState.postValue(DriverUpdates.setConnected(false))
+            _driverState.postValue(DriverUpdates.connecting(false))
+
         }
     }
 

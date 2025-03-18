@@ -163,10 +163,6 @@ class MainActivity : AppCompatActivity() {
                 if (viewModel.currentService.value != null) {
                     controller.navigate(R.id.nav_current_service)
                 }
-            } else if (destination.id == R.id.nav_apply) {
-                if (viewModel.isNetWorkConnected.value == false) {
-                    controller.navigate(R.id.nav_home)
-                }
             }
         }
 
@@ -206,19 +202,19 @@ class MainActivity : AppCompatActivity() {
 
         observeDriver(navView)
 
-        viewModel.isNetWorkConnected.observe(this) {
-            if (!it) {
-                connectionBar.visibility = View.VISIBLE
-                snackBar.show()
-                viewModel.setConnectedLocal(false)
-            } else {
-                driver?.let { d ->
-                    viewModel.isConnected(d.id)
-                }
-                connectionBar.visibility = View.GONE
-                snackBar.dismiss()
-            }
-        }
+//        viewModel.isNetWorkConnected.observe(this) {
+//            if (!it) {
+//                connectionBar.visibility = View.VISIBLE
+//                snackBar.show()
+//                viewModel.setConnectedLocal(false)
+//            } else {
+//                driver?.let { d ->
+//                    viewModel.isConnected(d.id)
+//                }
+//                connectionBar.visibility = View.GONE
+//                snackBar.dismiss()
+//            }
+//        }
 
         viewModel.isLoading.observe(this) {
             if (it) {
