@@ -385,6 +385,15 @@ class MainActivity : AppCompatActivity() {
                     if (driverUpdates.connecting) {
                         switchConnect.setText(R.string.status_connecting)
                         switchConnect.setEnabled(false)
+                    } else {
+                        if (switchConnect.isChecked) {
+                            switchConnect.setText(R.string.status_disconnected)
+                            switchConnect.isChecked = false
+                        } else {
+                            switchConnect.setText(R.string.status_connected)
+                            switchConnect.isChecked = true
+                        }
+                        switchConnect.setEnabled(true)
                     }
                 }
 

@@ -197,7 +197,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }.withTimeout {
             _driverState.postValue(DriverUpdates.setConnected(false))
             _driverState.postValue(DriverUpdates.connecting(false))
-
+            Log.d(TAG, "Timeout *******")
         }
     }
 
@@ -206,11 +206,18 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun disconnect(driver: Driver) {
+        _driverState.postValue(DriverUpdates.connecting(true))
         driver.disconnect().addOnSuccessListener {
+            _driverState.postValue(DriverUpdates.connecting(false))
             _driverState.postValue(DriverUpdates.setConnected(false))
         }.addOnFailureListener { e ->
             _driverState.postValue(DriverUpdates.setConnected(true))
+            _driverState.postValue(DriverUpdates.connecting(false))
             e.message?.let { message -> Log.e(TAG, message) }
+        }.withTimeout {
+            _driverState.postValue(DriverUpdates.setConnected(true))
+            _driverState.postValue(DriverUpdates.connecting(false))
+            Log.d(TAG, "Timeout Disconnecting *******")
         }
     }
 

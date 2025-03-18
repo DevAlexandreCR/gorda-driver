@@ -19,7 +19,7 @@
     <string name="menu_current_service">Servicio en curso</string>
     <string name="map">Mapa</string>
     <string name="common_error">"Ha ocurrido un error, intenta más tarde "</string>
-    <string name="status_connecting">Conectando…</string>
+    <string name="status_connecting">Espera…</string>
     <string name="fields_name">Nombre</string>
     <string name="fields_email">E-mail</string>
     <string name="fields_phone">Teléfono</string>

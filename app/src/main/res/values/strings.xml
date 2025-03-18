@@ -26,7 +26,7 @@
     <string name="apply">Apply at</string>
     <string name="map">Map</string>
     <string name="common_error">"Something went wrong, try late "</string>
-    <string name="status_connecting">Connecting…</string>
+    <string name="status_connecting">Wait…</string>
     <string name="fields_name">Name</string>
     <string name="fields_email">E-mail</string>
     <string name="fields_phone">Phone</string>
