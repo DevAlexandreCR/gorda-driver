@@ -42,6 +42,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _isTripStarted = MutableLiveData(false)
     private val _rideFees = MutableLiveData<RideFees>()
     private val _isLoading = MutableLiveData(false)
+    private val _errorTimeout = MutableLiveData(false)
     private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
         if (service == null) {
             _nextService.postValue(null)
@@ -79,6 +80,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val isTripStarted: LiveData<Boolean> = _isTripStarted
     val rideFees: LiveData<RideFees> = _rideFees
     val isLoading: LiveData<Boolean> = _isLoading
+    val errorTimeout: LiveData<Boolean> = _errorTimeout
 
     fun getRideFees() {
         SettingsRepository.getRideFees().addOnSuccessListener { snapshot ->
@@ -91,6 +93,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun setLoading(loading: Boolean) {
         _isLoading.postValue(loading)
+    }
+
+    fun setErrorTimeout(error: Boolean) {
+        _errorTimeout.postValue(error)
     }
 
     fun changeConnectTripService(connect: Boolean) {
@@ -144,6 +150,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                                         _isLoading.postValue(false)
                                     }.withTimeout {
                                         _isLoading.postValue(false)
+                                        setErrorTimeout(true)
                                     }
                                 }
                                 service.getStatusReference().removeEventListener(this)
@@ -203,6 +210,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             _driverState.postValue(DriverUpdates.setConnected(false))
             _driverState.postValue(DriverUpdates.connecting(false))
             _isLoading.postValue(false)
+            this.setErrorTimeout(true)
         }
     }
 
@@ -212,16 +220,20 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun disconnect(driver: Driver) {
         _driverState.postValue(DriverUpdates.connecting(true))
+        _isLoading.postValue(true)
         driver.disconnect().addOnSuccessListener {
             _driverState.postValue(DriverUpdates.connecting(false))
             _driverState.postValue(DriverUpdates.setConnected(false))
+            _isLoading.postValue(false)
         }.addOnFailureListener { e ->
             _driverState.postValue(DriverUpdates.setConnected(true))
             _driverState.postValue(DriverUpdates.connecting(false))
+            _isLoading.postValue(false)
             e.message?.let { message -> Log.e(TAG, message) }
         }.withTimeout {
             _driverState.postValue(DriverUpdates.setConnected(true))
             _driverState.postValue(DriverUpdates.connecting(false))
+            this.setErrorTimeout(true)
         }
     }
 

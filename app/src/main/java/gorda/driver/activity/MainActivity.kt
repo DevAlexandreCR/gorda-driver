@@ -216,6 +216,13 @@ class MainActivity : AppCompatActivity() {
 //            }
 //        }
 
+        viewModel.errorTimeout.observe(this) { error ->
+            if (error) {
+                Toast.makeText(this, R.string.error_timeout, Toast.LENGTH_SHORT).show()
+                viewModel.setErrorTimeout(false)
+            }
+        }
+
         viewModel.isLoading.observe(this) {
             if (it) {
                 connectionBar.visibility = View.VISIBLE

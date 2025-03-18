@@ -69,6 +69,7 @@
     <string name="service_running">Trip running…</string>
     <string name="not_waze">Waze is not installed! </string>
     <string name="navigation">Navigation: </string>
+    <string name="error_timeout">It was not possible to connect to the service. Please check your internet connection or try again later.</string>
     <!-- Preference Titles -->
     <string name="notifications">Notifications</string>
 

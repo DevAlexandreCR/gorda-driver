@@ -62,6 +62,7 @@
     <string name="service_running">Viaje iniciado…</string>
     <string name="not_waze">Waze no está instalado! </string>
     <string name="navigation">Navegar: </string>
+    <string name="error_timeout">No fue posible conectar con el servicio. Verifique su conexión a internet o inténtelo más tarde.</string>
     <!-- Preference Titles -->
     <string name="notifications">Notificaciones</string>
 

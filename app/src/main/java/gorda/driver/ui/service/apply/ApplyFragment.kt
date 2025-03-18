@@ -70,7 +70,7 @@ class ApplyFragment : Fragment() {
                 Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
             } .withTimeout {
                 button.isEnabled = true
-                Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
+                mainViewModel.setErrorTimeout(true)
             }
         }
 
@@ -120,8 +120,8 @@ class ApplyFragment : Fragment() {
                             }
                         }.withTimeout {
                             if (isAdded) {
-                                Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
                                 mainViewModel.setLoading(false)
+                                mainViewModel.setErrorTimeout(true)
                                 btnCancel.isEnabled = true
                                 if (findNavController().currentDestination?.id == R.id.nav_apply)
                                     findNavController().navigate(R.id.action_cancel_apply)
