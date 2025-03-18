@@ -142,6 +142,8 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                                     _isLoading.postValue(true)
                                     ServiceRepository.validateAssignment(key).addOnCompleteListener {
                                         _isLoading.postValue(false)
+                                    }.withTimeout {
+                                        _isLoading.postValue(false)
                                     }
                                 }
                                 service.getStatusReference().removeEventListener(this)
@@ -183,6 +185,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun connect(driver: Driver) {
         _driverState.postValue(DriverUpdates.connecting(true))
+        _isLoading.postValue(true)
 
         driver.connect(object: LocInterface {
             override var lat: Double = 2.4448143
@@ -190,13 +193,16 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }).addOnSuccessListener {
             _driverState.postValue(DriverUpdates.connecting(false))
             _driverState.postValue(DriverUpdates.setConnected(true))
+            _isLoading.postValue(false)
         }.addOnFailureListener { e ->
             _driverState.postValue(DriverUpdates.setConnected(false))
             _driverState.postValue(DriverUpdates.connecting(false))
+            _isLoading.postValue(false)
             e.message?.let { message -> Log.e(TAG, message) }
         }.withTimeout {
             _driverState.postValue(DriverUpdates.setConnected(false))
             _driverState.postValue(DriverUpdates.connecting(false))
+            _isLoading.postValue(false)
         }
     }
 
