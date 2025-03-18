@@ -202,19 +202,19 @@ class MainActivity : AppCompatActivity() {
 
         observeDriver(navView)
 
-//        viewModel.isNetWorkConnected.observe(this) {
-//            if (!it) {
-//                connectionBar.visibility = View.VISIBLE
-//                snackBar.show()
-//                viewModel.setConnectedLocal(false)
-//            } else {
-//                driver?.let { d ->
-//                    viewModel.isConnected(d.id)
-//                }
-//                connectionBar.visibility = View.GONE
-//                snackBar.dismiss()
-//            }
-//        }
+        viewModel.isNetWorkConnected.observe(this) {
+            if (!it) {
+                connectionBar.visibility = View.VISIBLE
+                viewModel.setLoading(true)
+                viewModel.setConnectedLocal(false)
+            } else {
+                driver?.let { d ->
+                    viewModel.isConnected(d.id)
+                }
+                connectionBar.visibility = View.GONE
+                viewModel.setLoading(false)
+            }
+        }
 
         viewModel.errorTimeout.observe(this) { error ->
             if (error) {

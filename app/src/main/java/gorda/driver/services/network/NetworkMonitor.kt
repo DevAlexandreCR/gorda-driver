@@ -26,8 +26,7 @@ class NetworkMonitor(private val context: Context,
 
         private fun isMobileDataConnected(network: Network): Boolean {
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-            return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) &&
-                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         }
     }
 
@@ -36,7 +35,9 @@ class NetworkMonitor(private val context: Context,
             val networkRequest =
                 NetworkRequest.Builder()
                     .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
                     .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
                     .build()
 
             connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
