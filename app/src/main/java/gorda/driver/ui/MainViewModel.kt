@@ -197,7 +197,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }.withTimeout {
             _driverState.postValue(DriverUpdates.setConnected(false))
             _driverState.postValue(DriverUpdates.connecting(false))
-            Log.d(TAG, "Timeout *******")
         }
     }
 
@@ -217,7 +216,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }.withTimeout {
             _driverState.postValue(DriverUpdates.setConnected(true))
             _driverState.postValue(DriverUpdates.connecting(false))
-            Log.d(TAG, "Timeout Disconnecting *******")
         }
     }
 
