@@ -26,6 +26,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.edit
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -378,7 +379,12 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                     mainViewModel.setLoading(false)
                                     feeMultiplier = editFeeMultiplier.text.toString().toDouble()
                                     textFareMultiplier.text = feeMultiplier.toString()
-                                    sharedPreferences.edit().putString(Constants.MULTIPLIER, feeMultiplier.toString()).apply()
+                                    sharedPreferences.edit() {
+                                        putString(
+                                            Constants.MULTIPLIER,
+                                            feeMultiplier.toString()
+                                        )
+                                    }
                                     startServiceFee(service.start_loc.name)
                                 }
                                 .addOnFailureListener {
@@ -469,9 +475,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 requireContext().stopService(intentFee)
             }
         }
-        sharedPreferences.edit().remove(Constants.MULTIPLIER).apply()
-        sharedPreferences.edit().remove(Constants.POINTS).apply()
-        sharedPreferences.edit().remove(Constants.START_TIME).apply()
+        sharedPreferences.edit() { remove(Constants.MULTIPLIER) }
+        sharedPreferences.edit() { remove(Constants.POINTS) }
+        sharedPreferences.edit() { remove(Constants.START_TIME) }
         totalRide = 0.0
     }
 
