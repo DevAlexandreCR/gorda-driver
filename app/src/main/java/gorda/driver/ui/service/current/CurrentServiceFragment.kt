@@ -409,13 +409,11 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             .setCancelable(false)
                             .setMessage(StringHelper.getString(message))
                             .setPositiveButton(R.string.yes) { _, _ ->
-                                service.metadata.end_trip_at = now
-                                service.status = Service.STATUS_TERMINATED
-                                service.metadata.trip_distance = NumberHelper.roundDouble(totalDistance).toInt()
-                                service.metadata.trip_fee = getTotalFee().toInt()
-                                service.metadata.route = ServiceMetadata.serializeRoute(feesService.getPoints())
-                                service.metadata.trip_multiplier = feeMultiplier
-                                service.updateMetadata()
+                                val tripDistance = NumberHelper.roundDouble(totalDistance).toInt()
+                                val tripFee = getTotalFee().toInt()
+                                val route = ServiceMetadata.serializeRoute(feesService.getPoints())
+                                val tripMultiplier = feeMultiplier
+                                service.terminate(route, tripDistance, tripFee, tripMultiplier)
                                     .addOnSuccessListener {
                                         stopFeeService()
                                         mainViewModel.setLoading(false)
@@ -432,7 +430,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                         service.metadata.route = null
                                         it.message?.let { message -> Log.e(TAG, message) }
                                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
-                                    }.withTimeout {
+                                    }
+                                    .withTimeout {
                                         btnStatus.text = endTrip
                                         mainViewModel.setLoading(false)
                                         service.metadata.end_trip_at = null
@@ -469,7 +468,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             ).also { intentFee ->
                 requireContext().stopService(intentFee)
             }
-            requireContext().unbindService(serviceConnection)
         }
         sharedPreferences.edit().remove(Constants.MULTIPLIER).apply()
         sharedPreferences.edit().remove(Constants.POINTS).apply()

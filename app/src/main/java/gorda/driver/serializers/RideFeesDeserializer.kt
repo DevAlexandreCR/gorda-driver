@@ -36,6 +36,8 @@ class RideFeesDeserializer : JsonDeserializer<RideFees> {
         rideFees.priceNightFee = jsonObject?.get("fees_night")?.asDouble ?: 0.0
         rideFees.priceFestive = jsonObject?.get("fees_DxF")?.asDouble ?: 0.0
         rideFees.priceFestiveNight = jsonObject?.get("fees_night_DxF")?.asDouble ?: 0.0
+        rideFees.timeoutToComplete = jsonObject?.get("timeout_to_complete")?.asInt ?: 240
+        rideFees.timeoutToConnection = jsonObject?.get("timeout_to_connection")?.asInt ?: 120
 
         return rideFees
     }
