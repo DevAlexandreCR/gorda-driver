@@ -224,8 +224,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                         layoutFees.visibility = ConstraintLayout.VISIBLE
                     }
                 }
-            } else {
-                findNavController().navigate(R.id.nav_home)
             }
         }
         mainViewModel.rideFees.observe(viewLifecycleOwner) { fees ->
@@ -402,6 +400,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                         }
                         .setNegativeButton(R.string.cancel) { dialog, _ ->
                             dialog.dismiss()
+                            mainViewModel.setLoading(false)
                         }
                     val dialog: AlertDialog = builder.create()
                     dialog.show()
@@ -425,6 +424,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                         mainViewModel.setLoading(false)
                                         mainViewModel.completeCurrentService()
                                         Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
+                                        findNavController().navigate(R.id.nav_home)
                                     }
                                     .addOnFailureListener {
                                         mainViewModel.setLoading(false)
@@ -450,6 +450,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             }
                             .setNegativeButton(R.string.no) { dialog, _ ->
                                 dialog.dismiss()
+                                mainViewModel.setLoading(false)
                             }
                         val dialog: AlertDialog = builderFinalize.create()
                         dialog.show()
