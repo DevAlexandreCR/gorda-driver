@@ -163,10 +163,6 @@ class MainActivity : AppCompatActivity() {
                 if (viewModel.currentService.value != null) {
                     controller.navigate(R.id.nav_current_service)
                 }
-            } else if (destination.id == R.id.nav_apply) {
-                if (viewModel.isNetWorkConnected.value == false) {
-                    controller.navigate(R.id.nav_home)
-                }
             }
         }
 
@@ -209,14 +205,21 @@ class MainActivity : AppCompatActivity() {
         viewModel.isNetWorkConnected.observe(this) {
             if (!it) {
                 connectionBar.visibility = View.VISIBLE
-                snackBar.show()
+                viewModel.setLoading(true)
                 viewModel.setConnectedLocal(false)
             } else {
                 driver?.let { d ->
                     viewModel.isConnected(d.id)
                 }
                 connectionBar.visibility = View.GONE
-                snackBar.dismiss()
+                viewModel.setLoading(false)
+            }
+        }
+
+        viewModel.errorTimeout.observe(this) { error ->
+            if (error) {
+                Toast.makeText(this, R.string.error_timeout, Toast.LENGTH_SHORT).show()
+                viewModel.setErrorTimeout(false)
             }
         }
 
@@ -389,6 +392,15 @@ class MainActivity : AppCompatActivity() {
                     if (driverUpdates.connecting) {
                         switchConnect.setText(R.string.status_connecting)
                         switchConnect.setEnabled(false)
+                    } else {
+                        if (switchConnect.isChecked) {
+                            switchConnect.setText(R.string.status_disconnected)
+                            switchConnect.isChecked = false
+                        } else {
+                            switchConnect.setText(R.string.status_connected)
+                            switchConnect.isChecked = true
+                        }
+                        switchConnect.setEnabled(true)
                     }
                 }
 
