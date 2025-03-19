@@ -93,7 +93,7 @@ class FeesService: Service() {
     private fun listenService() {
         currentServiceListener = ServiceEventListener { service ->
             if (service == null || !service.isInProgress()) {
-                sharedPreferences.edit() { putLong(Constants.START_TIME, startTime) }
+                sharedPreferences.edit() { remove(Constants.START_TIME) }
                 sharedPreferences.edit() { remove(Constants.MULTIPLIER) }
                 sharedPreferences.edit() { remove(Constants.POINTS) }
                 locationManager.removeListener(locationCallback)
