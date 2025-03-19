@@ -9,6 +9,7 @@ import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.repositories.ServiceRepository
 import java.io.Serializable
+import java.util.Date
 
 @IgnoreExtraProperties
 data class Service(
@@ -40,6 +41,16 @@ data class Service(
 
     fun updateMetadata(): Task<Void> {
         return ServiceRepository.updateMetadata(this.id, this.metadata, this.status)
+    }
+
+    fun terminate(route: String, distance: Int, fee: Int, multiplier: Double): Task<Void> {
+        val meta = this.metadata
+        meta.end_trip_at = Date().time / 1000
+        meta.route = route
+        meta.trip_distance = distance
+        meta.trip_fee = fee
+        meta.trip_multiplier = multiplier
+        return ServiceRepository.updateMetadata(this.id, meta, STATUS_TERMINATED)
     }
 
     fun addApplicant(driver: Driver, distance: Int, time: Int, connection: String? = null): Task<Void> {

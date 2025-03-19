@@ -19,7 +19,7 @@
     <string name="menu_current_service">Servicio en curso</string>
     <string name="map">Mapa</string>
     <string name="common_error">"Ha ocurrido un error, intenta más tarde "</string>
-    <string name="status_connecting">Conectando…</string>
+    <string name="status_connecting">Espera…</string>
     <string name="fields_name">Nombre</string>
     <string name="fields_email">E-mail</string>
     <string name="fields_phone">Teléfono</string>
@@ -62,6 +62,7 @@
     <string name="service_running">Viaje iniciado…</string>
     <string name="not_waze">Waze no está instalado! </string>
     <string name="navigation">Navegar: </string>
+    <string name="error_timeout">No fue posible conectar con el servicio. Verifique su conexión a internet o inténtelo más tarde.</string>
     <!-- Preference Titles -->
     <string name="notifications">Notificaciones</string>
 

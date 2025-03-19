@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.BuildConfig
+import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.DeviceInterface
 import gorda.driver.interfaces.DriverConnected
 import gorda.driver.interfaces.DriverInterface
@@ -36,6 +37,9 @@ object DriverRepository {
             listener(snapshot.hasChildren())
         }.addOnFailureListener {
             Log.e(TAG, it.message!!)
+        }.withTimeout {
+            listener(false)
+            Log.e(TAG, "Timeout checking driver connection")
         }
     }
 
@@ -45,6 +49,9 @@ object DriverRepository {
         }.addOnFailureListener {
             listener(null)
             Log.e(TAG, it.message!!)
+        }.withTimeout(7000) {
+            listener(null)
+            Log.e(TAG, "Timeout getting driver")
         }
     }
 

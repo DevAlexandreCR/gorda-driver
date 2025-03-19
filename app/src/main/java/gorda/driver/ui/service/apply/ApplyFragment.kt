@@ -16,6 +16,7 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.gms.tasks.Task
 import gorda.driver.R
 import gorda.driver.databinding.FragmentApplyBinding
+import gorda.driver.helpers.withTimeout
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
@@ -51,6 +52,7 @@ class ApplyFragment : Fragment() {
         btnCancel = binding.btnCancel
         progressBar = binding.progressBar
         textView = binding.textView
+        mainViewModel.setLoading(true)
 
         requireActivity().onBackPressedDispatcher.addCallback(this) {}
 
@@ -66,6 +68,9 @@ class ApplyFragment : Fragment() {
                 button.isEnabled = true
                 e.message?.let { message -> Log.e(TAG, message) }
                 Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
+            } .withTimeout {
+                button.isEnabled = true
+                mainViewModel.setErrorTimeout(true)
             }
         }
 
@@ -110,6 +115,14 @@ class ApplyFragment : Fragment() {
                             if (isAdded) {
                                 e.message?.let { message -> Log.e(TAG, message) }
                                 Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
+                                if (findNavController().currentDestination?.id == R.id.nav_apply)
+                                    findNavController().navigate(R.id.action_cancel_apply)
+                            }
+                        }.withTimeout {
+                            if (isAdded) {
+                                mainViewModel.setLoading(false)
+                                mainViewModel.setErrorTimeout(true)
+                                btnCancel.isEnabled = true
                                 if (findNavController().currentDestination?.id == R.id.nav_apply)
                                     findNavController().navigate(R.id.action_cancel_apply)
                             }

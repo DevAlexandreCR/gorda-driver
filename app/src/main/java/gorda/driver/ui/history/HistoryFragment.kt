@@ -11,6 +11,7 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import gorda.driver.databinding.FragmentHistoryBinding
+import gorda.driver.helpers.withTimeout
 import gorda.driver.ui.MainViewModel
 import gorda.driver.utils.NumberHelper
 
@@ -27,6 +28,9 @@ class HistoryFragment : Fragment() {
         mainViewModel.setLoading(true)
         viewmodel.getServices().addOnCompleteListener { _ ->
             mainViewModel.setLoading(false)
+        }.withTimeout {
+            mainViewModel.setLoading(false)
+            mainViewModel.setErrorTimeout(true)
         }
     }
 

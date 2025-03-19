@@ -26,6 +26,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.edit
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -37,6 +38,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
 import gorda.driver.databinding.FragmentCurrentServiceBinding
+import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.RideFees
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.maps.Map
@@ -222,8 +224,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                         layoutFees.visibility = ConstraintLayout.VISIBLE
                     }
                 }
-            } else {
-                findNavController().navigate(R.id.nav_home)
             }
         }
         mainViewModel.rideFees.observe(viewLifecycleOwner) { fees ->
@@ -338,17 +338,25 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private fun setOnClickListener(service: Service) {
         btnStatus.setOnClickListener {
             val now = Date().time / 1000
-
+            mainViewModel.setLoading(true)
             when (btnStatus.text) {
                 haveArrived -> {
                     service.metadata.arrived_at = now
                     service.updateMetadata()
                         .addOnSuccessListener {
+                            mainViewModel.setLoading(false)
                             Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener {
+                            mainViewModel.setLoading(false)
+                            btnStatus.text = haveArrived
                             it.message?.let { message -> Log.e(TAG, message) }
                             Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                        }.withTimeout {
+                            mainViewModel.setLoading(false)
+                            service.metadata.arrived_at = null
+                            mainViewModel.setErrorTimeout(true)
+                            btnStatus.text = haveArrived
                         }
                 }
 
@@ -366,19 +374,33 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             startingRide = true
                             service.updateMetadata()
                                 .addOnSuccessListener {
+                                    mainViewModel.setLoading(false)
                                     feeMultiplier = editFeeMultiplier.text.toString().toDouble()
                                     textFareMultiplier.text = feeMultiplier.toString()
-                                    sharedPreferences.edit().putString(Constants.MULTIPLIER, feeMultiplier.toString()).apply()
+                                    sharedPreferences.edit() {
+                                        putString(
+                                            Constants.MULTIPLIER,
+                                            feeMultiplier.toString()
+                                        )
+                                    }
                                     startServiceFee(service.start_loc.name)
                                 }
                                 .addOnFailureListener {
+                                    btnStatus.text = startTrip
+                                    mainViewModel.setLoading(false)
                                     it.message?.let { message -> Log.e(TAG, message) }
                                     Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                                     service.metadata.start_trip_at = null
+                                }.withTimeout {
+                                    btnStatus.text = startTrip
+                                    mainViewModel.setLoading(false)
+                                    service.metadata.start_trip_at = null
+                                    mainViewModel.setErrorTimeout(true)
                                 }
                         }
                         .setNegativeButton(R.string.cancel) { dialog, _ ->
                             dialog.dismiss()
+                            mainViewModel.setLoading(false)
                         }
                     val dialog: AlertDialog = builder.create()
                     dialog.show()
@@ -392,27 +414,43 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             .setCancelable(false)
                             .setMessage(StringHelper.getString(message))
                             .setPositiveButton(R.string.yes) { _, _ ->
-                                service.metadata.end_trip_at = now
-                                service.status = Service.STATUS_TERMINATED
-                                service.metadata.trip_distance = NumberHelper.roundDouble(totalDistance).toInt()
-                                service.metadata.trip_fee = getTotalFee().toInt()
-                                service.metadata.route = ServiceMetadata.serializeRoute(feesService.getPoints())
-                                service.metadata.trip_multiplier = feeMultiplier
-                                service.updateMetadata()
+                                val tripDistance = NumberHelper.roundDouble(totalDistance).toInt()
+                                val tripFee = getTotalFee().toInt()
+                                val route = ServiceMetadata.serializeRoute(feesService.getPoints())
+                                val tripMultiplier = feeMultiplier
+                                service.terminate(route, tripDistance, tripFee, tripMultiplier)
                                     .addOnSuccessListener {
                                         stopFeeService()
+                                        mainViewModel.setLoading(false)
                                         mainViewModel.completeCurrentService()
                                         Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
+                                        findNavController().navigate(R.id.nav_home)
                                     }
                                     .addOnFailureListener {
+                                        mainViewModel.setLoading(false)
+                                        btnStatus.text = endTrip
                                         service.metadata.end_trip_at = null
                                         service.status = Service.STATUS_IN_PROGRESS
+                                        service.metadata.trip_distance = null
+                                        service.metadata.trip_fee = null
+                                        service.metadata.route = null
                                         it.message?.let { message -> Log.e(TAG, message) }
                                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                                    }
+                                    .withTimeout {
+                                        btnStatus.text = endTrip
+                                        mainViewModel.setLoading(false)
+                                        service.metadata.end_trip_at = null
+                                        service.metadata.trip_distance = null
+                                        service.metadata.trip_fee = null
+                                        service.metadata.route = null
+                                        service.status = Service.STATUS_IN_PROGRESS
+                                        mainViewModel.setErrorTimeout(true)
                                     }
                             }
                             .setNegativeButton(R.string.no) { dialog, _ ->
                                 dialog.dismiss()
+                                mainViewModel.setLoading(false)
                             }
                         val dialog: AlertDialog = builderFinalize.create()
                         dialog.show()
@@ -422,6 +460,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             R.string.cannot_complete_service_yet,
                             Toast.LENGTH_SHORT
                         ).show()
+                        mainViewModel.setLoading(false)
                     }
                 }
             }
@@ -436,11 +475,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             ).also { intentFee ->
                 requireContext().stopService(intentFee)
             }
-            requireContext().unbindService(serviceConnection)
         }
-        sharedPreferences.edit().remove(Constants.MULTIPLIER).apply()
-        sharedPreferences.edit().remove(Constants.POINTS).apply()
-        sharedPreferences.edit().remove(Constants.START_TIME).apply()
+        sharedPreferences.edit() { remove(Constants.MULTIPLIER) }
+        sharedPreferences.edit() { remove(Constants.POINTS) }
+        sharedPreferences.edit() { remove(Constants.START_TIME) }
         totalRide = 0.0
     }
 
