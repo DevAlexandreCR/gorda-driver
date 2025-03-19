@@ -6,31 +6,24 @@ import android.app.Service
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
-import android.location.Location
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
-import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationListener
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
-import gorda.driver.interfaces.LocInterface
 import gorda.driver.location.LocationHandler
-import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
-import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.utils.Constants
-import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 import gorda.driver.utils.Utils
 
 class FeesService: Service() {
@@ -72,12 +65,17 @@ class FeesService: Service() {
                 restorePoints()
                 restoreMultiplier()
             } else {
-                sharedPreferences.edit().putLong(Constants.START_TIME, startTime).apply()
-                sharedPreferences.edit().remove(Constants.MULTIPLIER).apply()
-                sharedPreferences.edit().remove(Constants.POINTS).apply()
+                sharedPreferences.edit() { putLong(Constants.START_TIME, startTime) }
+                sharedPreferences.edit() { remove(Constants.MULTIPLIER) }
+                sharedPreferences.edit() { remove(Constants.POINTS) }
                 it.getDoubleExtra(Constants.MULTIPLIER, multiplier).also { multi ->
                     multiplier = multi
-                    sharedPreferences.edit().putString(Constants.MULTIPLIER, multiplier.toString()).apply()
+                    sharedPreferences.edit() {
+                        putString(
+                            Constants.MULTIPLIER,
+                            multiplier.toString()
+                        )
+                    }
                 }
             }
             it.getStringExtra(Constants.LOCATION_EXTRA)?.also { locationName ->
@@ -95,9 +93,9 @@ class FeesService: Service() {
     private fun listenService() {
         currentServiceListener = ServiceEventListener { service ->
             if (service == null || !service.isInProgress()) {
-                sharedPreferences.edit().putLong(Constants.START_TIME, startTime).apply()
-                sharedPreferences.edit().remove(Constants.MULTIPLIER).apply()
-                sharedPreferences.edit().remove(Constants.POINTS).apply()
+                sharedPreferences.edit() { putLong(Constants.START_TIME, startTime) }
+                sharedPreferences.edit() { remove(Constants.MULTIPLIER) }
+                sharedPreferences.edit() { remove(Constants.POINTS) }
                 locationManager.removeListener(locationCallback)
                 stopSelf()
             }
@@ -144,7 +142,7 @@ class FeesService: Service() {
     private fun savePoints() {
         val gson = Gson()
         val json = gson.toJson(points)
-        sharedPreferences.edit().putString(Constants.POINTS, json).apply()
+        sharedPreferences.edit() { putString(Constants.POINTS, json) }
     }
 
     fun getBaseTime(): Long {
@@ -181,7 +179,7 @@ class FeesService: Service() {
 
     fun setMultiplier(multi: Double) {
         multiplier = multi
-        sharedPreferences.edit().putString(Constants.MULTIPLIER, multiplier.toString()).apply()
+        sharedPreferences.edit() { putString(Constants.MULTIPLIER, multiplier.toString()) }
     }
 
     inner class ChronometerBinder: Binder() {
