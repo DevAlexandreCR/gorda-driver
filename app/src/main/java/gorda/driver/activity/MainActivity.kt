@@ -234,9 +234,11 @@ class MainActivity : AppCompatActivity() {
         viewModel.getRideFees()
 
         viewModel.currentService.observe(this) { currentService ->
-            if (currentService == null) {
+            if (currentService == null && viewModel.isLoading.value == false) {
+                if (navController.currentDestination?.id == R.id.nav_current_service)
+                    navController.navigate(R.id.nav_home)
                 removeFeeServiceData()
-            } else {
+            } else if (currentService != null) {
                 when (currentService.status) {
                     Service.STATUS_IN_PROGRESS -> {
                         if (navController.currentDestination?.id != R.id.nav_current_service) {
