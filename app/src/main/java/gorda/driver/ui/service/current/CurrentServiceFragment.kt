@@ -210,6 +210,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             builder.setNegativeButton(R.string.no) { dialog, _ ->
                                 dialog.dismiss()
                                 layoutFees.visibility = ConstraintLayout.VISIBLE
+                                sharedPreferences.edit(commit = true) { remove(Constants.MULTIPLIER) }
+                                sharedPreferences.edit(commit = true) { remove(Constants.POINTS) }
+                                sharedPreferences.edit(commit = true) { remove(Constants.START_TIME) }
+                                totalRide = 0.0
                                 startServiceFee(service.start_loc.name)
                                 startingRide = true
                             }
@@ -377,7 +381,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                     mainViewModel.setLoading(false)
                                     feeMultiplier = editFeeMultiplier.text.toString().toDouble()
                                     textFareMultiplier.text = feeMultiplier.toString()
-                                    sharedPreferences.edit() {
+                                    sharedPreferences.edit(commit = true) {
                                         putString(
                                             Constants.MULTIPLIER,
                                             feeMultiplier.toString()
@@ -476,9 +480,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 requireContext().stopService(intentFee)
             }
         }
-        sharedPreferences.edit() { remove(Constants.MULTIPLIER) }
-        sharedPreferences.edit() { remove(Constants.POINTS) }
-        sharedPreferences.edit() { remove(Constants.START_TIME) }
+        sharedPreferences.edit(commit = true) { remove(Constants.MULTIPLIER) }
+        sharedPreferences.edit(commit = true) { remove(Constants.POINTS) }
+        sharedPreferences.edit(commit = true) { remove(Constants.START_TIME) }
         totalRide = 0.0
     }
 
