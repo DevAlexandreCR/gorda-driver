@@ -65,12 +65,12 @@ class FeesService: Service() {
                 restorePoints()
                 restoreMultiplier()
             } else {
-                sharedPreferences.edit() { putLong(Constants.START_TIME, startTime) }
-                sharedPreferences.edit() { remove(Constants.MULTIPLIER) }
-                sharedPreferences.edit() { remove(Constants.POINTS) }
+                sharedPreferences.edit(commit = true) { putLong(Constants.START_TIME, startTime) }
+                sharedPreferences.edit(commit = true) { remove(Constants.MULTIPLIER) }
+                sharedPreferences.edit(commit = true) { remove(Constants.POINTS) }
                 it.getDoubleExtra(Constants.MULTIPLIER, multiplier).also { multi ->
                     multiplier = multi
-                    sharedPreferences.edit() {
+                    sharedPreferences.edit(commit = true) {
                         putString(
                             Constants.MULTIPLIER,
                             multiplier.toString()
@@ -93,9 +93,9 @@ class FeesService: Service() {
     private fun listenService() {
         currentServiceListener = ServiceEventListener { service ->
             if (service != null && !service.isInProgress()) {
-                sharedPreferences.edit() { remove(Constants.START_TIME) }
-                sharedPreferences.edit() { remove(Constants.MULTIPLIER) }
-                sharedPreferences.edit() { remove(Constants.POINTS) }
+                sharedPreferences.edit(commit = true) { remove(Constants.START_TIME) }
+                sharedPreferences.edit(commit = true) { remove(Constants.MULTIPLIER) }
+                sharedPreferences.edit(commit = true) { remove(Constants.POINTS) }
                 locationManager.removeListener(locationCallback)
                 stopSelf()
             }
@@ -142,7 +142,7 @@ class FeesService: Service() {
     private fun savePoints() {
         val gson = Gson()
         val json = gson.toJson(points)
-        sharedPreferences.edit() { putString(Constants.POINTS, json) }
+        sharedPreferences.edit(commit = true) { putString(Constants.POINTS, json) }
     }
 
     fun getBaseTime(): Long {
@@ -179,7 +179,7 @@ class FeesService: Service() {
 
     fun setMultiplier(multi: Double) {
         multiplier = multi
-        sharedPreferences.edit() { putString(Constants.MULTIPLIER, multiplier.toString()) }
+        sharedPreferences.edit(commit = true) { putString(Constants.MULTIPLIER, multiplier.toString()) }
     }
 
     inner class ChronometerBinder: Binder() {
