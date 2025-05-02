@@ -210,6 +210,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             builder.setNegativeButton(R.string.no) { dialog, _ ->
                                 dialog.dismiss()
                                 layoutFees.visibility = ConstraintLayout.VISIBLE
+                                sharedPreferences.edit() { remove(Constants.MULTIPLIER) }
+                                sharedPreferences.edit() { remove(Constants.POINTS) }
+                                sharedPreferences.edit() { remove(Constants.START_TIME) }
+                                totalRide = 0.0
                                 startServiceFee(service.start_loc.name)
                                 startingRide = true
                             }
