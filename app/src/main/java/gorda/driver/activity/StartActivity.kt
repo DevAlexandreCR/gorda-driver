@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import gorda.driver.BuildConfig
@@ -47,10 +48,8 @@ class StartActivity : AppCompatActivity() {
 
         if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
             val newServiceUri: Uri =
-                Uri.parse(
-                    ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName +
-                        "/" + R.raw.assigned_service
-                )
+                (ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName +
+                        "/" + R.raw.assigned_service).toUri()
             val notificationManager: NotificationManager =
                 getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             val locationChannel = NotificationChannel(
