@@ -189,9 +189,15 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }
     }
 
-    fun connect() {
+    fun connecting() {
         _driverState.postValue(DriverUpdates.connecting(true))
         _isLoading.postValue(true)
+    }
+
+    fun connected() {
+        _driverState.postValue(DriverUpdates.connecting(false))
+        _driverState.postValue(DriverUpdates.setConnected(true))
+        _isLoading.postValue(false)
     }
 
     fun updateDriverDevice(driverID: String, device: DeviceInterface?): Task<Void> {

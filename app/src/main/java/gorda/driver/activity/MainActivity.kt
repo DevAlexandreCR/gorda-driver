@@ -123,6 +123,7 @@ class MainActivity : AppCompatActivity() {
                             viewModel.setLoading(false)
                             viewModel.setConnectedLocal(true)
                             viewModel.setConnecting(false)
+                            viewModel.connected()
                             switchConnect.setText(R.string.status_connected)
                         }.addOnFailureListener { e ->
                             stopLocationService()
@@ -215,7 +216,7 @@ class MainActivity : AppCompatActivity() {
                             connectionBroadcastReceiver,
                             IntentFilter(ConnectionBroadcastReceiver.ACTION_CONNECTION)
                         )
-                    viewModel.connect()
+                    viewModel.connecting()
                     this.startLocationService()
                 } else {
                     LocalBroadcastManager.getInstance(this).unregisterReceiver(connectionBroadcastReceiver)
