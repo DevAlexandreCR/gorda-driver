@@ -124,7 +124,6 @@ class MainActivity : AppCompatActivity() {
                             viewModel.setConnectedLocal(true)
                             viewModel.setConnecting(false)
                             viewModel.connected()
-                            switchConnect.setText(R.string.status_connected)
                         }.addOnFailureListener { e ->
                             stopLocationService()
                             viewModel.setLoading(false)
@@ -424,7 +423,9 @@ class MainActivity : AppCompatActivity() {
                 is DriverUpdates.IsConnected -> {
                     switchConnect.isChecked = driverUpdates.connected
                     switchConnect.setEnabled(true)
+                    switchConnect.setText(R.string.status_connected)
                     if (driverUpdates.connected) {
+                        switchConnect.setText(R.string.status_connected)
                         if (!LocationHandler.checkPermissions(this)) {
                             DriverUpdates.setConnected(false)
                         } else {
