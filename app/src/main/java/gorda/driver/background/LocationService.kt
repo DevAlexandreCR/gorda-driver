@@ -22,7 +22,6 @@ import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationListener
 import com.google.android.gms.location.LocationResult
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
@@ -35,6 +34,7 @@ import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
+import gorda.driver.ui.service.ConnectionBroadcastReceiver
 import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.ServicesEventListener
@@ -55,7 +55,8 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
 
     private lateinit var lastLocation: Location
     private lateinit var messenger: Messenger
-    private var stoped = false
+    private var starting = false
+    private var stopped = false
     private var driverID: String = ""
     private var toSpeech: TextToSpeech? = null
     private lateinit var mediaPlayer: MediaPlayer
@@ -73,7 +74,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         override fun onLocationResult(locationResult: LocationResult) {
             super.onLocationResult(locationResult)
             for (location in locationResult.locations) {
-                if (!stoped) {
+                if (!stopped) {
                     haveToUpdate++
                     lastLocation = location
                     if (haveToUpdate == 10) {
@@ -89,6 +90,15 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
                     broadcast.putExtra(LOCATION_EXTRA, lastLocation)
                     LocalBroadcastManager.getInstance(applicationContext)
                         .sendBroadcast(broadcast)
+
+                    if (starting) {
+                        starting = false
+                        val starting =
+                            Intent(ConnectionBroadcastReceiver.ACTION_CONNECTION)
+                        starting.putExtra(LOCATION_EXTRA, lastLocation)
+                        LocalBroadcastManager.getInstance(applicationContext)
+                            .sendBroadcast(starting)
+                    }
                 }
             }
         }
@@ -162,7 +172,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
             playSound = PlaySound(this, sharedPreferences)
-            stoped = false
+            stopped = false
             intent.getStringExtra(Driver.DRIVER_KEY)?.let { id ->
                 driverID = id
                 ServiceRepository.isThereCurrentService(currentServiceListener)
@@ -207,6 +217,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this@LocationService)
         mediaPlayer = MediaPlayer.create(this, R.raw.new_service)
         listServices = mutableListOf()
+        this.starting = true
         locationManager = LocationHandler.getInstance(this)
         locationManager.addListener(locationCallback)
         startListenNewServices()
@@ -219,7 +230,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         locationManager.removeListener(locationCallback)
         ServiceRepository.stopListenNewServices(listenerNewServices)
         ServiceRepository.stopListenServices(listener)
-        stoped = true
+        stopped = true
         timer.cancel()
         if (toSpeech != null) {
             toSpeech!!.stop()

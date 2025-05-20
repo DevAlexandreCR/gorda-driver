@@ -13,7 +13,6 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.DeviceInterface
-import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.RideFees
 import gorda.driver.models.Driver
@@ -190,28 +189,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }
     }
 
-    fun connect(driver: Driver) {
+    fun connect() {
         _driverState.postValue(DriverUpdates.connecting(true))
         _isLoading.postValue(true)
-
-        driver.connect(object: LocInterface {
-            override var lat: Double = 2.4448143
-            override var lng: Double = -76.6147395
-        }).addOnSuccessListener {
-            _driverState.postValue(DriverUpdates.connecting(false))
-            _driverState.postValue(DriverUpdates.setConnected(true))
-            _isLoading.postValue(false)
-        }.addOnFailureListener { e ->
-            _driverState.postValue(DriverUpdates.setConnected(false))
-            _driverState.postValue(DriverUpdates.connecting(false))
-            _isLoading.postValue(false)
-            e.message?.let { message -> Log.e(TAG, message) }
-        }.withTimeout {
-            _driverState.postValue(DriverUpdates.setConnected(false))
-            _driverState.postValue(DriverUpdates.connecting(false))
-            _isLoading.postValue(false)
-            this.setErrorTimeout(true)
-        }
     }
 
     fun updateDriverDevice(driverID: String, device: DeviceInterface?): Task<Void> {
@@ -239,5 +219,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun setConnectedLocal(connected: Boolean) {
         _driverState.postValue(DriverUpdates.setConnected(connected))
+    }
+
+    fun setConnecting(connecting: Boolean) {
+        _driverState.postValue(DriverUpdates.connecting(connecting))
     }
 }
