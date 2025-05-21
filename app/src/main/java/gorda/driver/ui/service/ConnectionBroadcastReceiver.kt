@@ -5,10 +5,10 @@ import android.content.Context
 import android.content.Intent
 import gorda.driver.interfaces.LocationUpdateInterface
 
-class LocationBroadcastReceiver(private var received: LocationUpdateInterface): BroadcastReceiver() {
+class ConnectionBroadcastReceiver(private var received: LocationUpdateInterface): BroadcastReceiver() {
 
     companion object {
-        const val ACTION_LOCATION_UPDATES = "location.updates"
+        const val ACTION_CONNECTION = "action.connection"
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {

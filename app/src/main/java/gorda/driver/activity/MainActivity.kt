@@ -18,6 +18,7 @@ import android.os.IBinder
 import android.os.Message
 import android.os.Messenger
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
@@ -28,6 +29,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.edit
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -46,7 +48,9 @@ import com.google.android.material.snackbar.Snackbar
 import gorda.driver.R
 import gorda.driver.background.LocationService
 import gorda.driver.databinding.ActivityMainBinding
+import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.DeviceInterface
+import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
@@ -55,6 +59,7 @@ import gorda.driver.services.firebase.Auth
 import gorda.driver.services.network.NetworkMonitor
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.driver.DriverUpdates
+import gorda.driver.ui.service.ConnectionBroadcastReceiver
 import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.utils.Constants
@@ -101,6 +106,40 @@ class MainActivity : AppCompatActivity() {
                 val extra: Location? = intent.getParcelableExtra(LOCATION_EXTRA)
                 extra?.let { location ->
                     viewModel.updateLocation(location)
+                }
+            }
+        })
+
+    private val connectionBroadcastReceiver =
+        ConnectionBroadcastReceiver(object : LocationUpdateInterface {
+            override fun onUpdate(intent: Intent) {
+                val extra: Location? = intent.getParcelableExtra(LOCATION_EXTRA)
+                extra?.let { location ->
+                    viewModel.driver.value?.let { driver ->
+                        driver.connect(object: LocInterface {
+                            override var lat = location.latitude
+                            override var lng = location.longitude
+                        }).addOnSuccessListener {
+                            viewModel.setLoading(false)
+                            viewModel.setConnectedLocal(true)
+                            viewModel.setConnecting(false)
+                            viewModel.connected()
+                        }.addOnFailureListener { e ->
+                            stopLocationService()
+                            viewModel.setLoading(false)
+                            viewModel.setConnectedLocal(false)
+                            viewModel.setConnecting(false)
+                            switchConnect.setText(R.string.status_disconnected)
+                            e.message?.let { message -> Log.e(TAG, message) }
+                        }.withTimeout {
+                            stopLocationService()
+                            viewModel.setConnecting(false)
+                            viewModel.setLoading(false)
+                            viewModel.setConnectedLocal(false)
+                            viewModel.setErrorTimeout(true)
+                            switchConnect.setText(R.string.status_disconnected)
+                        }
+                    }
                 }
             }
         })
@@ -171,8 +210,16 @@ class MainActivity : AppCompatActivity() {
         switchConnect.setOnClickListener {
             driver?.let { driver ->
                 if (switchConnect.isChecked) {
-                    viewModel.connect(driver)
+                    LocalBroadcastManager.getInstance(this)
+                        .registerReceiver(
+                            connectionBroadcastReceiver,
+                            IntentFilter(ConnectionBroadcastReceiver.ACTION_CONNECTION)
+                        )
+                    viewModel.connecting()
+                    this.startLocationService()
                 } else {
+                    LocalBroadcastManager.getInstance(this).unregisterReceiver(connectionBroadcastReceiver)
+                    this.stopLocationService()
                     viewModel.disconnect(driver)
                 }
             }
@@ -183,7 +230,6 @@ class MainActivity : AppCompatActivity() {
                 is LocationUpdates.LastLocation -> {
                     lastLocation = locationUpdate.location
                 }
-
                 else -> {}
             }
         }
@@ -194,13 +240,13 @@ class MainActivity : AppCompatActivity() {
 
         notificationButton.setOnClickListener {
             val isNotifyMute: Boolean = !preferences.getBoolean(Constants.NOTIFICATION_MUTE, false)
-            val editor: SharedPreferences.Editor = preferences.edit()
-            editor.putBoolean(Constants.NOTIFICATION_MUTE, isNotifyMute)
-            editor.apply()
+            preferences.edit() {
+                putBoolean(Constants.NOTIFICATION_MUTE, isNotifyMute)
+            }
             setIconNotificationButton(isNotifyMute)
         }
 
-        observeDriver(navView)
+        this.observeDriver(navView)
 
         viewModel.isNetWorkConnected.observe(this) {
             if (!it) {
@@ -209,7 +255,11 @@ class MainActivity : AppCompatActivity() {
                 viewModel.setConnectedLocal(false)
             } else {
                 driver?.let { d ->
-                    viewModel.isConnected(d.id)
+                    Auth.reloadUser().addOnSuccessListener {
+                        viewModel.isConnected(d.id)
+                    }.withTimeout {
+                        viewModel.setErrorTimeout(true)
+                    }
                 }
                 connectionBar.visibility = View.GONE
                 viewModel.setLoading(false)
@@ -257,10 +307,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun removeFeeServiceData() {
-        preferences.edit().putString(Constants.CURRENT_SERVICE_ID, null).apply()
-        preferences.edit().remove(Constants.START_TIME).apply()
-        preferences.edit().remove(Constants.MULTIPLIER).apply()
-        preferences.edit().remove(Constants.POINTS).apply()
+        preferences.edit(true) { putString(Constants.CURRENT_SERVICE_ID, null) }
+        preferences.edit(true) { remove(Constants.START_TIME) }
+        preferences.edit(true) { remove(Constants.MULTIPLIER) }
+        preferences.edit(true) { remove(Constants.POINTS) }
     }
 
     private fun setIconNotificationButton(isNotificationMute: Boolean) {
@@ -304,9 +354,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        val editor: SharedPreferences.Editor = preferences.edit()
-        editor.putString(Constants.CURRENT_SERVICE_ID, viewModel.currentService.value?.id)
-        editor.apply()
+        preferences.edit(true) {
+            putString(Constants.CURRENT_SERVICE_ID, viewModel.currentService.value?.id)
+        }
         if (mBound) {
             this.unbindService(connection)
             mBound = false
@@ -377,11 +427,14 @@ class MainActivity : AppCompatActivity() {
                 is DriverUpdates.IsConnected -> {
                     switchConnect.isChecked = driverUpdates.connected
                     switchConnect.setEnabled(true)
+                    switchConnect.setText(R.string.status_connected)
                     if (driverUpdates.connected) {
+                        switchConnect.setText(R.string.status_connected)
                         if (!LocationHandler.checkPermissions(this)) {
                             DriverUpdates.setConnected(false)
+                            this.stopLocationService()
                         } else {
-                            startLocationService()
+                            this.startLocationService()
                             switchConnect.setText(R.string.status_connected)
                         }
                     } else {
@@ -395,13 +448,6 @@ class MainActivity : AppCompatActivity() {
                         switchConnect.setText(R.string.status_connecting)
                         switchConnect.setEnabled(false)
                     } else {
-                        if (switchConnect.isChecked) {
-                            switchConnect.setText(R.string.status_disconnected)
-                            switchConnect.isChecked = false
-                        } else {
-                            switchConnect.setText(R.string.status_connected)
-                            switchConnect.isChecked = true
-                        }
                         switchConnect.setEnabled(true)
                     }
                 }
@@ -416,8 +462,8 @@ class MainActivity : AppCompatActivity() {
             when (it) {
                 is Driver -> {
                     this.driver = it
-                    if (this.driver!!.device != null) {
-                        if (this.deviceID != this.driver!!.device!!.id) {
+                    if (it.device != null) {
+                        if (this.deviceID != it.device!!.id) {
                             Auth.logOut(this).addOnCompleteListener { completed ->
                                 if (completed.isSuccessful) {
                                     Toast.makeText(
