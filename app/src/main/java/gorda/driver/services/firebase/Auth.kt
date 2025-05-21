@@ -14,6 +14,14 @@ object Auth {
         return auth.currentUser?.uid
     }
 
+    fun reloadUser(): Task<Void> {
+        return if (auth.currentUser != null) {
+            auth.currentUser!!.reload()
+        } else {
+            throw IllegalStateException("User is not logged in")
+        }
+    }
+
     fun onAuthChanges(listener: (uuid: String?) -> Unit) {
         auth.addAuthStateListener { p0 -> listener(p0.uid) }
     }
