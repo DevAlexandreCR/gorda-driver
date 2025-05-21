@@ -432,7 +432,9 @@ class MainActivity : AppCompatActivity() {
                         switchConnect.setText(R.string.status_connected)
                         if (!LocationHandler.checkPermissions(this)) {
                             DriverUpdates.setConnected(false)
+                            this.stopLocationService()
                         } else {
+                            this.startLocationService()
                             switchConnect.setText(R.string.status_connected)
                         }
                     } else {
