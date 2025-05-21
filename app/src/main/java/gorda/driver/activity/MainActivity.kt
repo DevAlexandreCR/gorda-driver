@@ -255,7 +255,11 @@ class MainActivity : AppCompatActivity() {
                 viewModel.setConnectedLocal(false)
             } else {
                 driver?.let { d ->
-                    viewModel.isConnected(d.id)
+                    Auth.reloadUser().addOnSuccessListener {
+                        viewModel.isConnected(d.id)
+                    }.withTimeout {
+                        viewModel.setErrorTimeout(true)
+                    }
                 }
                 connectionBar.visibility = View.GONE
                 viewModel.setLoading(false)
@@ -456,8 +460,8 @@ class MainActivity : AppCompatActivity() {
             when (it) {
                 is Driver -> {
                     this.driver = it
-                    if (this.driver!!.device != null) {
-                        if (this.deviceID != this.driver!!.device!!.id) {
+                    if (it.device != null) {
+                        if (this.deviceID != it.device!!.id) {
                             Auth.logOut(this).addOnCompleteListener { completed ->
                                 if (completed.isSuccessful) {
                                     Toast.makeText(
