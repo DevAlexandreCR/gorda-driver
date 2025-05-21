@@ -182,10 +182,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     fun isConnected(driverId: String) {
         _driverState.postValue(DriverUpdates.connecting(true))
         _isLoading.postValue(true)
-        DriverRepository.isConnected(driverId) {
+        DriverRepository.isConnected(driverId) { connected ->
             _isLoading.postValue(false)
             _driverState.postValue(DriverUpdates.connecting(false))
-            _driverState.postValue(DriverUpdates.setConnected(it))
+            _driverState.postValue(DriverUpdates.setConnected(connected))
         }
     }
 
