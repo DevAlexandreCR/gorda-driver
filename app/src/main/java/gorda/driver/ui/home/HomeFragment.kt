@@ -28,6 +28,7 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
     private val mainViewModel: MainViewModel by activityViewModels()
     private var location: Location? = null
+    private lateinit var recyclerView: RecyclerView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -40,7 +41,7 @@ class HomeFragment : Fragment() {
         val root: View = binding.root
 
         val textView: TextView = binding.textHome
-        val recyclerView: RecyclerView = binding.listServices
+        this.recyclerView = binding.listServices
         val showMapFromService: (location: LocType) -> Unit = { location ->
             mainViewModel.setServiceUpdateStartLocation(location)
             findNavController().navigate(R.id.nav_map)
@@ -52,7 +53,7 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.nav_apply, bundle)
         }
         val serviceAdapter = ServiceAdapter(requireContext(), showMapFromService, apply)
-        recyclerView.adapter = serviceAdapter
+        this.recyclerView.adapter = serviceAdapter
         homeViewModel.text.observe(viewLifecycleOwner) {
             textView.text = getString(it)
         }
@@ -88,13 +89,23 @@ class HomeFragment : Fragment() {
             }
         }
 
+        mainViewModel.isNetWorkConnected.observe(viewLifecycleOwner) {
+            if (it) {
+                this.recyclerView.visibility = View.VISIBLE
+            } else {
+                this.recyclerView.visibility = View.GONE
+            }
+        }
+
         mainViewModel.driverStatus.observe(viewLifecycleOwner) {
             when (it) {
                 is DriverUpdates.IsConnected -> {
                     if (it.connected) {
+                        this.recyclerView.visibility = View.VISIBLE
                         homeViewModel.startListenServices()
                     } else {
                         homeViewModel.stopListenServices()
+                        this.recyclerView.visibility = View.GONE
                     }
                 }
                 else -> {}

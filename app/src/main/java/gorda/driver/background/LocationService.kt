@@ -1,5 +1,6 @@
 package gorda.driver.background
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.app.Service
@@ -18,11 +19,14 @@ import android.os.Message
 import android.os.Messenger
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -63,6 +67,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var playSound: PlaySound
     private lateinit var locationManager: LocationHandler
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var haveToUpdate = 0
     private lateinit var listServices: MutableList<DBService>
     private val timer = Timer()
@@ -186,6 +191,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         return messenger.binder
     }
 
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     @SuppressLint("UnspecifiedImmutableFlag")
     override fun onCreate() {
         super.onCreate()
@@ -218,6 +224,20 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         mediaPlayer = MediaPlayer.create(this, R.raw.new_service)
         listServices = mutableListOf()
         this.starting = true
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+            if (location != null) {
+                lastLocation = location
+                if (starting) {
+                    starting = false
+                    val starting =
+                        Intent(ConnectionBroadcastReceiver.ACTION_CONNECTION)
+                    starting.putExtra(LOCATION_EXTRA, lastLocation)
+                    LocalBroadcastManager.getInstance(applicationContext)
+                        .sendBroadcast(starting)
+                }
+            }
+        }
         locationManager = LocationHandler.getInstance(this)
         locationManager.addListener(locationCallback)
         startListenNewServices()
@@ -308,3 +328,4 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         ServiceRepository.isThereConnectionService(nextServiceListener)
     }
 }
+
