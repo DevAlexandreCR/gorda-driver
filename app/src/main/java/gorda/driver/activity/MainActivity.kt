@@ -252,7 +252,7 @@ class MainActivity : AppCompatActivity() {
             if (!it) {
                 connectionBar.visibility = View.VISIBLE
                 viewModel.setLoading(true)
-                viewModel.setConnectedLocal(false)
+                viewModel.setConnecting(true)
             } else {
                 driver?.let { d ->
                     Auth.reloadUser().addOnSuccessListener {
