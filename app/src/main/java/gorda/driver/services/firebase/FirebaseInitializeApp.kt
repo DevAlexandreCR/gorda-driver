@@ -3,6 +3,7 @@ package gorda.driver.services.firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
 import gorda.driver.BuildConfig
 
@@ -29,4 +30,6 @@ object FirebaseInitializeApp {
             this.useEmulator(BuildConfig.FIREBASE_FIRESTORE_HOST, BuildConfig.FIREBASE_FIRESTORE_PORT.toInt())
         this
     }
+
+    val messaging: FirebaseMessaging = FirebaseMessaging.getInstance()
 }
