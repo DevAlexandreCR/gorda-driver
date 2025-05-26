@@ -1,10 +1,14 @@
 package gorda.driver.background
 
+import android.annotation.SuppressLint
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import gorda.driver.repositories.TokenRepository
 import gorda.driver.services.firebase.Auth
+import gorda.driver.utils.Constants
 
 class NotificationService: FirebaseMessagingService() {
     companion object {
@@ -12,22 +16,29 @@ class NotificationService: FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        // TODO(developer): Handle FCM messages here.
-        // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
-        Log.d(TAG, "From: ${remoteMessage.from}")
-
-        // Check if message contains a data payload.
         if (remoteMessage.data.isNotEmpty()) {
             Log.d(TAG, "Message data payload: ${remoteMessage.data}")
         }
-
-        // Check if message contains a notification payload.
         remoteMessage.notification?.let {
             Log.d(TAG, "Message Notification Body: ${it.body}")
+            showNotification(it.title, it.body)
         }
+    }
 
-        // Also if you intend on generating your own notifications as a result of a received FCM
-        // message, here is where that should be initiated. See sendNotification method below.
+    @SuppressLint("MissingPermission")
+    private fun showNotification(title: String?, body: String?) {
+        val channelId = Constants.MESSAGES_NOTIFICATION_CHANNEL_ID
+        val notificationId = 1000
+
+        val builder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title ?: "Notification")
+            .setContentText(body ?: "")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+        with(NotificationManagerCompat.from(this)) {
+            notify(notificationId, builder.build())
+        }
     }
 
     override fun onNewToken(token: String) {
@@ -41,3 +52,4 @@ class NotificationService: FirebaseMessagingService() {
         }
     }
 }
+

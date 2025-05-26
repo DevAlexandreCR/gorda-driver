@@ -60,9 +60,14 @@ class StartActivity : AppCompatActivity() {
                 Constants.SERVICES_NOTIFICATION_CHANNEL_ID,
                 Constants.SERVICES_NOTIFICATION_CHANNEL_ID, NotificationManager.IMPORTANCE_HIGH
             )
+            val messagesChannel = NotificationChannel(
+                Constants.MESSAGES_NOTIFICATION_CHANNEL_ID,
+                Constants.MESSAGES_NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
+            )
 
             locationChannel.description = Constants.LOCATION_NOTIFICATION_CHANNEL_ID
             servicesChannel.description = Constants.SERVICES_NOTIFICATION_CHANNEL_ID
+            messagesChannel.description = Constants.MESSAGES_NOTIFICATION_CHANNEL_NAME
             val audioAttributes = AudioAttributes.Builder()
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -70,6 +75,7 @@ class StartActivity : AppCompatActivity() {
             servicesChannel.setSound(newServiceUri, audioAttributes)
             notificationManager.createNotificationChannel(locationChannel)
             notificationManager.createNotificationChannel(servicesChannel)
+            notificationManager.createNotificationChannel(messagesChannel)
         }
 
         setupSentry()

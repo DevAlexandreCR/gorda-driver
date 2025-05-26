@@ -377,6 +377,7 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(intent)
         }
+        requestNotificationPermissionIfNeeded()
     }
 
     private fun showDisClosure() {
@@ -505,7 +506,16 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_DENIED) {
+            var denied = false
+            for (i in permissions.indices) {
+                if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
+                    denied = true
+                    if (permissions[i] == Manifest.permission.POST_NOTIFICATIONS) {
+                        Toast.makeText(this, R.string.notification_permission_required, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+            if (denied) {
                 finish()
             }
         }
@@ -552,6 +562,18 @@ class MainActivity : AppCompatActivity() {
         ActivityCompat.requestPermissions(
             this, permissions, LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
         )
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
+                )
+            }
+        }
     }
 
     private fun isLocationEnabled(): Boolean {
