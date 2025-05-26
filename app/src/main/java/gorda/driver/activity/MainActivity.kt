@@ -2,6 +2,7 @@ package gorda.driver.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -146,6 +147,16 @@ class MainActivity : AppCompatActivity() {
         })
 
     private lateinit var snackBar: Snackbar
+
+    private val alertReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val title = intent?.getStringExtra("title") ?: getString(R.string.app_name)
+            val body = intent?.getStringExtra("body") ?: ""
+            Snackbar.make(binding.root, "$title: $body", Snackbar.LENGTH_LONG)
+                .setAction(R.string.navigation) { }
+                .show()
+        }
+    }
 
     @SuppressLint("HardwareIds")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -331,6 +342,7 @@ class MainActivity : AppCompatActivity() {
         viewModel.changeNetWorkStatus(isConnected)
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onStart() {
         super.onStart()
         LocalBroadcastManager.getInstance(this)
@@ -352,6 +364,19 @@ class MainActivity : AppCompatActivity() {
         viewModel.isThereCurrentService()
         viewModel.isThereConnectionService()
         networkMonitor.startMonitoring()
+
+        if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
+            registerReceiver(
+                alertReceiver,
+                IntentFilter(Constants.ALERT_ACTION),
+                RECEIVER_NOT_EXPORTED
+            )
+        } else {
+            registerReceiver(
+                alertReceiver,
+                IntentFilter(Constants.ALERT_ACTION),
+            )
+        }
     }
 
     override fun onStop() {
@@ -366,6 +391,8 @@ class MainActivity : AppCompatActivity() {
         }
         networkMonitor.stopMonitoring()
         viewModel.stopNextServiceListener()
+
+        unregisterReceiver(alertReceiver)
     }
 
     override fun onResume() {
