@@ -68,4 +68,29 @@
         <item name="fullscreenBackgroundColor">@color/light_blue_600</item>
         <item name="fullscreenTextColor">@color/light_blue_A200</item>
     </style>
+
+    <!-- Bootstrap-like styles using your color palette -->
+    <style name="Gorda.Button.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="android:elevation">2dp</item>
+    </style>
+    <style name="Gorda.Button.Secondary" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/secondary</item>
+        <item name="android:textColor">@color/black</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="android:elevation">2dp</item>
+    </style>
+    <style name="Gorda.CardView" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/secondary_variant</item>
+        <item name="cardElevation">4dp</item>
+        <item name="cardCornerRadius">12dp</item>
+    </style>
+    <style name="Gorda.TextInput" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundColor">@color/white</item>
+        <item name="boxStrokeColor">@color/primary</item>
+        <item name="android:textColorHint">@color/secondary_dark</item>
+    </style>
 </resources>
+
