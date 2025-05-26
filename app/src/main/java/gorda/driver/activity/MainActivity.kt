@@ -56,6 +56,7 @@ import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
+import gorda.driver.services.firebase.Messaging
 import gorda.driver.services.network.NetworkMonitor
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.driver.DriverUpdates
@@ -157,6 +158,7 @@ class MainActivity : AppCompatActivity() {
 
         intent.getStringExtra(Constants.DRIVER_ID_EXTRA)?.let {
             viewModel.getDriver(it)
+            Messaging.init(it)
         }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
