@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.edit
 import androidx.core.os.bundleOf
@@ -162,7 +163,7 @@ class HomeFragment : Fragment() {
         }
         val now = System.currentTimeMillis()
         val validNotifications = org.json.JSONArray()
-        val container = view?.findViewById<androidx.constraintlayout.widget.ConstraintLayout>(R.id.alerts_container)
+        val container = view?.findViewById<LinearLayout>(R.id.alerts_container)
         container?.removeAllViews()
         // Show all valid notifications, most recent first
         val validList = mutableListOf<org.json.JSONObject>()
