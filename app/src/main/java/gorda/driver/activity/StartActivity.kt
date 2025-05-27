@@ -50,6 +50,8 @@ class StartActivity : AppCompatActivity() {
             val newServiceUri: Uri =
                 (ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName +
                         "/" + R.raw.assigned_service).toUri()
+            val msgUri: Uri =
+                (ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName + "/" + R.raw.message).toUri()
             val notificationManager: NotificationManager =
                 getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             val locationChannel = NotificationChannel(
@@ -72,6 +74,7 @@ class StartActivity : AppCompatActivity() {
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                 .build()
+            messagesChannel.setSound(msgUri, audioAttributes)
             servicesChannel.setSound(newServiceUri, audioAttributes)
             notificationManager.createNotificationChannel(locationChannel)
             notificationManager.createNotificationChannel(servicesChannel)

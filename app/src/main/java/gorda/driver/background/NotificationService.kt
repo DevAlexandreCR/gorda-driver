@@ -1,15 +1,22 @@
 package gorda.driver.background
 
 import android.annotation.SuppressLint
+import android.app.PendingIntent
+import android.content.ContentResolver
 import android.content.Intent
 import android.content.SharedPreferences
+import android.media.RingtoneManager
+import android.net.Uri
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.preference.PreferenceManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import gorda.driver.R
+import gorda.driver.activity.StartActivity
 import gorda.driver.repositories.TokenRepository
 import gorda.driver.services.firebase.Auth
 import gorda.driver.utils.Constants
@@ -23,20 +30,43 @@ class NotificationService: FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        Log.d(TAG, "Message data payload: ${remoteMessage.data}")
+        val type = remoteMessage.data["type"] ?: "notification"
         var duration = "15"
-        if (remoteMessage.data.isNotEmpty()) {
-            duration = remoteMessage.data["duration"] ?: duration
-        }
-        remoteMessage.notification?.let {
-            Log.d(TAG, "Message Notification Body: ${it.body}")
-            saveNotificationToPrefs(it.title.toString(), it.body.toString(), duration)
-            if (Utils.isAppInForeground(this)) {
-                val intent = Intent(Constants.ALERT_ACTION)
-                sendBroadcast(intent)
-            } else {
-                showNotification(it.title, it.body)
+        var title = "Notification"
+        var body = "New Notification"
+
+        if (type === "notification") {
+            remoteMessage.notification?.let {
+                Log.d(TAG, "Message Notification Body: ${it.body}")
+                title = it.title ?: title
+                body = it.body ?: body
+                duration = remoteMessage.data["duration"] ?: "15"
             }
+        } else {
+            duration = remoteMessage.data["duration"] ?: duration
+            title = remoteMessage.data["title"] ?: title
+            body = remoteMessage.data["body"] ?: body
+        }
+
+        saveNotificationToPrefs(title, body, duration)
+
+        if (Utils.isAppInForeground(this)) {
+            val intent = Intent(Constants.ALERT_ACTION)
+            sendBroadcast(intent)
+            playNotificationSound()
+        } else {
+            showNotification(title, body)
+        }
+    }
+
+    private fun playNotificationSound() {
+        try {
+            val msgUri: Uri =
+                (ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName + "/" + R.raw.message).toUri()
+            val r = RingtoneManager.getRingtone(applicationContext, msgUri)
+            r.play()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -58,13 +88,24 @@ class NotificationService: FirebaseMessagingService() {
     private fun showNotification(title: String?, body: String?) {
         val channelId = Constants.MESSAGES_NOTIFICATION_CHANNEL_ID
         val notificationId = 1000
+        val notificationIntent = Intent(this, StartActivity::class.java)
+        notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(
+            this, 0, notificationIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val msgUri: Uri =
+            (ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName + "/" + R.raw.message).toUri()
 
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title ?: "Notification")
             .setContentText(body ?: "")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
+            .setSound(msgUri)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(false)
 
         with(NotificationManagerCompat.from(this)) {
             notify(notificationId, builder.build())

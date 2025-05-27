@@ -21,6 +21,7 @@ import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -196,7 +197,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     override fun onCreate() {
         super.onCreate()
         val connectedUri: Uri =
-            Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName + "/" + R.raw.assigned_service)
+            (ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName + "/" + R.raw.assigned_service).toUri()
         val notificationIntent = Intent(this, StartActivity::class.java)
             notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             notificationIntent.putExtra(Constants.DRIVER_ID_EXTRA, driverID)
