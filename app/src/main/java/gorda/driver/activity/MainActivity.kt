@@ -150,11 +150,7 @@ class MainActivity : AppCompatActivity() {
 
     private val alertReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val title = intent?.getStringExtra("title") ?: getString(R.string.app_name)
-            val body = intent?.getStringExtra("body") ?: ""
-            Snackbar.make(binding.root, "$title: $body", Snackbar.LENGTH_LONG)
-                .setAction(R.string.navigation) { }
-                .show()
+            showAlerts()
         }
     }
 
@@ -607,6 +603,31 @@ class MainActivity : AppCompatActivity() {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+    private fun showAlerts() {
+        val notificationsJson = preferences.getString(Constants.ALERT_ACTION, "[]")
+        val notificationsArray = try {
+            org.json.JSONArray(notificationsJson)
+        } catch (e: Exception) {
+            org.json.JSONArray()
+        }
+        val now = System.currentTimeMillis()
+        val validNotifications = org.json.JSONArray()
+        for (i in 0 until notificationsArray.length()) {
+            val obj = notificationsArray.optJSONObject(i)
+            val title = obj?.optString("title") ?: getString(R.string.app_name)
+            val body = obj?.optString("body") ?: ""
+            val duration = obj?.optString("duration")?.toLongOrNull() ?: 15L
+            val timestamp = obj?.optLong("timestamp") ?: System.currentTimeMillis()
+            val minutesPassed = (now - timestamp) / 60000L
+            if (minutesPassed <= duration) {
+
+                validNotifications.put(obj)
+            }
+        }
+        // Save only valid notifications back to preferences
+        preferences.edit() { putString(Constants.ALERT_ACTION, validNotifications.toString()) }
     }
 
     @Deprecated("Deprecated in Java")
