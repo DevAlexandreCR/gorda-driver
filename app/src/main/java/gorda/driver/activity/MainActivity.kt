@@ -56,6 +56,7 @@ import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
+import gorda.driver.services.firebase.Messaging
 import gorda.driver.services.network.NetworkMonitor
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.driver.DriverUpdates
@@ -157,6 +158,7 @@ class MainActivity : AppCompatActivity() {
 
         intent.getStringExtra(Constants.DRIVER_ID_EXTRA)?.let {
             viewModel.getDriver(it)
+            Messaging.init(it)
         }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -329,6 +331,7 @@ class MainActivity : AppCompatActivity() {
         viewModel.changeNetWorkStatus(isConnected)
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onStart() {
         super.onStart()
         LocalBroadcastManager.getInstance(this)
@@ -375,6 +378,7 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(intent)
         }
+        requestNotificationPermissionIfNeeded()
     }
 
     private fun showDisClosure() {
@@ -503,7 +507,16 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_DENIED) {
+            var denied = false
+            for (i in permissions.indices) {
+                if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
+                    denied = true
+                    if (permissions[i] == Manifest.permission.POST_NOTIFICATIONS) {
+                        Toast.makeText(this, R.string.notification_permission_required, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+            if (denied) {
                 finish()
             }
         }
@@ -550,6 +563,18 @@ class MainActivity : AppCompatActivity() {
         ActivityCompat.requestPermissions(
             this, permissions, LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
         )
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    LocationHandler.PERMISSION_REQUEST_ACCESS_LOCATION
+                )
+            }
+        }
     }
 
     private fun isLocationEnabled(): Boolean {
