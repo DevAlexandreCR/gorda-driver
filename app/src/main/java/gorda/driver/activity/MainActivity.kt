@@ -2,7 +2,6 @@ package gorda.driver.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -147,12 +146,6 @@ class MainActivity : AppCompatActivity() {
         })
 
     private lateinit var snackBar: Snackbar
-
-    private val alertReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            showAlerts()
-        }
-    }
 
     @SuppressLint("HardwareIds")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -360,19 +353,6 @@ class MainActivity : AppCompatActivity() {
         viewModel.isThereCurrentService()
         viewModel.isThereConnectionService()
         networkMonitor.startMonitoring()
-
-        if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
-            registerReceiver(
-                alertReceiver,
-                IntentFilter(Constants.ALERT_ACTION),
-                RECEIVER_NOT_EXPORTED
-            )
-        } else {
-            registerReceiver(
-                alertReceiver,
-                IntentFilter(Constants.ALERT_ACTION),
-            )
-        }
     }
 
     override fun onStop() {
@@ -387,8 +367,6 @@ class MainActivity : AppCompatActivity() {
         }
         networkMonitor.stopMonitoring()
         viewModel.stopNextServiceListener()
-
-        unregisterReceiver(alertReceiver)
     }
 
     override fun onResume() {
@@ -603,31 +581,6 @@ class MainActivity : AppCompatActivity() {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-    }
-
-    private fun showAlerts() {
-        val notificationsJson = preferences.getString(Constants.ALERT_ACTION, "[]")
-        val notificationsArray = try {
-            org.json.JSONArray(notificationsJson)
-        } catch (e: Exception) {
-            org.json.JSONArray()
-        }
-        val now = System.currentTimeMillis()
-        val validNotifications = org.json.JSONArray()
-        for (i in 0 until notificationsArray.length()) {
-            val obj = notificationsArray.optJSONObject(i)
-            val title = obj?.optString("title") ?: getString(R.string.app_name)
-            val body = obj?.optString("body") ?: ""
-            val duration = obj?.optString("duration")?.toLongOrNull() ?: 15L
-            val timestamp = obj?.optLong("timestamp") ?: System.currentTimeMillis()
-            val minutesPassed = (now - timestamp) / 60000L
-            if (minutesPassed <= duration) {
-
-                validNotifications.put(obj)
-            }
-        }
-        // Save only valid notifications back to preferences
-        preferences.edit() { putString(Constants.ALERT_ACTION, validNotifications.toString()) }
     }
 
     @Deprecated("Deprecated in Java")
