@@ -105,7 +105,7 @@ class HomeFragment : Fragment() {
             if (it) {
                 this.recyclerView.visibility = View.VISIBLE
             } else {
-                this.recyclerView.visibility = View.GONE
+                this.recyclerView.visibility = View.INVISIBLE
             }
         }
 
@@ -117,7 +117,7 @@ class HomeFragment : Fragment() {
                         homeViewModel.startListenServices()
                     } else {
                         homeViewModel.stopListenServices()
-                        this.recyclerView.visibility = View.GONE
+                        this.recyclerView.visibility = View.INVISIBLE
                     }
                 }
                 else -> {}
