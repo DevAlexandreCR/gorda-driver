@@ -8,6 +8,8 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.location.Location
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -41,6 +43,8 @@ class HomeFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var alertReceiver: BroadcastReceiver
     private lateinit var preferences: SharedPreferences
+    private var alertsHandler: Handler? = null
+    private var alertsRunnable: Runnable? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -134,6 +138,15 @@ class HomeFragment : Fragment() {
                 showAlerts()
             }
         }
+        // Start cron to call showAlerts every minute
+        alertsHandler = Handler(Looper.getMainLooper())
+        alertsRunnable = object : Runnable {
+            override fun run() {
+                showAlerts()
+                alertsHandler?.postDelayed(this, 60_000)
+            }
+        }
+        alertsHandler?.post(alertsRunnable!!)
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
@@ -211,6 +224,7 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        alertsHandler?.removeCallbacks(alertsRunnable!!)
         _binding = null
     }
 }
