@@ -34,6 +34,7 @@ class NotificationService: FirebaseMessagingService() {
         var duration = "15"
         var title = "Notification"
         var body = "New Notification"
+        var timestamp = System.currentTimeMillis()
 
         if (type === "notification") {
             remoteMessage.notification?.let {
@@ -46,9 +47,10 @@ class NotificationService: FirebaseMessagingService() {
             duration = remoteMessage.data["duration"] ?: duration
             title = remoteMessage.data["title"] ?: title
             body = remoteMessage.data["body"] ?: body
+            timestamp = remoteMessage.data["timestamp"]?.toLongOrNull() ?: timestamp
         }
 
-        saveNotificationToPrefs(title, body, duration)
+        saveNotificationToPrefs(title, body, duration, timestamp)
 
         if (Utils.isAppInForeground(this)) {
             val intent = Intent(Constants.ALERT_ACTION)
@@ -70,14 +72,14 @@ class NotificationService: FirebaseMessagingService() {
         }
     }
 
-    private fun saveNotificationToPrefs(title: String, body: String, duration: String) {
+    private fun saveNotificationToPrefs(title: String, body: String, duration: String, timestamp: Long) {
         val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         val notificationsJson = prefs.getString(Constants.ALERT_ACTION, "[]")
         val notificationsArray = JSONArray(notificationsJson)
         val notificationObj = JSONObject().apply {
             put("title", title)
             put("body", body)
-            put("timestamp", System.currentTimeMillis())
+            put("timestamp", timestamp)
             put("duration", duration)
         }
         notificationsArray.put(notificationObj)
