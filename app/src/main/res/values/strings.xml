@@ -114,4 +114,5 @@
     <string name="summary_text">Today you have won:\n</string>
     <string name="fields_balance">Balance</string>
     <string name="driver_balance">Balance: <big> <b> %s</b></big> </string>
+    <string name="notification_permission_required">Push notification permission required</string>
 </resources>
