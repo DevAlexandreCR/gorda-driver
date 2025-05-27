@@ -1,12 +1,12 @@
 package gorda.driver.ui.home
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.location.Location
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +18,6 @@ import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
@@ -32,7 +31,6 @@ import gorda.driver.ui.service.ServiceAdapter
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 import gorda.driver.utils.Constants
-import gorda.driver.utils.Utils
 
 class HomeFragment : Fragment() {
 
@@ -138,20 +136,19 @@ class HomeFragment : Fragment() {
         }
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onResume() {
         super.onResume()
-        if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
-            LocalBroadcastManager.getInstance(requireContext()).registerReceiver(
-                alertReceiver,
-                IntentFilter(Constants.ALERT_ACTION)
-            )
-        }
+        requireContext().registerReceiver(
+            alertReceiver,
+            IntentFilter(Constants.ALERT_ACTION)
+        )
         showAlerts()
     }
 
     override fun onPause() {
         super.onPause()
-        LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(alertReceiver)
+        requireContext().unregisterReceiver(alertReceiver)
     }
 
     private fun showAlerts() {
