@@ -1,12 +1,12 @@
 package gorda.driver.ui.home
 
-import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.location.Location
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -15,11 +15,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
@@ -33,6 +35,7 @@ import gorda.driver.ui.service.ServiceAdapter
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 import gorda.driver.utils.Constants
+import gorda.driver.utils.Utils
 
 class HomeFragment : Fragment() {
 
@@ -149,13 +152,21 @@ class HomeFragment : Fragment() {
         alertsHandler?.post(alertsRunnable!!)
     }
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onResume() {
         super.onResume()
-        requireContext().registerReceiver(
-            alertReceiver,
-            IntentFilter(Constants.ALERT_ACTION)
-        )
+        if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
+            ContextCompat.registerReceiver(
+                requireContext(),
+                alertReceiver,
+                IntentFilter(Constants.ALERT_ACTION),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        } else {
+            LocalBroadcastManager.getInstance(requireContext()).registerReceiver(
+                alertReceiver,
+                IntentFilter(Constants.ALERT_ACTION)
+            )
+        }
         showAlerts()
     }
 
