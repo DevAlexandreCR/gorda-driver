@@ -232,7 +232,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         }
         mainViewModel.rideFees.observe(viewLifecycleOwner) { fees ->
             this.fees = fees
-            feeMultiplier = getFeeMultiplier(fees)
+            feeMultiplier = fees.feeMultiplier
             textPriceBase.text = NumberHelper.toCurrency(fees.feesBase)
             textPriceMinFee.text = NumberHelper.toCurrency(fees.priceMinFee)
             textPriceAddFee.text = NumberHelper.toCurrency(fees.priceAddFee)
@@ -516,20 +516,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     }
 
     private fun getFeeMultiplier(fees: RideFees): Double {
-        val calendar = Calendar.getInstance()
-        return if (isFestive()) {
-            when(calendar.get(Calendar.HOUR_OF_DAY)) {
-                in 0..5 -> fees.priceFestiveNight
-                in 19..23 -> fees.priceFestiveNight
-                else -> fees.priceFestive
-            }
-        } else {
-            when(calendar.get(Calendar.HOUR_OF_DAY)) {
-                in 0..5 -> fees.priceFestiveNight
-                in 19..23 -> fees.priceNightFee
-                else -> 1.0
-            }
-        }
+        return fees.feeMultiplier
     }
 
     private fun getTotalFee(): Double {
