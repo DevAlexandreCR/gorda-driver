@@ -52,7 +52,6 @@ import gorda.driver.utils.NumberHelper
 import gorda.driver.utils.ServiceHelper
 import gorda.driver.utils.StringHelper
 import gorda.driver.utils.Utils
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -239,6 +238,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             textDistancePrice.text = NumberHelper.toCurrency(fees.priceKm)
             textTimePrice.text = NumberHelper.toCurrency(fees.priceMin)
             textFareMultiplier.text = feeMultiplier.toString()
+            if (isServiceBound) {
+                feesService.setMultiplier(feeMultiplier)
+            }
         }
         mainViewModel.nextService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
@@ -515,23 +517,12 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         textFareMultiplier.text = feesService.getMultiplier().toString()
     }
 
-    private fun getFeeMultiplier(fees: RideFees): Double {
-        return fees.feeMultiplier
-    }
-
     private fun getTotalFee(): Double {
         return if (totalRide < (fees.priceMinFee * feeMultiplier)) {
             NumberHelper.roundDouble((fees.priceMinFee * feeMultiplier))
         } else {
             NumberHelper.roundDouble(totalRide)
         }
-    }
-
-    private fun isFestive(): Boolean {
-        val calendar = Calendar.getInstance()
-        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-
-        return dayOfWeek == 1
     }
 
     private fun startServiceFee(startLocName: String, restart: Boolean = false) {
