@@ -1,6 +1,5 @@
 package gorda.driver.repositories
 
-import android.util.Log
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
@@ -16,7 +15,6 @@ object SettingsRepository {
                     if (snapshot.exists()) {
                         val fees = RideFeesDeserializer.getRideFees(snapshot)
                         callback(fees)
-                        Log.d('f'.toString(), "Ride fees fetched successfully: $fees")
                     }
                 }
                 override fun onCancelled(error: DatabaseError) {
