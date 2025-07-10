@@ -8,7 +8,7 @@ import gorda.driver.serializers.RideFeesDeserializer
 import gorda.driver.services.firebase.Database
 
 object SettingsRepository {
-    fun getRideFees(callback: (fees: RideFees) -> Unit): Unit {
+    fun getRideFees(callback: (fees: RideFees) -> Unit) {
         Database.dbRideFees().addValueEventListener(
             object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
