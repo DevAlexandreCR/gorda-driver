@@ -20,7 +20,6 @@ import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
 import gorda.driver.repositories.SettingsRepository
-import gorda.driver.serializers.RideFeesDeserializer
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.dataclasses.LocationUpdates
@@ -82,11 +81,8 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val errorTimeout: LiveData<Boolean> = _errorTimeout
 
     fun getRideFees() {
-        SettingsRepository.getRideFees().addOnSuccessListener { snapshot ->
-            _rideFees.postValue(RideFeesDeserializer.getRideFees(snapshot))
-        }
-        .addOnFailureListener { _ ->
-            _rideFees.postValue(RideFees())
+        SettingsRepository.getRideFees {
+            _rideFees.postValue(it)
         }
     }
 

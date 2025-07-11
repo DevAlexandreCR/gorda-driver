@@ -7,14 +7,14 @@ plugins {
 }
 
 android {
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "gorda.driver"
         minSdk 24
-        targetSdk 34
-        versionCode 57
-        versionName "1.1.11"
+        targetSdk 35
+        versionCode 59
+        versionName "1.1.13"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -7,7 +7,6 @@ import android.content.Context.BIND_NOT_FOREGROUND
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.SharedPreferences
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -27,6 +26,7 @@ import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -52,7 +52,6 @@ import gorda.driver.utils.NumberHelper
 import gorda.driver.utils.ServiceHelper
 import gorda.driver.utils.StringHelper
 import gorda.driver.utils.Utils
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -167,13 +166,13 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 textAddress.text = service.start_loc.name
                 textComment.text = service.comment
                 textPhone.setOnClickListener {
-                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + service.phone))
+                    val intent = Intent(Intent.ACTION_DIAL, ("tel:" + service.phone).toUri())
                     startActivity(intent)
                 }
                 imgBtnMaps.setOnClickListener {
                     val uri: String = String.format(Locale.ENGLISH, "google.navigation:q=%f,%f",
                         service.start_loc.lat, service.start_loc.lng)
-                    val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+                    val mapIntent = Intent(Intent.ACTION_VIEW, uri.toUri())
                     mapIntent.setPackage("com.google.android.apps.maps")
                     activity?.let { fragmentActivity ->
                         mapIntent.resolveActivity(fragmentActivity.packageManager)?.let {
@@ -184,7 +183,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 imgButtonWaze.setOnClickListener {
                     val uri: String = String.format(Locale.ENGLISH, "waze://?ll=%f,%f&navigate=yes",
                         service.start_loc.lat, service.start_loc.lng)
-                    val wazeIntent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+                    val wazeIntent = Intent(Intent.ACTION_VIEW, uri.toUri())
                     try {
                         startActivity(wazeIntent)
                     } catch (e: ActivityNotFoundException) {
@@ -232,13 +231,16 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         }
         mainViewModel.rideFees.observe(viewLifecycleOwner) { fees ->
             this.fees = fees
-            feeMultiplier = getFeeMultiplier(fees)
+            feeMultiplier = fees.feeMultiplier
             textPriceBase.text = NumberHelper.toCurrency(fees.feesBase)
             textPriceMinFee.text = NumberHelper.toCurrency(fees.priceMinFee)
             textPriceAddFee.text = NumberHelper.toCurrency(fees.priceAddFee)
             textDistancePrice.text = NumberHelper.toCurrency(fees.priceKm)
             textTimePrice.text = NumberHelper.toCurrency(fees.priceMin)
             textFareMultiplier.text = feeMultiplier.toString()
+            if (isServiceBound) {
+                feesService.setMultiplier(feeMultiplier)
+            }
         }
         mainViewModel.nextService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
@@ -515,36 +517,12 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         textFareMultiplier.text = feesService.getMultiplier().toString()
     }
 
-    private fun getFeeMultiplier(fees: RideFees): Double {
-        val calendar = Calendar.getInstance()
-        return if (isFestive()) {
-            when(calendar.get(Calendar.HOUR_OF_DAY)) {
-                in 0..5 -> fees.priceFestiveNight
-                in 19..23 -> fees.priceFestiveNight
-                else -> fees.priceFestive
-            }
-        } else {
-            when(calendar.get(Calendar.HOUR_OF_DAY)) {
-                in 0..5 -> fees.priceFestiveNight
-                in 19..23 -> fees.priceNightFee
-                else -> 1.0
-            }
-        }
-    }
-
     private fun getTotalFee(): Double {
         return if (totalRide < (fees.priceMinFee * feeMultiplier)) {
             NumberHelper.roundDouble((fees.priceMinFee * feeMultiplier))
         } else {
             NumberHelper.roundDouble(totalRide)
         }
-    }
-
-    private fun isFestive(): Boolean {
-        val calendar = Calendar.getInstance()
-        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-
-        return dayOfWeek == 1
     }
 
     private fun startServiceFee(startLocName: String, restart: Boolean = false) {
