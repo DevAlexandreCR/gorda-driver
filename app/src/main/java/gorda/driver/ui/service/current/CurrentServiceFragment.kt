@@ -129,7 +129,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         binding = FragmentCurrentServiceBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val bottomSheetBehavior = BottomSheetBehavior.from(binding.serviceLayout.root)
+        val bottomSheet = root.findViewById<View>(R.id.service_layout)
+        val bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
         bottomSheetBehavior.peekHeight = resources.getDimensionPixelSize(R.dimen.service_sheet_peek)
         bottomSheetBehavior.isDraggable = true
