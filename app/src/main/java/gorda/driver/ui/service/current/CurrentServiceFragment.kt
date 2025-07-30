@@ -127,23 +127,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentCurrentServiceBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-
-        val bottomSheet = root.findViewById<View>(R.id.service_layout)
-        val bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
-        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
-        bottomSheetBehavior.peekHeight = resources.getDimensionPixelSize(R.dimen.service_sheet_peek)
-        bottomSheetBehavior.isDraggable = true
-        bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-            override fun onStateChanged(bottomSheet: View, newState: Int) {
-                val visible = newState != BottomSheetBehavior.STATE_COLLAPSED
-                binding.serviceLayout.serviceInfoContainer.visibility = if (visible) View.VISIBLE else View.GONE
-            }
-
-            override fun onSlide(bottomSheet: View, slideOffset: Float) {
-                // no-op
-            }
-        })
 
         context?.let {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(it)
@@ -300,7 +283,26 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         toggleFragmentButton.setOnClickListener {
             toggleFragment()
         }
-        return root
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val bottomSheetBehavior = BottomSheetBehavior.from(binding.serviceLayout.root)
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        bottomSheetBehavior.peekHeight = resources.getDimensionPixelSize(R.dimen.service_sheet_peek)
+        bottomSheetBehavior.isDraggable = true
+        bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                val visible = newState != BottomSheetBehavior.STATE_COLLAPSED
+                binding.serviceLayout.serviceInfoContainer.visibility = if (visible) View.VISIBLE else View.GONE
+            }
+
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                // no-op
+            }
+        })
     }
 
     override fun onStart() {
