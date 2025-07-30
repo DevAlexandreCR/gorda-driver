@@ -131,6 +131,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
 
         val bottomSheetBehavior = BottomSheetBehavior.from(binding.serviceLayout.root)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        bottomSheetBehavior.peekHeight = resources.getDimensionPixelSize(R.dimen.service_sheet_peek)
+        bottomSheetBehavior.isDraggable = true
         bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
             override fun onStateChanged(bottomSheet: View, newState: Int) {
                 val visible = newState != BottomSheetBehavior.STATE_COLLAPSED

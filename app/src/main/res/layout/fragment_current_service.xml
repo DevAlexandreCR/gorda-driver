@@ -356,8 +356,6 @@
         android:id="@+id/service_layout"
         layout="@layout/service_layout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_behavior="@string/bottom_sheet_behavior"
-        app:behavior_peekHeight="@dimen/service_sheet_peek" />
+        android:layout_height="wrap_content" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
