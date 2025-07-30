@@ -7,6 +7,11 @@
     android:layout_height="match_parent"
     tools:context=".ui.service.current.CurrentServiceFragment">
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/fees_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/toggle_button"
@@ -36,17 +41,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/layoutFees"
-        android:layout_width="match_parent"
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/fees_scroll"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@id/service_layout"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
+        android:fillViewport="true"
         app:layout_constraintTop_toBottomOf="@id/toggle_button"
-        app:layout_constraintVertical_bias="1.0">
+        app:layout_constraintBottom_toTopOf="@id/service_layout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutFees"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="invisible">
 
         <TextView
             android:id="@+id/textPrice"
@@ -336,6 +345,10 @@
                     android:ellipsize="end" />
             </LinearLayout>
         </TableLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.core.widget.NestedScrollView>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
