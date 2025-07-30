@@ -7,11 +7,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.service.current.CurrentServiceFragment">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/content_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/toggle_button"
@@ -41,27 +36,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/current_service_scroll"
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutFees"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:fillViewport="true"
-        android:clipToPadding="false"
-        android:paddingBottom="@dimen/service_sheet_peek"
-        app:layout_constraintTop_toBottomOf="@id/toggle_button"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@id/service_layout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-        <LinearLayout
-            android:orientation="vertical"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/layoutFees"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="invisible">
+        app:layout_constraintTop_toBottomOf="@id/toggle_button"
+        app:layout_constraintVertical_bias="1.0">
 
         <TextView
             android:id="@+id/textPrice"
@@ -106,7 +91,10 @@
                         android:text=""
                         android:textAlignment="center"
                         android:textSize="24sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:singleLine="true"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -148,7 +136,10 @@
                         android:text=""
                         android:textAlignment="center"
                         android:textSize="24sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:singleLine="true"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -164,7 +155,10 @@
                             android:gravity="bottom"
                             android:textAlignment="textStart"
                             android:textSize="24sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:singleLine="true"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
 
                         <TextView
                             android:id="@+id/textView15"
@@ -198,7 +192,10 @@
                     android:layout_weight="0.5"
                     android:text=""
                     android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
 
             <LinearLayout
@@ -221,7 +218,10 @@
                     android:layout_weight="0.5"
                     android:text=""
                     android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
 
             <LinearLayout
@@ -244,7 +244,10 @@
                     android:layout_weight="0.5"
                     android:text=""
                     android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
 
             <LinearLayout
@@ -267,7 +270,10 @@
                     android:layout_weight="0.5"
                     android:text=""
                     android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
 
             </LinearLayout>
 
@@ -291,7 +297,10 @@
                     android:layout_weight="0.5"
                     android:text=""
                     android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
 
             </LinearLayout>
 
@@ -317,19 +326,16 @@
                     android:clickable="true"
                     android:drawableRight="@drawable/baseline_edit_12"
                     android:linksClickable="false"
-                    android:singleLine="false"
+                    android:singleLine="true"
                     android:text=""
                     android:textAlignment="textEnd"
                     android:textIsSelectable="false"
                     android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
         </TableLayout>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-        </LinearLayout>
-
-    </androidx.core.widget.NestedScrollView>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
