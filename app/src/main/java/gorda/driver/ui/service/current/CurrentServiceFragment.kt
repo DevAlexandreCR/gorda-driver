@@ -131,6 +131,16 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
 
         val bottomSheetBehavior = BottomSheetBehavior.from(binding.serviceLayout.root)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                val visible = newState != BottomSheetBehavior.STATE_COLLAPSED
+                binding.serviceLayout.serviceInfoContainer.visibility = if (visible) View.VISIBLE else View.GONE
+            }
+
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                // no-op
+            }
+        })
 
         context?.let {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(it)
