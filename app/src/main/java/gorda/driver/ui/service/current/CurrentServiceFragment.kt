@@ -35,6 +35,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import gorda.driver.R
 import gorda.driver.background.FeesService
 import gorda.driver.databinding.FragmentCurrentServiceBinding
@@ -127,6 +128,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     ): View {
         binding = FragmentCurrentServiceBinding.inflate(inflater, container, false)
         val root: View = binding.root
+
+        val bottomSheetBehavior = BottomSheetBehavior.from(binding.serviceLayout.root)
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
 
         context?.let {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(it)

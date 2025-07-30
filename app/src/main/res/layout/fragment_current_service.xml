@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/textNavigation"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.service.current.CurrentServiceFragment">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/content_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -41,8 +46,10 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingBottom="@dimen/service_sheet_peek"
         app:layout_constraintTop_toBottomOf="@id/toggle_button"
-        app:layout_constraintBottom_toTopOf="@id/service_layout"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
         <LinearLayout
@@ -324,13 +331,14 @@
 
     </androidx.core.widget.NestedScrollView>
 
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <include
         android:id="@+id/service_layout"
         layout="@layout/service_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_behavior="@string/bottom_sheet_behavior"
+        app:behavior_peekHeight="@dimen/service_sheet_peek" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
