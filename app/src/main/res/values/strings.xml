@@ -115,4 +115,5 @@
     <string name="fields_balance">Balance</string>
     <string name="driver_balance">Balance: <big> <b> %s</b></big> </string>
     <string name="notification_permission_required">Push notification permission required</string>
+    <string name="swipe_for_details">Swipe up for details</string>
 </resources>

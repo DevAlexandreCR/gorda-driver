@@ -9,4 +9,5 @@
     <dimen name="text_margin">16dp</dimen>
     <dimen name="map_margin_big">50dp</dimen>
     <dimen name="map_margin_small">30dp</dimen>
+    <dimen name="service_sheet_peek">80dp</dimen>
 </resources>

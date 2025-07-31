@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/textNavigation"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.service.current.CurrentServiceFragment">
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/fees_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/fees_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -36,17 +47,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/layoutFees"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/service_layout"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0">
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutFees"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="invisible"
+            app:layout_constraintTop_toBottomOf="@id/toggle_button"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
 
         <TextView
             android:id="@+id/textPrice"
@@ -62,8 +71,8 @@
 
         <TableLayout
             android:id="@+id/tableLayout"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="32dp"
             android:layout_marginEnd="8dp"
@@ -91,7 +100,10 @@
                         android:text=""
                         android:textAlignment="center"
                         android:textSize="24sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:singleLine="true"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -133,7 +145,10 @@
                         android:text=""
                         android:textAlignment="center"
                         android:textSize="24sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:singleLine="true"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -149,7 +164,10 @@
                             android:gravity="bottom"
                             android:textAlignment="textStart"
                             android:textSize="24sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:singleLine="true"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
 
                         <TextView
                             android:id="@+id/textView15"
@@ -183,7 +201,10 @@
                     android:layout_weight="0.5"
                     android:text=""
                     android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
 
             <LinearLayout
@@ -206,7 +227,10 @@
                     android:layout_weight="0.5"
                     android:text=""
                     android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
 
             <LinearLayout
@@ -229,7 +253,10 @@
                     android:layout_weight="0.5"
                     android:text=""
                     android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
 
             <LinearLayout
@@ -252,7 +279,10 @@
                     android:layout_weight="0.5"
                     android:text=""
                     android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
 
             </LinearLayout>
 
@@ -276,7 +306,10 @@
                     android:layout_weight="0.5"
                     android:text=""
                     android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                    android:textSize="20sp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
 
             </LinearLayout>
 
@@ -302,24 +335,27 @@
                     android:clickable="true"
                     android:drawableRight="@drawable/baseline_edit_12"
                     android:linksClickable="false"
-                    android:singleLine="false"
+                    android:singleLine="true"
                     android:text=""
                     android:textAlignment="textEnd"
                     android:textIsSelectable="false"
                     android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
         </TableLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
     <include
         android:id="@+id/service_layout"
         layout="@layout/service_layout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:layout_height="wrap_content" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
