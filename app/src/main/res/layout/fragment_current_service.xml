@@ -7,10 +7,16 @@
     android:layout_height="match_parent"
     tools:context=".ui.service.current.CurrentServiceFragment">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/fees_container"
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/fees_scroll"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/fees_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -41,21 +47,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/fees_scroll"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:fillViewport="true"
-        app:layout_constraintTop_toBottomOf="@id/toggle_button"
-        app:layout_constraintBottom_toTopOf="@id/service_layout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layoutFees"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="invisible">
+            android:visibility="invisible"
+            app:layout_constraintTop_toBottomOf="@id/toggle_button"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
 
         <TextView
             android:id="@+id/textPrice"
@@ -348,9 +348,9 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    </androidx.core.widget.NestedScrollView>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.core.widget.NestedScrollView>
 
     <include
         android:id="@+id/service_layout"
