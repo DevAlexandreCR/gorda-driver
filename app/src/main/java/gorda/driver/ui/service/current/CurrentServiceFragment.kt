@@ -21,6 +21,8 @@ import android.widget.Chronometer
 import android.widget.Chronometer.OnChronometerTickListener
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -81,6 +83,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var textTotalFee: TextView
     private lateinit var layoutFees: ConstraintLayout
     private lateinit var scrollViewFees: ScrollView
+    private lateinit var feeDetailsHeader: LinearLayout
+    private lateinit var feeDetailsContent: LinearLayout
+    private lateinit var expandIcon: ImageView
+    private var isExpanded = false
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
     private lateinit var endTrip: String
@@ -130,6 +136,12 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         context?.let {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(it)
         }
+
+        // Initialize string properties early to avoid UninitializedPropertyAccessException
+        haveArrived = getString(R.string.service_have_arrived)
+        startTrip = getString(R.string.service_start_trip)
+        endTrip = getString(R.string.service_end_trip)
+
         requireActivity().onBackPressedDispatcher.addCallback(this) {}
         textName = binding.serviceLayout.currentServiceName
         textPhone = binding.serviceLayout.currentPhone
@@ -152,6 +164,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         chronometer = binding.chronometer
         layoutFees = binding.layoutFees
         scrollViewFees = binding.scrollViewFees
+        feeDetailsHeader = binding.feeDetailsHeader
+        feeDetailsContent = binding.feeDetailsContent
+        expandIcon = binding.expandIcon
         homeFragment = HomeFragment()
         fragmentManager = childFragmentManager
         connectionServiceButton = binding.connectedServiceButton
@@ -280,49 +295,33 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             dialog.show()
         }
 
+        // Setup collapsible fee details
+        setupFeeDetailsCollapse()
+
         toggleFragmentButton.setOnClickListener {
             toggleFragment()
         }
         return root
     }
 
-    override fun onStart() {
-        super.onStart()
-        haveArrived = getString(R.string.service_have_arrived)
-        startTrip = getString(R.string.service_start_trip)
-        endTrip = getString(R.string.service_end_trip)
-        toggleFragmentButton.setImageResource(R.drawable.service_list_24)
-        if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java) && !startingRide) {
-            Intent(requireContext(), FeesService::class.java).also { intentFee ->
-                requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
-                mainViewModel.changeConnectTripService(true)
-            }
+    private fun setupFeeDetailsCollapse() {
+        feeDetailsHeader.setOnClickListener {
+            toggleFeeDetails()
+        }
+    }
+
+    private fun toggleFeeDetails() {
+        isExpanded = !isExpanded
+
+        if (isExpanded) {
+            // Expand
+            feeDetailsContent.visibility = View.VISIBLE
+            expandIcon.animate().rotation(180f).setDuration(200).start()
         } else {
-            mainViewModel.changeConnectTripService(false)
+            // Collapse
+            feeDetailsContent.visibility = View.GONE
+            expandIcon.animate().rotation(0f).setDuration(200).start()
         }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        if (mainViewModel.isTripStarted.value == true) {
-            mainViewModel.changeConnectTripService(false)
-        }
-        if (isServiceBound) {
-            isServiceBound = false
-            requireContext().unbindService(serviceConnection)
-        }
-    }
-
-    override fun onPause() {
-        if (homeFragment.isAdded) {
-            toggleFragmentButton.setImageResource(R.drawable.current_return_24)
-            transaction = fragmentManager.beginTransaction()
-            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
-            transaction.remove(homeFragment)
-            transaction.commit()
-
-        }
-        super.onPause()
     }
 
     private fun toggleFragment() {

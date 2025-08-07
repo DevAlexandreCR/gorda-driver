@@ -78,6 +78,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/textPrice">
 
+                <!-- Time and Distance Section (Always visible) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -167,153 +168,228 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout
+                <!-- Expandable Fee Details Section -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardFeeDetails"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:layout_marginTop="16dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@android:color/darker_gray">
 
-                    <TextView
-                        android:id="@+id/textView17"
-                        android:layout_width="0dp"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/base"
-                        android:textSize="20sp" />
+                        android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/textBaseFare"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="0.5"
-                        android:text=""
-                        android:textAlignment="textEnd"
-                        android:textSize="20sp" />
-                </LinearLayout>
+                        <!-- Header with expand/collapse indicator -->
+                        <LinearLayout
+                            android:id="@+id/feeDetailsHeader"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/fee_details"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/textView26"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/fare_minimum"
-                        android:textSize="20sp" />
+                            <ImageView
+                                android:id="@+id/expandIcon"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/ic_expand_more_24"
+                                android:rotation="0"
+                                android:contentDescription="@string/expand_collapse" />
 
-                    <TextView
-                        android:id="@+id/textFareMin"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="0.5"
-                        android:text=""
-                        android:textAlignment="textEnd"
-                        android:textSize="20sp" />
-                </LinearLayout>
+                        </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                        <!-- Collapsible content -->
+                        <LinearLayout
+                            android:id="@+id/feeDetailsContent"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingBottom="16dp"
+                            android:visibility="gone">
 
-                    <TextView
-                        android:id="@+id/textView20"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/time_fare"
-                        android:textSize="20sp" />
+                            <!-- Base Fare -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:paddingVertical="8dp">
 
-                    <TextView
-                        android:id="@+id/textTimeFare"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="0.5"
-                        android:text=""
-                        android:textAlignment="textEnd"
-                        android:textSize="20sp" />
-                </LinearLayout>
+                                <TextView
+                                    android:id="@+id/textView17"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/base"
+                                    android:textSize="16sp" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                                <TextView
+                                    android:id="@+id/textBaseFare"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.5"
+                                    android:text=""
+                                    android:textAlignment="textEnd"
+                                    android:textSize="16sp" />
+                            </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/textView22"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/distance_fare"
-                        android:textSize="20sp" />
+                            <!-- Minimum Fare -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:paddingVertical="8dp">
 
-                    <TextView
-                        android:id="@+id/textDistanceFare"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="0.5"
-                        android:text=""
-                        android:textAlignment="textEnd"
-                        android:textSize="20sp" />
+                                <TextView
+                                    android:id="@+id/textView26"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/fare_minimum"
+                                    android:textSize="16sp" />
 
-                </LinearLayout>
+                                <TextView
+                                    android:id="@+id/textFareMin"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.5"
+                                    android:text=""
+                                    android:textAlignment="textEnd"
+                                    android:textSize="16sp" />
+                            </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                            <!-- Time Fare -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:paddingVertical="8dp">
 
-                    <TextView
-                        android:id="@+id/textView23"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/fees"
-                        android:textSize="20sp" />
+                                <TextView
+                                    android:id="@+id/textView20"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/time_fare"
+                                    android:textSize="16sp" />
 
-                    <TextView
-                        android:id="@+id/textFees"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="0.5"
-                        android:text=""
-                        android:textAlignment="textEnd"
-                        android:textSize="20sp" />
+                                <TextView
+                                    android:id="@+id/textTimeFare"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.5"
+                                    android:text=""
+                                    android:textAlignment="textEnd"
+                                    android:textSize="16sp" />
+                            </LinearLayout>
 
-                </LinearLayout>
+                            <!-- Distance Fare -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:paddingVertical="8dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                                <TextView
+                                    android:id="@+id/textView22"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/distance_fare"
+                                    android:textSize="16sp" />
 
-                    <TextView
-                        android:id="@+id/textView25"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/fare_multiplier"
-                        android:textSize="20sp" />
+                                <TextView
+                                    android:id="@+id/textDistanceFare"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.5"
+                                    android:text=""
+                                    android:textAlignment="textEnd"
+                                    android:textSize="16sp" />
+                            </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/textFareMultiplier"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="0.5"
-                        android:autoLink="web"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:drawableEndCompat="@drawable/baseline_edit_12"
-                        android:linksClickable="false"
-                        android:singleLine="false"
-                        android:text=""
-                        android:textAlignment="textEnd"
-                        android:textIsSelectable="false"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                            <!-- Additional Fees -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:paddingVertical="8dp">
+
+                                <TextView
+                                    android:id="@+id/textView23"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/fees"
+                                    android:textSize="16sp" />
+
+                                <TextView
+                                    android:id="@+id/textFees"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.5"
+                                    android:text=""
+                                    android:textAlignment="textEnd"
+                                    android:textSize="16sp" />
+                            </LinearLayout>
+
+                            <!-- Fare Multiplier -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:paddingVertical="8dp">
+
+                                <TextView
+                                    android:id="@+id/textView25"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/fare_multiplier"
+                                    android:textSize="16sp" />
+
+                                <TextView
+                                    android:id="@+id/textFareMultiplier"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.5"
+                                    android:autoLink="web"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    app:drawableEndCompat="@drawable/baseline_edit_12"
+                                    android:linksClickable="false"
+                                    android:singleLine="false"
+                                    android:text=""
+                                    android:textAlignment="textEnd"
+                                    android:textIsSelectable="false"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
             </TableLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>

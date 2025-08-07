@@ -107,5 +107,7 @@
     <string name="summary_text">Hoy has ganado:</string>
     <string name="fields_balance">Saldo</string>
     <string name="driver_balance">Saldo: <big> <b> %s</b></big> </string>
-    <string name="notification_permission_required">Se necesitan permisos de notificaciones</string>
+    <string name="notification_permission_required">Se requiere permiso de notificaciones push</string>
+    <string name="fee_details">Detalles de Tarifas</string>
+    <string name="expand_collapse">Expandir o contraer detalles de tarifas</string>
 </resources>

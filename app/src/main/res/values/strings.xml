@@ -115,4 +115,6 @@
     <string name="fields_balance">Balance</string>
     <string name="driver_balance">Balance: <big> <b> %s</b></big> </string>
     <string name="notification_permission_required">Push notification permission required</string>
+    <string name="fee_details">Fee Details</string>
+    <string name="expand_collapse">Expand or collapse fee details</string>
 </resources>
