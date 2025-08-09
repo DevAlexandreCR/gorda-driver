@@ -137,7 +137,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(it)
         }
 
-        // Initialize string properties early to avoid UninitializedPropertyAccessException
         haveArrived = getString(R.string.service_have_arrived)
         startTrip = getString(R.string.service_start_trip)
         endTrip = getString(R.string.service_end_trip)
