@@ -32,11 +32,11 @@ object Map {
         else String.format("%.2f", distance) + "m"
     }
 
-    fun calculateTime(distance: Float): Float {
-        return (distance / 5)
+    fun calculateTime(distance: Float): Int {
+        return (distance / 5).toInt()
     }
 
-    fun getTimeString(time: Float): String {
+    fun getTimeString(time: Int): String {
         return if (time < 60) {
             "1m"
         } else {

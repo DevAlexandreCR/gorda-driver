@@ -123,7 +123,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             val time = Map.calculateTime(distance)
             textTime.text = Map.getTimeString(time)
             textDistance.text = Map.distanceToString(distance)
-            mainViewModel.setServiceUpdateDistTime(distance.toInt(), time.toInt())
+            mainViewModel.setServiceUpdateDistTime(distance.toInt(), time)
             if (markerStartAddress != null) {
                 markerStartAddress.tag = makeInfoWindowData(
                     statLoc!!.name,
