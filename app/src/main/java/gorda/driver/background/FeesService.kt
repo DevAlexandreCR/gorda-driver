@@ -26,10 +26,6 @@ import gorda.driver.interfaces.RideFees
 import gorda.driver.location.LocationHandler
 import gorda.driver.maps.Map
 import gorda.driver.utils.Constants
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 class FeesService: Service() {
 
@@ -237,17 +233,6 @@ class FeesService: Service() {
             }
         }
         totalDistance = distance
-    }
-
-    private fun calculateDistance(start: LatLng, end: LatLng): Double {
-        val earthRadius = 6371.0
-        val dLat = Math.toRadians(end.latitude - start.latitude)
-        val dLon = Math.toRadians(end.longitude - start.longitude)
-        val a = sin(dLat / 2) * sin(dLat / 2) +
-                cos(Math.toRadians(start.latitude)) * cos(Math.toRadians(end.latitude)) *
-                sin(dLon / 2) * sin(dLon / 2)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return earthRadius * c
     }
 
     fun getPoints(): ArrayList<LatLng> = points
