@@ -39,6 +39,7 @@ import androidx.preference.PreferenceManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
+import gorda.driver.background.FeesService.Companion.CURRENT_FEES
 import gorda.driver.databinding.FragmentCurrentServiceBinding
 import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.RideFees
@@ -280,15 +281,38 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             val builder = AlertDialog.Builder(requireContext())
             val dialogLayout: View = LayoutInflater.from(activity).inflate(R.layout.multiplier_feed, null)
             val editFeeMultiplier = dialogLayout.findViewById<EditText>(R.id.dialog_fee_multiplier)
-            editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(feesService.getMultiplier().toString())
+
+            // Get current multiplier from service if bound, otherwise use local value
+            val currentMultiplier = if (isServiceBound) {
+                feesService.getMultiplier()
+            } else {
+                feeMultiplier
+            }
+
+            editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(currentMultiplier.toString())
             builder.setTitle(R.string.edit_multiplier)
                 .setView(dialogLayout)
             builder.setNegativeButton(R.string.cancel) { dialog, _ ->
                 dialog.dismiss()
             }
             builder.setPositiveButton(R.string.save) { _, _ ->
-                feesService.setMultiplier(editFeeMultiplier.text.toString().toDouble())
-                this.feeMultiplier = editFeeMultiplier.text.toString().toDouble()
+                val newMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
+
+                // Update local value
+                feeMultiplier = newMultiplier
+                textFareMultiplier.text = newMultiplier.toString()
+
+                // Update service if bound
+                if (isServiceBound) {
+                    feesService.setMultiplier(newMultiplier)
+                }
+
+                // Save to SharedPreferences
+                sharedPreferences.edit(commit = true) {
+                    putString(Constants.MULTIPLIER, newMultiplier.toString())
+                }
+
+                Toast.makeText(requireContext(), "Multiplier updated to $newMultiplier", Toast.LENGTH_SHORT).show()
             }
             val dialog: AlertDialog = builder.create()
             dialog.show()
@@ -496,6 +520,12 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             textFareMultiplier.text = feeMultiplier.toString()
         }
 
+        // Ensure we stop any existing service first
+        if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
+            val stopIntent = Intent(requireContext(), FeesService::class.java)
+            requireContext().stopService(stopIntent)
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             requireContext().startForegroundService(intentFee)
         } else {
@@ -522,6 +552,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             remove(Constants.MULTIPLIER)
             remove(Constants.POINTS)
             remove(Constants.START_TIME)
+            remove(CURRENT_FEES)
         }
 
         mainViewModel.changeConnectTripService(false)
@@ -543,7 +574,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             textTotalFee.text = NumberHelper.toCurrency(totalRide)
             textCurrentTimePrice.text = NumberHelper.toCurrency(feesService.getTimeFee())
             textCurrentDistancePrice.text = NumberHelper.toCurrency(feesService.getDistanceFee())
-            textCurrentDistance.text = NumberHelper.roundDouble(totalDistance).toString()
+            textCurrentDistance.text = totalDistance.toInt().toString()
         }
     }
 

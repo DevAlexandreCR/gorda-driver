@@ -15,12 +15,15 @@ import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
 import gorda.driver.interfaces.RideFees
+import gorda.driver.location.LocationHandler
 import gorda.driver.utils.Constants
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -46,6 +49,7 @@ class FeesService: Service() {
     private lateinit var sharedPreferences: SharedPreferences
     private var rideFees: RideFees = RideFees()
     private var totalDistance = 0.0
+    private lateinit var locationHandler: LocationHandler
 
     inner class ChronometerBinder : Binder() {
         fun getService(): FeesService = this@FeesService
@@ -60,6 +64,7 @@ class FeesService: Service() {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         rideFees = RideFees()
         createNotificationChannel()
+        locationHandler = LocationHandler.getInstance(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -82,8 +87,10 @@ class FeesService: Service() {
                 restoreRideData()
             } else {
                 startTime = SystemClock.elapsedRealtime()
+                points.clear()
                 saveStartTime()
             }
+            startLocationTracking()
         }
 
         startForeground()
@@ -151,6 +158,40 @@ class FeesService: Service() {
         }
     }
 
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            super.onLocationResult(locationResult)
+            locationResult.lastLocation?.let { location ->
+                addLocationPoint(LatLng(location.latitude, location.longitude))
+            }
+        }
+    }
+
+    private fun startLocationTracking() {
+        locationHandler.addListener(locationCallback)
+    }
+
+    private fun stopLocationTracking() {
+        locationHandler.removeListener(locationCallback)
+    }
+
+    private fun addLocationPoint(latLng: LatLng) {
+        points.add(latLng)
+        savePoints()
+        calculateTotalDistance()
+
+        // Debug log to check if points are being added
+        android.util.Log.d("FeesService", "Added point: $latLng, Total points: ${points.size}, Distance: $totalDistance km")
+    }
+
+    private fun savePoints() {
+        val gson = Gson()
+        val pointsJson = gson.toJson(points)
+        sharedPreferences.edit(commit = true) {
+            putString(Constants.POINTS, pointsJson)
+        }
+    }
+
     fun getBaseTime(): Long = startTime
 
     fun setMultiplier(newMultiplier: Double) {
@@ -167,7 +208,9 @@ class FeesService: Service() {
         val distanceFee = getDistanceFee()
         val baseFee = rideFees.feesBase
         val total = (baseFee + timeFee + distanceFee + rideFees.priceAddFee) * multiplier
-        return maxOf(total, rideFees.priceMinFee)
+        val finalFee = maxOf(total, rideFees.priceMinFee)
+
+        return finalFee
     }
 
     fun getTimeFee(): Double {
@@ -177,19 +220,17 @@ class FeesService: Service() {
     }
 
     fun getDistanceFee(): Double {
-        calculateTotalDistance()
         return totalDistance * rideFees.priceKm
     }
 
-    fun getTotalDistance(): Double {
-        calculateTotalDistance()
-        return totalDistance
-    }
+    fun getTotalDistance(): Double = totalDistance
 
     private fun calculateTotalDistance() {
         var distance = 0.0
-        for (i in 1 until points.size) {
-            distance += calculateDistance(points[i-1], points[i])
+        if (points.size >= 2) {
+            for (i in 1 until points.size) {
+                distance += calculateDistance(points[i-1], points[i])
+            }
         }
         totalDistance = distance
     }
@@ -208,6 +249,7 @@ class FeesService: Service() {
     fun getPoints(): ArrayList<LatLng> = points
 
     override fun onDestroy() {
+        stopLocationTracking()
         super.onDestroy()
     }
 }
