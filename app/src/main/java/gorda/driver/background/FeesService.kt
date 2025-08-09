@@ -148,7 +148,8 @@ class FeesService: Service() {
 
     private fun restoreRideData() {
         startTime = sharedPreferences.getLong(Constants.START_TIME, SystemClock.elapsedRealtime())
-        multiplier = sharedPreferences.getString(Constants.MULTIPLIER, "1.0")?.toDoubleOrNull() ?: 1.0
+        val savedMultiplier = sharedPreferences.getString(Constants.MULTIPLIER, "1.0")?.toDoubleOrNull() ?: 1.0
+        multiplier = if (savedMultiplier < 1.0) 1.0 else savedMultiplier
 
         val pointsJson = sharedPreferences.getString(Constants.POINTS, null)
         if (!pointsJson.isNullOrEmpty()) {
@@ -179,9 +180,6 @@ class FeesService: Service() {
         points.add(latLng)
         savePoints()
         calculateTotalDistance()
-
-        // Debug log to check if points are being added
-        android.util.Log.d("FeesService", "Added point: $latLng, Total points: ${points.size}, Distance: $totalDistance km")
     }
 
     private fun savePoints() {
@@ -195,9 +193,9 @@ class FeesService: Service() {
     fun getBaseTime(): Long = startTime
 
     fun setMultiplier(newMultiplier: Double) {
-        this.multiplier = newMultiplier
+        this.multiplier = if (newMultiplier < 1.0) 1.0 else newMultiplier
         sharedPreferences.edit(commit = true) {
-            putString(Constants.MULTIPLIER, newMultiplier.toString())
+            putString(Constants.MULTIPLIER, multiplier.toString())
         }
     }
 
@@ -236,7 +234,7 @@ class FeesService: Service() {
     }
 
     private fun calculateDistance(start: LatLng, end: LatLng): Double {
-        val earthRadius = 6371.0 // km
+        val earthRadius = 6371.0
         val dLat = Math.toRadians(end.latitude - start.latitude)
         val dLon = Math.toRadians(end.longitude - start.longitude)
         val a = sin(dLat / 2) * sin(dLat / 2) +

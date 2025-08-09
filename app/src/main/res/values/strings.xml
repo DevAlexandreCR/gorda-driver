@@ -117,4 +117,7 @@
     <string name="notification_permission_required">Push notification permission required</string>
     <string name="fee_details">Fee Details</string>
     <string name="expand_collapse">Expand or collapse fee details</string>
+    <string name="multiplier_minimum_value">Minimum multiplier value is 1.0</string>
+    <string name="multiplier_updated">Multiplier updated to %1$.1f</string>
+    <string name="distance_km">%1$.2f km</string>
 </resources>

@@ -296,7 +296,13 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 dialog.dismiss()
             }
             builder.setPositiveButton(R.string.save) { _, _ ->
-                val newMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
+                val inputValue = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
+                val newMultiplier = if (inputValue < 1.0) {
+                    Toast.makeText(requireContext(), R.string.multiplier_minimum_value, Toast.LENGTH_SHORT).show()
+                    1.0
+                } else {
+                    inputValue
+                }
 
                 // Update local value
                 feeMultiplier = newMultiplier
@@ -312,7 +318,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                     putString(Constants.MULTIPLIER, newMultiplier.toString())
                 }
 
-                Toast.makeText(requireContext(), "Multiplier updated to $newMultiplier", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.multiplier_updated, newMultiplier), Toast.LENGTH_SHORT).show()
             }
             val dialog: AlertDialog = builder.create()
             dialog.show()
@@ -403,7 +409,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             service.updateMetadata()
                                 .addOnSuccessListener {
                                     mainViewModel.setLoading(false)
-                                    feeMultiplier = editFeeMultiplier.text.toString().toDouble()
+                                    val inputMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
+                                    feeMultiplier = if (inputMultiplier < 1.0) 1.0 else inputMultiplier
                                     textFareMultiplier.text = feeMultiplier.toString()
                                     sharedPreferences.edit(commit = true) {
                                         putString(
@@ -583,3 +590,5 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         _binding = null
     }
 }
+
+
