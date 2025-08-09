@@ -19,16 +19,6 @@ class Map {
             return startLoc.distanceTo(endLoc).toInt()
         }
 
-        fun calculateDistanceBetween(latLng1: LatLng, latLng2: LatLng): Double {
-            val startLoc = Location("last")
-            startLoc.latitude = latLng1.latitude
-            startLoc.longitude = latLng1.longitude
-            val endLoc = Location("last")
-            endLoc.latitude = latLng2.latitude
-            endLoc.longitude = latLng2.longitude
-            return startLoc.distanceTo(endLoc).toDouble()
-        }
-
         fun distanceToString(distance: Int): String {
             return if (distance > 1000) (distance / 1000).toString() + "km"
             else distance.toString() + "m"

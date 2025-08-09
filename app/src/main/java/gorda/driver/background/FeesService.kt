@@ -224,7 +224,7 @@ class FeesService: Service() {
     }
 
     fun getDistanceFee(): Double {
-        return totalDistance * rideFees.priceKm
+        return (totalDistance / 1000) * rideFees.priceKm
     }
 
     fun getTotalDistance(): Double = totalDistance
