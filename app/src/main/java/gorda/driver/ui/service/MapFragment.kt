@@ -116,7 +116,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     paddingInPixels
                 )
             )
-            val distance = Map.calculateDistance(statLoc!!, location!!)
+            val distance = Map.calculateDistance(
+                LatLng(statLoc!!.lat, statLoc!!.lng),
+                LatLng(location!!.latitude, location!!.longitude))
             val time = Map.calculateTime(distance)
             textTime.text = Map.getTimeString(time)
             textDistance.text = Map.distanceToString(distance)

@@ -24,6 +24,7 @@ import gorda.driver.R
 import gorda.driver.activity.StartActivity
 import gorda.driver.interfaces.RideFees
 import gorda.driver.location.LocationHandler
+import gorda.driver.maps.Map
 import gorda.driver.utils.Constants
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -232,7 +233,7 @@ class FeesService: Service() {
         var distance = 0.0
         if (points.size >= 2) {
             for (i in 1 until points.size) {
-                distance += calculateDistance(points[i-1], points[i])
+                distance += Map.calculateDistance(points[i-1], points[i])
             }
         }
         totalDistance = distance

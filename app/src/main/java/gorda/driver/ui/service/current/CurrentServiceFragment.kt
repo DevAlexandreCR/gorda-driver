@@ -583,7 +583,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             textTotalFee.text = NumberHelper.toCurrency(totalRide)
             textCurrentTimePrice.text = NumberHelper.toCurrency(feesService.getTimeFee())
             textCurrentDistancePrice.text = NumberHelper.toCurrency(feesService.getDistanceFee())
-            textCurrentDistance.text = getString(R.string.distance_km, totalDistance)
+            textCurrentDistance.text = NumberHelper.roundDouble(totalDistance).toString()
         }
     }
 

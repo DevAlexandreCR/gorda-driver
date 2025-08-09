@@ -4,16 +4,19 @@ import android.graphics.Color
 import android.location.Location
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.PolylineOptions
-import gorda.driver.interfaces.LocType
 
 class Map {
 
     companion object {
-        fun calculateDistance(starLoc: LocType, endLoc: Location): Int {
-            val location = Location("last")
-            location.latitude = starLoc.lat
-            location.longitude = starLoc.lng
-            return endLoc.distanceTo(location).toInt()
+        fun calculateDistance(latLng1: LatLng, latLng2: LatLng): Int {
+            val startLoc = Location("last")
+            startLoc.latitude = latLng1.latitude
+            startLoc.longitude = latLng1.longitude
+            val endLoc = Location("last")
+            endLoc.latitude = latLng2.latitude
+            endLoc.longitude = latLng2.longitude
+
+            return startLoc.distanceTo(endLoc).toInt()
         }
 
         fun calculateDistanceBetween(latLng1: LatLng, latLng2: LatLng): Double {

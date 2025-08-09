@@ -12,11 +12,12 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.maps.model.LatLng
 import gorda.driver.R
 import gorda.driver.interfaces.LocType
 import gorda.driver.maps.Map
 import gorda.driver.models.Service
-import java.util.*
+import java.util.Date
 
 class ServiceAdapter(
     private val context: Context,
@@ -60,7 +61,15 @@ class ServiceAdapter(
         holder.serviceTimer.format = context.resources.getString(R.string.ago) + " %s"
         holder.textName.text = service.name
         holder.textComment.text = service.comment
-        holder.textDis.text = lastLocation?.let { Map.distanceToString(Map.calculateDistance(service.start_loc, it))}
+        val startLoc = Location("last")
+        startLoc.latitude = service.start_loc.lat
+        startLoc.longitude = service.start_loc.lng
+        holder.textDis.text = lastLocation?.let {
+            Map.distanceToString(Map.calculateDistance(
+                LatLng(service.start_loc.lat, service.start_loc.lng),
+                LatLng(it.latitude, it.longitude
+                )))
+        }
     }
 
     object ServiceDiffCallback : DiffUtil.ItemCallback<Service>() {
