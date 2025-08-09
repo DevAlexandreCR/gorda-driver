@@ -116,6 +116,8 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             chronometer.base = feesService.getBaseTime()
             chronometer.start()
             chronometer.onChronometerTickListener = this@CurrentServiceFragment
+
+            updateUIFromService()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -573,7 +575,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         }
     }
 
-    override fun onChronometerTick(chronometer: Chronometer?) {
+    private fun updateUIFromService() {
         if (isServiceBound) {
             totalRide = feesService.getTotalFee()
             totalDistance = feesService.getTotalDistance()
@@ -581,8 +583,12 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             textTotalFee.text = NumberHelper.toCurrency(totalRide)
             textCurrentTimePrice.text = NumberHelper.toCurrency(feesService.getTimeFee())
             textCurrentDistancePrice.text = NumberHelper.toCurrency(feesService.getDistanceFee())
-            textCurrentDistance.text = totalDistance.toInt().toString()
+            textCurrentDistance.text = getString(R.string.distance_km, totalDistance)
         }
+    }
+
+    override fun onChronometerTick(chronometer: Chronometer?) {
+        updateUIFromService()
     }
 
     override fun onDestroyView() {
@@ -590,5 +596,3 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         _binding = null
     }
 }
-
-

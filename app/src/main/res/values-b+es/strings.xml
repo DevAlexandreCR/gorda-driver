@@ -112,5 +112,5 @@
     <string name="expand_collapse">Expandir o contraer detalles de tarifas</string>
     <string name="multiplier_minimum_value">Valor mínimo de multiplicador es 1</string>
     <string name="multiplier_updated">Multiplicador actualizado a %1$.1f</string>
-    <string name="distance_km">%1$.2f km</string>
+    <string name="distance_km">%1$.1f</string>
 </resources>

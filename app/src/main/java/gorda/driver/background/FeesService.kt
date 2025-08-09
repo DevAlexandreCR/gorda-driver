@@ -156,6 +156,11 @@ class FeesService: Service() {
             val gson = Gson()
             val type = object : TypeToken<ArrayList<LatLng>>() {}.type
             points = gson.fromJson(pointsJson, type) ?: ArrayList()
+
+            if (points.isNotEmpty()) {
+                calculateTotalDistance()
+                android.util.Log.d("FeesService", "Restored ride data: ${points.size} points, distance: $totalDistance km")
+            }
         }
     }
 
