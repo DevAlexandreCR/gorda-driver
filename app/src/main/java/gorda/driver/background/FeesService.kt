@@ -64,12 +64,11 @@ class FeesService: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let {
-            name = it.getStringExtra("ORIGIN") ?: ""
-            multiplier = it.getDoubleExtra("FEE_MULTIPLIER", 1.0)
-            val resumeRide = it.getBooleanExtra("RESUME_RIDE", false)
+            name = it.getStringExtra(ORIGIN) ?: ""
+            multiplier = it.getDoubleExtra(FEE_MULTIPLIER, 1.0)
+            val resumeRide = it.getBooleanExtra(RESUME_RIDE, false)
 
-            // Get RideFees from shared preferences if available
-            val feesJson = sharedPreferences.getString("CURRENT_FEES", null)
+            val feesJson = sharedPreferences.getString(CURRENT_FEES, null)
             if (!feesJson.isNullOrEmpty()) {
                 try {
                     val gson = Gson()
@@ -95,10 +94,10 @@ class FeesService: Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
-                "Fees Service Channel",
+                CHANNEL_ID,
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Channel for ride fees calculation service"
+                description = CHANNEL_ID
                 setShowBadge(false)
             }
 
@@ -113,16 +112,12 @@ class FeesService: Service() {
             this,
             0,
             notificationIntent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            } else {
-                PendingIntent.FLAG_UPDATE_CURRENT
-            }
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.app_name))
-            .setContentText("Calculando tarifa: $name")
+            .setContentTitle(getString(R.string.service_running))
+            .setContentText(getString(R.string.service_from, name))
             .setSmallIcon(R.drawable.ic_baseline_info_24)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
