@@ -1,0 +1,5 @@
+<resources>
+    <dimen name="screen_hpadding">24dp</dimen>
+    <dimen name="stat_number">26sp</dimen>
+    <dimen name="card_corner">16dp</dimen>
+</resources>

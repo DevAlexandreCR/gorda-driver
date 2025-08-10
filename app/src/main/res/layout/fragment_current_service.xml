@@ -7,7 +7,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.service.current.CurrentServiceFragment">
 
-
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/toggle_button"
         android:layout_width="wrap_content"
@@ -36,17 +35,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Scrollable fees section -->
     <ScrollView
         android:id="@+id/scrollViewFees"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:visibility="invisible"
         android:fillViewport="true"
+        android:visibility="invisible"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/service_layout"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layoutFees"
@@ -54,356 +52,320 @@
             android:layout_height="wrap_content"
             android:paddingBottom="16dp">
 
-            <TextView
-                android:id="@+id/textPrice"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/service_running"
-                android:textSize="34sp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TableLayout
-                android:id="@+id/tableLayout"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/fare_total_card"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="32dp"
-                android:layout_marginEnd="8dp"
-                android:stretchColumns="*"
-                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginStart="@dimen/screen_hpadding"
+                android:layout_marginTop="@dimen/screen_hpadding"
+                android:layout_marginEnd="@dimen/screen_hpadding"
+                app:cardCornerRadius="@dimen/card_corner"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textPrice">
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
-                <!-- Time and Distance Section (Always visible) -->
+                <TextView
+                    android:id="@+id/textPrice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:text="@string/service_running"
+                    android:textAlignment="center"
+                    android:textSize="34sp"
+                    android:textStyle="bold" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:id="@+id/statsRow"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/screen_hpadding"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="@dimen/screen_hpadding"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                app:layout_constraintTop_toBottomOf="@id/fare_total_card"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal">
+
+                    <TextView
+                        android:id="@+id/textPriceByTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/stat_number"
+                        android:textStyle="bold" />
+
+                    <Chronometer
+                        android:id="@+id/chronometer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal">
+
+                    <TextView
+                        android:id="@+id/textPriceByDistance"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/stat_number"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textCurrentDistance"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardFeeDetails"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/screen_hpadding"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="@dimen/screen_hpadding"
+                app:cardCornerRadius="@dimen/card_corner"
+                app:layout_constraintTop_toBottomOf="@id/statsRow"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:baselineAligned="false">
+                    android:orientation="vertical">
 
                     <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:weightSum="1">
+                        android:id="@+id/feeDetailsHeader"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="@dimen/screen_hpadding"
+                        android:paddingEnd="@dimen/screen_hpadding">
 
                         <TextView
-                            android:id="@+id/textPriceByTime"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text=""
-                            android:textAlignment="center"
-                            android:textSize="24sp"
+                            android:layout_weight="1"
+                            android:text="@string/fee_details"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="horizontal">
-
-                            <Chronometer
-                                android:id="@+id/chronometer"
-                                android:layout_width="0dp"
-                                android:layout_height="match_parent"
-                                android:layout_weight="1"
-                                android:gravity="center_vertical"
-                                android:textAlignment="gravity"
-                                android:textSize="24sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/textView12"
-                                android:layout_width="0dp"
-                                android:layout_height="match_parent"
-                                android:layout_weight="0.5"
-                                android:gravity="center_vertical|end"
-                                android:text="@string/min" />
-                        </LinearLayout>
+                        <ImageView
+                            android:id="@+id/expandIcon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:rotation="0"
+                            android:src="@drawable/ic_expand_more_24" />
                     </LinearLayout>
 
                     <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
+                        android:id="@+id/feeDetailsContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:weightSum="1">
-
-                        <TextView
-                            android:id="@+id/textPriceByDistance"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text=""
-                            android:textAlignment="center"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
+                        android:paddingStart="@dimen/screen_hpadding"
+                        android:paddingEnd="@dimen/screen_hpadding"
+                        android:paddingBottom="16dp"
+                        android:visibility="gone">
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="horizontal">
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
 
                             <TextView
-                                android:id="@+id/textCurrentDistance"
+                                android:id="@+id/textView17"
                                 android:layout_width="0dp"
-                                android:layout_height="match_parent"
-                                android:layout_marginStart="@dimen/min_margin"
+                                android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:gravity="center_vertical|start"
-                                android:textSize="24sp"
-                                android:textStyle="bold" />
+                                android:text="@string/base"
+                                android:textSize="16sp" />
 
                             <TextView
-                                android:id="@+id/textView15"
+                                android:id="@+id/textBaseFare"
                                 android:layout_width="0dp"
-                                android:layout_height="match_parent"
+                                android:layout_height="wrap_content"
                                 android:layout_weight="0.5"
-                                android:gravity="center_vertical|end"
-                                android:text="@string/km" />
+                                android:textAlignment="textEnd"
+                                android:textSize="16sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.divider.MaterialDivider
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:alpha="0.12" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <TextView
+                                android:id="@+id/textView26"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/fare_minimum"
+                                android:textSize="16sp" />
+
+                            <TextView
+                                android:id="@+id/textFareMin"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="0.5"
+                                android:textAlignment="textEnd"
+                                android:textSize="16sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.divider.MaterialDivider
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:alpha="0.12" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <TextView
+                                android:id="@+id/textView20"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/time_fare"
+                                android:textSize="16sp" />
+
+                            <TextView
+                                android:id="@+id/textTimeFare"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="0.5"
+                                android:textAlignment="textEnd"
+                                android:textSize="16sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.divider.MaterialDivider
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:alpha="0.12" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <TextView
+                                android:id="@+id/textView22"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/distance_fare"
+                                android:textSize="16sp" />
+
+                            <TextView
+                                android:id="@+id/textDistanceFare"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="0.5"
+                                android:textAlignment="textEnd"
+                                android:textSize="16sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.divider.MaterialDivider
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:alpha="0.12" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <TextView
+                                android:id="@+id/textView23"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/fees"
+                                android:textSize="16sp" />
+
+                            <TextView
+                                android:id="@+id/textFees"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="0.5"
+                                android:textAlignment="textEnd"
+                                android:textSize="16sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.divider.MaterialDivider
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:alpha="0.12" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <TextView
+                                android:id="@+id/textView25"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/fare_multiplier"
+                                android:textSize="16sp" />
+
+                            <TextView
+                                android:id="@+id/textFareMultiplier"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="0.5"
+                                android:autoLink="web"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:textAlignment="textEnd"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                app:drawableEndCompat="@drawable/baseline_edit_12" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
-
-                <!-- Expandable Fee Details Section -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardFeeDetails"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="2dp"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="@android:color/darker_gray"
-                    app:cardBackgroundColor="?attr/colorPrimary">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical">
-
-                        <!-- Header with expand/collapse indicator -->
-                        <LinearLayout
-                            android:id="@+id/feeDetailsHeader"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:background="?attr/selectableItemBackground"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp">
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="@string/fee_details"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
-                            <ImageView
-                                android:id="@+id/expandIcon"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/ic_expand_more_24"
-                                android:rotation="0"
-                                android:contentDescription="@string/expand_collapse" />
-
-                        </LinearLayout>
-
-                        <!-- Collapsible content -->
-                        <LinearLayout
-                            android:id="@+id/feeDetailsContent"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp"
-                            android:paddingBottom="16dp"
-                            android:visibility="gone">
-
-                            <!-- Base Fare -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:id="@+id/textView17"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/base"
-                                    android:textSize="16sp" />
-
-                                <TextView
-                                    android:id="@+id/textBaseFare"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textSize="16sp" />
-                            </LinearLayout>
-
-                            <!-- Minimum Fare -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:id="@+id/textView26"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/fare_minimum"
-                                    android:textSize="16sp" />
-
-                                <TextView
-                                    android:id="@+id/textFareMin"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textSize="16sp" />
-                            </LinearLayout>
-
-                            <!-- Time Fare -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:id="@+id/textView20"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/time_fare"
-                                    android:textSize="16sp" />
-
-                                <TextView
-                                    android:id="@+id/textTimeFare"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textSize="16sp" />
-                            </LinearLayout>
-
-                            <!-- Distance Fare -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:id="@+id/textView22"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/distance_fare"
-                                    android:textSize="16sp" />
-
-                                <TextView
-                                    android:id="@+id/textDistanceFare"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textSize="16sp" />
-                            </LinearLayout>
-
-                            <!-- Additional Fees -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:id="@+id/textView23"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/fees"
-                                    android:textSize="16sp" />
-
-                                <TextView
-                                    android:id="@+id/textFees"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textSize="16sp" />
-                            </LinearLayout>
-
-                            <!-- Fare Multiplier -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:id="@+id/textView25"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/fare_multiplier"
-                                    android:textSize="16sp" />
-
-                                <TextView
-                                    android:id="@+id/textFareMultiplier"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:autoLink="web"
-                                    android:clickable="true"
-                                    android:focusable="true"
-                                    app:drawableEndCompat="@drawable/baseline_edit_12"
-                                    android:linksClickable="false"
-                                    android:singleLine="false"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textIsSelectable="false"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold" />
-                            </LinearLayout>
-
-                        </LinearLayout>
-
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-            </TableLayout>
-
+            </com.google.android.material.card.MaterialCardView>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
-    <!-- Fixed service layout at bottom -->
     <include
         android:id="@+id/service_layout"
         layout="@layout/service_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
