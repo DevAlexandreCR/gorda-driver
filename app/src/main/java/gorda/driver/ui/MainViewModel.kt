@@ -41,6 +41,18 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _rideFees = MutableLiveData<RideFees>()
     private val _isLoading = MutableLiveData(false)
     private val _errorTimeout = MutableLiveData(false)
+
+    // Add fee tracking LiveData
+    private val _currentFeeData = MutableLiveData<FeeData>()
+
+    data class FeeData(
+        val totalFee: Double,
+        val timeFee: Double,
+        val distanceFee: Double,
+        val totalDistance: Double,
+        val elapsedSeconds: Long
+    )
+
     private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
         if (service == null) {
             _nextService.postValue(null)
@@ -79,6 +91,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val rideFees: LiveData<RideFees> = _rideFees
     val isLoading: LiveData<Boolean> = _isLoading
     val errorTimeout: LiveData<Boolean> = _errorTimeout
+    val currentFeeData: LiveData<FeeData> = _currentFeeData
 
     fun getRideFees() {
         SettingsRepository.getRideFees {
@@ -225,5 +238,11 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun setConnecting(connecting: Boolean) {
         _driverState.postValue(DriverUpdates.connecting(connecting))
+    }
+
+    // Add method to update fee data from the service
+    fun updateFeeData(totalFee: Double, timeFee: Double, distanceFee: Double, totalDistance: Double, elapsedSeconds: Long) {
+        val feeData = FeeData(totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds)
+        _currentFeeData.postValue(feeData)
     }
 }

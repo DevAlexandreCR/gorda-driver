@@ -18,7 +18,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Chronometer
-import android.widget.Chronometer.OnChronometerTickListener
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -61,7 +60,7 @@ import java.util.Date
 import java.util.Locale
 
 
-class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
+class CurrentServiceFragment : Fragment() {
 
     companion object {
         const val TAG = "CurrentServiceFragment"
@@ -118,10 +117,11 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             feesService = binder.getService()
             mainViewModel.changeConnectTripService(true)
             chronometer.base = feesService.getBaseTime()
-            chronometer.start()
-            chronometer.onChronometerTickListener = this@CurrentServiceFragment
 
-            updateUIFromService()
+            // Set up callback to update MainViewModel with fee data
+            feesService.setFeeUpdateCallback { totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds ->
+                mainViewModel.updateFeeData(totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds)
+            }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -273,6 +273,25 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             }
         }
 
+        // Add observer for fee data that persists across fragment navigation
+        mainViewModel.currentFeeData.observe(viewLifecycleOwner) { feeData ->
+            // Update UI with fee data from MainViewModel
+            totalRide = feeData.totalFee
+            totalDistance = feeData.totalDistance
+
+            chronometer.base = SystemClock.elapsedRealtime() - (feeData.elapsedSeconds * 1000)
+
+            textTotalFee.text = NumberHelper.toCurrency(feeData.totalFee)
+            textCurrentTimePrice.text = NumberHelper.toCurrency(feeData.timeFee)
+            textCurrentDistancePrice.text = NumberHelper.toCurrency(feeData.distanceFee)
+            textCurrentDistance.text = getString(R.string.distance_km, feeData.totalDistance / 1000)
+
+            // Show toggle button based on elapsed time, but only if there's no next service
+            if (feeData.elapsedSeconds > this.fees.timeoutToConnection && !toggleFragmentButton.isVisible && mainViewModel.nextService.value == null) {
+                toggleFragmentButton.visibility = View.VISIBLE
+            }
+        }
+
         connectionServiceButton.setOnClickListener {
             connectionDialog?.let { dialog ->
                 if (dialog.isAdded) {
@@ -288,7 +307,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             val dialogLayout: View = LayoutInflater.from(activity).inflate(R.layout.multiplier_feed, null)
             val editFeeMultiplier = dialogLayout.findViewById<EditText>(R.id.dialog_fee_multiplier)
 
-            // Get current multiplier from service if bound, otherwise use local value
             val currentMultiplier = if (isServiceBound) {
                 feesService.getMultiplier()
             } else {
@@ -574,26 +592,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         } else {
             totalRide
         }
-    }
-
-    private fun updateUIFromService() {
-        if (isServiceBound) {
-            totalRide = feesService.getTotalFee()
-            totalDistance = feesService.getTotalDistance()
-
-            textTotalFee.text = NumberHelper.toCurrency(totalRide)
-            textCurrentTimePrice.text = NumberHelper.toCurrency(feesService.getTimeFee())
-            textCurrentDistancePrice.text = NumberHelper.toCurrency(feesService.getDistanceFee())
-            textCurrentDistance.text = getString(R.string.distance_km, totalDistance / 1000)
-
-            if (feesService.getElapsedSeconds() > this.fees.timeoutToConnection && !toggleFragmentButton.isVisible && mainViewModel.nextService.value == null) {
-                toggleFragmentButton.visibility = View.VISIBLE
-            }
-        }
-    }
-
-    override fun onChronometerTick(chronometer: Chronometer?) {
-        updateUIFromService()
     }
 
     override fun onDestroyView() {

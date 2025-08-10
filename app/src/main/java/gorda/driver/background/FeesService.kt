@@ -10,7 +10,9 @@ import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
@@ -36,6 +38,7 @@ class FeesService: Service() {
         const val RESUME_RIDE = "RESUME_RIDE"
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "FeesServiceChannel"
+        private const val UPDATE_INTERVAL = 1000L // Update every second
     }
 
     private val binder = ChronometerBinder()
@@ -47,6 +50,11 @@ class FeesService: Service() {
     private var rideFees: RideFees = RideFees()
     private var totalDistance = 0.0
     private lateinit var locationHandler: LocationHandler
+
+    // Add periodic update mechanism
+    private val updateHandler = Handler(Looper.getMainLooper())
+    private var updateRunnable: Runnable? = null
+    private var feeUpdateCallback: ((Double, Double, Double, Double, Long) -> Unit)? = null
 
     inner class ChronometerBinder : Binder() {
         fun getService(): FeesService = this@FeesService
@@ -91,6 +99,7 @@ class FeesService: Service() {
         }
 
         startForeground()
+        startPeriodicUpdates()
         return START_STICKY
     }
 
@@ -239,10 +248,42 @@ class FeesService: Service() {
 
     override fun onDestroy() {
         stopLocationTracking()
+        stopPeriodicUpdates()
         super.onDestroy()
     }
 
     fun getElapsedSeconds(): Long {
         return (SystemClock.elapsedRealtime() - startTime) / 1000
+    }
+
+    private fun startPeriodicUpdates() {
+        updateRunnable = object : Runnable {
+            override fun run() {
+                // Calculate and update fees periodically
+                val totalFee = getTotalFee()
+                val timeFee = getTimeFee()
+                val distanceFee = getDistanceFee()
+                val currentTotalDistance = getTotalDistance()
+                val elapsedSeconds = getElapsedSeconds()
+
+                // Invoke the callback if set - pass totalDistance instead of baseFee
+                feeUpdateCallback?.invoke(totalFee, timeFee, distanceFee, currentTotalDistance, elapsedSeconds)
+
+                // Schedule the next update
+                updateHandler.postDelayed(this, UPDATE_INTERVAL)
+            }
+        }
+
+        updateHandler.post(updateRunnable!!)
+    }
+
+    private fun stopPeriodicUpdates() {
+        updateRunnable?.let {
+            updateHandler.removeCallbacks(it)
+        }
+    }
+
+    fun setFeeUpdateCallback(callback: (Double, Double, Double, Double, Long) -> Unit) {
+        this.feeUpdateCallback = callback
     }
 }
