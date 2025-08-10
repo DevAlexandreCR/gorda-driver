@@ -289,6 +289,8 @@ class CurrentServiceFragment : Fragment() {
             // Show toggle button based on elapsed time, but only if there's no next service
             if (feeData.elapsedSeconds > this.fees.timeoutToConnection && !toggleFragmentButton.isVisible && mainViewModel.nextService.value == null) {
                 toggleFragmentButton.visibility = View.VISIBLE
+            } else {
+                toggleFragmentButton.visibility = View.GONE
             }
         }
 
