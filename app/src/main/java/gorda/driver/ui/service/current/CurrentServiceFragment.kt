@@ -31,6 +31,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
@@ -40,6 +41,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.core.view.isVisible
 import androidx.preference.PreferenceManager
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
@@ -92,6 +94,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var feeDetailsContent: LinearLayout
     private lateinit var expandIcon: ImageView
     private var isFeeExpanded = false
+    private var bottomSheetBehavior: BottomSheetBehavior<*>? = null
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
     private lateinit var endTrip: String
@@ -338,6 +341,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initBottomSheet()
         setupFeeDetailsCard()
     }
 
@@ -359,6 +363,16 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 if (isFeeExpanded) R.string.fee_details_expanded else R.string.fee_details_collapsed
             )
             header.announceForAccessibility(header.contentDescription)
+        }
+    }
+
+    private fun initBottomSheet() {
+        val sheet = binding.serviceLayout.root
+        val params = sheet.layoutParams
+        if (params is CoordinatorLayout.LayoutParams && params.behavior is BottomSheetBehavior<*>) {
+            bottomSheetBehavior = BottomSheetBehavior.from(sheet)
+        } else {
+            bottomSheetBehavior = null
         }
     }
 
