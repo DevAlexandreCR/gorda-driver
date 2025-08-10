@@ -275,7 +275,6 @@ class CurrentServiceFragment : Fragment() {
 
         // Add observer for fee data that persists across fragment navigation
         mainViewModel.currentFeeData.observe(viewLifecycleOwner) { feeData ->
-            // Update UI with fee data from MainViewModel
             totalRide = feeData.totalFee
             totalDistance = feeData.totalDistance
 
