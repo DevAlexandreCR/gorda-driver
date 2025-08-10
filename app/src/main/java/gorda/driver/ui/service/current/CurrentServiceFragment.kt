@@ -118,6 +118,7 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var transaction: FragmentTransaction
     private lateinit var homeFragment: HomeFragment
     private var isServiceBound = false
+
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             isServiceBound = true
