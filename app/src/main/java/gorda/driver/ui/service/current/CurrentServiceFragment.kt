@@ -286,8 +286,10 @@ class CurrentServiceFragment : Fragment() {
             textCurrentDistance.text = getString(R.string.distance_km, feeData.totalDistance / 1000)
 
             // Show toggle button based on elapsed time, but only if there's no next service
-            if (feeData.elapsedSeconds > this.fees.timeoutToConnection && !toggleFragmentButton.isVisible && mainViewModel.nextService.value == null) {
-                toggleFragmentButton.visibility = View.VISIBLE
+            if (mainViewModel.nextService.value == null) {
+                if (feeData.elapsedSeconds > this.fees.timeoutToConnection && !toggleFragmentButton.isVisible) {
+                    toggleFragmentButton.visibility = View.VISIBLE
+                }
             } else {
                 toggleFragmentButton.visibility = View.GONE
             }
