@@ -19,7 +19,6 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Chronometer
 import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -36,6 +35,7 @@ import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
@@ -59,7 +59,6 @@ import gorda.driver.utils.StringHelper
 import java.util.Date
 import java.util.Locale
 
-
 class CurrentServiceFragment : Fragment() {
 
     companion object {
@@ -67,13 +66,16 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private var _binding: FragmentCurrentServiceBinding? = null
+    private val binding get() = _binding!!
+
     private val mainViewModel: MainViewModel by activityViewModels()
     private lateinit var btnStatus: Button
-    private lateinit var imgBtnMaps: ImageButton
-    private lateinit var imgButtonWaze: ImageButton
+    private lateinit var imgBtnMaps: MaterialButton
+    private lateinit var imgButtonWaze: MaterialButton
     private lateinit var textName: TextView
     private lateinit var textPhone: TextView
     private lateinit var textAddress: TextView
+    private lateinit var textAddressPreview: TextView
     private lateinit var textComment: TextView
     private lateinit var textTimePrice: TextView
     private lateinit var textCurrentTimePrice: TextView
@@ -90,6 +92,13 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var feeDetailsHeader: LinearLayout
     private lateinit var feeDetailsContent: LinearLayout
     private lateinit var expandIcon: ImageView
+
+    // New slide-up/down interface elements
+    private lateinit var collapsedHeader: LinearLayout
+    private lateinit var expandableContent: ScrollView
+    private lateinit var expandCollapseIcon: ImageView
+    private var isServiceExpanded = false
+
     private var isExpanded = false
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
@@ -97,7 +106,6 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var toggleFragmentButton: FloatingActionButton
     private lateinit var connectionServiceButton: FloatingActionButton
     private var connectionDialog: ConnectionServiceDialog? = null
-    private lateinit var binding: FragmentCurrentServiceBinding
     private var feesService: FeesService = FeesService()
     private lateinit var chronometer: Chronometer
     private var fees: RideFees = RideFees()
@@ -137,7 +145,7 @@ class CurrentServiceFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentCurrentServiceBinding.inflate(inflater, container, false)
+        _binding = FragmentCurrentServiceBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
         context?.let {
@@ -149,9 +157,12 @@ class CurrentServiceFragment : Fragment() {
         endTrip = getString(R.string.service_end_trip)
 
         requireActivity().onBackPressedDispatcher.addCallback(this) {}
+
+        // Initialize views
         textName = binding.serviceLayout.currentServiceName
         textPhone = binding.serviceLayout.currentPhone
         textAddress = binding.serviceLayout.currentAddress
+        textAddressPreview = binding.serviceLayout.currentAddressPreview
         textComment = binding.serviceLayout.serviceComment
         textPriceBase = binding.textBaseFare
         textPriceMinFee = binding.textFareMin
@@ -173,18 +184,30 @@ class CurrentServiceFragment : Fragment() {
         feeDetailsHeader = binding.feeDetailsHeader
         feeDetailsContent = binding.feeDetailsContent
         expandIcon = binding.expandIcon
+
+        // Initialize new slide-up/down interface elements
+        collapsedHeader = binding.serviceLayout.collapsedHeader
+        expandableContent = binding.serviceLayout.expandableContent
+        expandCollapseIcon = binding.serviceLayout.expandCollapseIcon
+
         homeFragment = HomeFragment()
         fragmentManager = childFragmentManager
         connectionServiceButton = binding.connectedServiceButton
+
+        // Setup slide-up/down functionality
+        setupServiceSlideInterface()
+
         mainViewModel.isLoading.observe(viewLifecycleOwner) { loading ->
             btnStatus.isEnabled = !loading
         }
+
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 setOnClickListener(service)
                 textName.text = service.name
                 textPhone.text = service.phone
                 textAddress.text = service.start_loc.name
+                textAddressPreview.text = service.start_loc.name
                 textComment.text = service.comment
                 textPhone.setOnClickListener {
                     val intent = Intent(Intent.ACTION_DIAL, ("tel:" + service.phone).toUri())
@@ -250,6 +273,7 @@ class CurrentServiceFragment : Fragment() {
                 }
             }
         }
+
         mainViewModel.rideFees.observe(viewLifecycleOwner) { fees ->
             this.fees = fees
             feeMultiplier = fees.feeMultiplier
@@ -263,6 +287,7 @@ class CurrentServiceFragment : Fragment() {
                 feesService.setMultiplier(feeMultiplier)
             }
         }
+
         mainViewModel.nextService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 connectionDialog = ConnectionServiceDialog(service)
@@ -358,6 +383,41 @@ class CurrentServiceFragment : Fragment() {
             toggleFragment()
         }
         return root
+    }
+
+    private fun setupServiceSlideInterface() {
+        collapsedHeader.setOnClickListener {
+            toggleServiceDetails()
+        }
+    }
+
+    private fun toggleServiceDetails() {
+        isServiceExpanded = !isServiceExpanded
+
+        if (isServiceExpanded) {
+            // Expand - slide up
+            expandableContent.visibility = View.VISIBLE
+            expandCollapseIcon.animate().rotation(0f).setDuration(300).start()
+
+            // Animate the content sliding up
+            expandableContent.alpha = 0f
+            expandableContent.animate()
+                .alpha(1f)
+                .setDuration(300)
+                .start()
+        } else {
+            // Collapse - slide down
+            expandCollapseIcon.animate().rotation(180f).setDuration(300).start()
+
+            // Animate the content sliding down
+            expandableContent.animate()
+                .alpha(0f)
+                .setDuration(300)
+                .withEndAction {
+                    expandableContent.visibility = View.GONE
+                }
+                .start()
+        }
     }
 
     private fun setupFeeDetailsCollapse() {

@@ -5,20 +5,25 @@
     android:id="@+id/textNavigation"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/primary"
     tools:context=".ui.service.current.CurrentServiceFragment">
 
-
+    <!-- Top Action Buttons with improved positioning -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/toggle_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="20dp"
         android:clickable="true"
         android:contentDescription="@string/services_list"
         android:focusable="true"
         android:src="@drawable/service_list_24"
         android:visibility="invisible"
+        app:fabSize="normal"
+        app:backgroundTint="@color/secondary"
+        app:tint="@android:color/white"
+        app:elevation="6dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -26,23 +31,30 @@
         android:id="@+id/connected_service_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
         android:clickable="true"
         android:contentDescription="@string/new_service_text"
         android:focusable="true"
         android:src="@drawable/connected_service_24"
         android:visibility="invisible"
+        app:fabSize="normal"
+        app:backgroundTint="@color/secondary"
+        app:tint="@android:color/white"
+        app:elevation="6dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Scrollable fees section -->
+    <!-- Enhanced Scrollable fees section -->
     <ScrollView
         android:id="@+id/scrollViewFees"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:visibility="invisible"
         android:fillViewport="true"
+        android:scrollbars="none"
+        android:paddingTop="90dp"
+        android:paddingHorizontal="12dp"
         app:layout_constraintBottom_toTopOf="@+id/service_layout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -52,346 +64,525 @@
             android:id="@+id/layoutFees"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="16dp">
+            android:paddingBottom="24dp">
 
-            <TextView
-                android:id="@+id/textPrice"
-                android:layout_width="wrap_content"
+            <!-- Total Price Card with enhanced design -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTotalPrice"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/service_running"
-                android:textSize="34sp"
-                android:textStyle="bold"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginBottom="20dp"
+                app:cardBackgroundColor="@color/secondary"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="12dp"
+                app:strokeWidth="0dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent">
 
-            <TableLayout
-                android:id="@+id/tableLayout"
-                android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="28dp"
+                    android:paddingVertical="32dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/fields_price"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp"
+                        android:textStyle="normal"
+                        android:alpha="0.9"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:id="@+id/textPrice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/service_running"
+                        android:textColor="@android:color/white"
+                        android:textSize="48sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.02"
+                        android:shadowColor="@android:color/black"
+                        android:shadowDx="0"
+                        android:shadowDy="2"
+                        android:shadowRadius="4" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Time and Distance Metrics Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMetrics"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="32dp"
-                android:layout_marginEnd="8dp"
-                android:stretchColumns="*"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/primary_dark"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="6dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/secondary"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textPrice">
+                app:layout_constraintTop_toBottomOf="@+id/cardTotalPrice">
 
-                <!-- Time and Distance Section (Always visible) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
+                    android:padding="24dp"
                     android:baselineAligned="false">
 
+                    <!-- Time Section -->
                     <LinearLayout
                         android:layout_width="0dp"
-                        android:layout_height="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:orientation="vertical"
-                        android:weightSum="1">
+                        android:gravity="center"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/audiotrack_24"
+                            android:contentDescription="@string/time"
+                            app:tint="@color/secondary"
+                            android:layout_marginBottom="12dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/time_fare"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="normal"
+                            android:alpha="0.8"
+                            android:layout_marginBottom="6dp" />
 
                         <TextView
                             android:id="@+id/textPriceByTime"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text=""
-                            android:textAlignment="center"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
+                            android:textColor="@android:color/white"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="12dp" />
 
                         <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="horizontal">
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:background="@color/secondary"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp"
+                            android:elevation="2dp">
 
                             <Chronometer
                                 android:id="@+id/chronometer"
-                                android:layout_width="0dp"
-                                android:layout_height="match_parent"
-                                android:layout_weight="1"
-                                android:gravity="center_vertical"
-                                android:textAlignment="gravity"
-                                android:textSize="24sp"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@android:color/white"
+                                android:textSize="16sp"
                                 android:textStyle="bold" />
 
                             <TextView
                                 android:id="@+id/textView12"
-                                android:layout_width="0dp"
-                                android:layout_height="match_parent"
-                                android:layout_weight="0.5"
-                                android:gravity="center_vertical|end"
-                                android:text="@string/min" />
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:text="@string/min"
+                                android:textColor="@android:color/white"
+                                android:textSize="14sp"
+                                android:alpha="0.9" />
+
                         </LinearLayout>
+
                     </LinearLayout>
 
+                    <!-- Elegant Divider -->
+                    <View
+                        android:layout_width="2dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginHorizontal="20dp"
+                        android:background="@color/secondary"
+                        android:alpha="0.6" />
+
+                    <!-- Distance Section -->
                     <LinearLayout
                         android:layout_width="0dp"
-                        android:layout_height="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:orientation="vertical"
-                        android:weightSum="1">
+                        android:gravity="center"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_baseline_map_24"
+                            android:contentDescription="@string/distance"
+                            app:tint="@color/secondary"
+                            android:layout_marginBottom="12dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/distance_fare"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="normal"
+                            android:alpha="0.8"
+                            android:layout_marginBottom="6dp" />
 
                         <TextView
                             android:id="@+id/textPriceByDistance"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text=""
-                            android:textAlignment="center"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
+                            android:textColor="@android:color/white"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="12dp" />
 
                         <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="horizontal">
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:background="@color/secondary"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp"
+                            android:elevation="2dp">
 
                             <TextView
                                 android:id="@+id/textCurrentDistance"
-                                android:layout_width="0dp"
-                                android:layout_height="match_parent"
-                                android:layout_marginStart="@dimen/min_margin"
-                                android:layout_weight="1"
-                                android:gravity="center_vertical|start"
-                                android:textSize="24sp"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@android:color/white"
+                                android:textSize="16sp"
                                 android:textStyle="bold" />
 
                             <TextView
                                 android:id="@+id/textView15"
-                                android:layout_width="0dp"
-                                android:layout_height="match_parent"
-                                android:layout_weight="0.5"
-                                android:gravity="center_vertical|end"
-                                android:text="@string/km" />
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:text="@string/km"
+                                android:textColor="@android:color/white"
+                                android:textSize="14sp"
+                                android:alpha="0.9" />
+
                         </LinearLayout>
+
                     </LinearLayout>
+
                 </LinearLayout>
 
-                <!-- Expandable Fee Details Section -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardFeeDetails"
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Enhanced Expandable Fee Details Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardFeeDetails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                app:cardBackgroundColor="@color/primary_dark"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/secondary"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/cardMetrics">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="2dp"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="@android:color/darker_gray"
-                    app:cardBackgroundColor="?attr/colorPrimary">
+                    android:orientation="vertical">
 
+                    <!-- Enhanced Header with better visual design -->
                     <LinearLayout
+                        android:id="@+id/feeDetailsHeader"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="24dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_baseline_info_24"
+                            android:contentDescription="@string/fee_details"
+                            app:tint="@color/secondary"
+                            android:layout_marginEnd="16dp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/fee_details"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <ImageView
+                            android:id="@+id/expandIcon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_expand_more_24"
+                            android:rotation="0"
+                            android:contentDescription="@string/expand_collapse"
+                            app:tint="@android:color/white"
+                            android:alpha="0.7" />
+
+                    </LinearLayout>
+
+                    <!-- Enhanced Collapsible content -->
+                    <LinearLayout
+                        android:id="@+id/feeDetailsContent"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:paddingHorizontal="24dp"
+                        android:paddingBottom="24dp"
+                        android:visibility="gone">
 
-                        <!-- Header with expand/collapse indicator -->
+                        <!-- Base Fare -->
                         <LinearLayout
-                            android:id="@+id/feeDetailsHeader"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:background="?attr/selectableItemBackground"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:gravity="center_vertical"
+                            android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp">
+                            android:paddingVertical="16dp">
 
                             <TextView
+                                android:id="@+id/textView17"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="@string/fee_details"
-                                android:textSize="16sp"
+                                android:text="@string/base"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal"
+                                android:alpha="0.8" />
+
+                            <TextView
+                                android:id="@+id/textBaseFare"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
                                 android:textStyle="bold" />
-
-                            <ImageView
-                                android:id="@+id/expandIcon"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/ic_expand_more_24"
-                                android:rotation="0"
-                                android:contentDescription="@string/expand_collapse" />
-
                         </LinearLayout>
 
-                        <!-- Collapsible content -->
+                        <!-- Elegant Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/secondary"
+                            android:alpha="0.3" />
+
+                        <!-- Minimum Fare -->
                         <LinearLayout
-                            android:id="@+id/feeDetailsContent"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp"
-                            android:paddingBottom="16dp"
-                            android:visibility="gone">
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp">
 
-                            <!-- Base Fare -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
+                            <TextView
+                                android:id="@+id/textView26"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
+                                android:layout_weight="1"
+                                android:text="@string/fare_minimum"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal"
+                                android:alpha="0.8" />
 
-                                <TextView
-                                    android:id="@+id/textView17"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/base"
-                                    android:textSize="16sp" />
-
-                                <TextView
-                                    android:id="@+id/textBaseFare"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textSize="16sp" />
-                            </LinearLayout>
-
-                            <!-- Minimum Fare -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
+                            <TextView
+                                android:id="@+id/textFareMin"
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
-                                <TextView
-                                    android:id="@+id/textView26"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/fare_minimum"
-                                    android:textSize="16sp" />
+                        <!-- Elegant Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/secondary"
+                            android:alpha="0.3" />
 
-                                <TextView
-                                    android:id="@+id/textFareMin"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textSize="16sp" />
-                            </LinearLayout>
+                        <!-- Time Fare -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp">
 
-                            <!-- Time Fare -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
+                            <TextView
+                                android:id="@+id/textView20"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
+                                android:layout_weight="1"
+                                android:text="@string/time_fare"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal"
+                                android:alpha="0.8" />
 
-                                <TextView
-                                    android:id="@+id/textView20"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/time_fare"
-                                    android:textSize="16sp" />
-
-                                <TextView
-                                    android:id="@+id/textTimeFare"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textSize="16sp" />
-                            </LinearLayout>
-
-                            <!-- Distance Fare -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
+                            <TextView
+                                android:id="@+id/textTimeFare"
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
-                                <TextView
-                                    android:id="@+id/textView22"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/distance_fare"
-                                    android:textSize="16sp" />
+                        <!-- Elegant Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/secondary"
+                            android:alpha="0.3" />
 
-                                <TextView
-                                    android:id="@+id/textDistanceFare"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textSize="16sp" />
-                            </LinearLayout>
+                        <!-- Distance Fare -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp">
 
-                            <!-- Additional Fees -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
+                            <TextView
+                                android:id="@+id/textView22"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
+                                android:layout_weight="1"
+                                android:text="@string/distance_fare"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal"
+                                android:alpha="0.8" />
 
-                                <TextView
-                                    android:id="@+id/textView23"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/fees"
-                                    android:textSize="16sp" />
-
-                                <TextView
-                                    android:id="@+id/textFees"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textSize="16sp" />
-                            </LinearLayout>
-
-                            <!-- Fare Multiplier -->
-                            <LinearLayout
-                                android:layout_width="match_parent"
+                            <TextView
+                                android:id="@+id/textDistanceFare"
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="8dp">
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
-                                <TextView
-                                    android:id="@+id/textView25"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/fare_multiplier"
-                                    android:textSize="16sp" />
+                        <!-- Elegant Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/secondary"
+                            android:alpha="0.3" />
 
-                                <TextView
-                                    android:id="@+id/textFareMultiplier"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="0.5"
-                                    android:autoLink="web"
-                                    android:clickable="true"
-                                    android:focusable="true"
-                                    app:drawableEndCompat="@drawable/baseline_edit_12"
-                                    android:linksClickable="false"
-                                    android:singleLine="false"
-                                    android:text=""
-                                    android:textAlignment="textEnd"
-                                    android:textIsSelectable="false"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold" />
-                            </LinearLayout>
+                        <!-- Additional Fees -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp">
 
+                            <TextView
+                                android:id="@+id/textView23"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/fees"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal"
+                                android:alpha="0.8" />
+
+                            <TextView
+                                android:id="@+id/textFees"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Elegant Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/secondary"
+                            android:alpha="0.3" />
+
+                        <!-- Fare Multiplier with enhanced design -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp"
+                            android:background="?attr/selectableItemBackground">
+
+                            <TextView
+                                android:id="@+id/textView25"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/fare_multiplier"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal"
+                                android:alpha="0.8" />
+
+                            <TextView
+                                android:id="@+id/textFareMultiplier"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:autoLink="web"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:background="@color/secondary"
+                                android:paddingHorizontal="12dp"
+                                android:paddingVertical="8dp"
+                                app:drawableEndCompat="@drawable/baseline_edit_12"
+                                android:drawablePadding="8dp"
+                                android:linksClickable="false"
+                                android:singleLine="false"
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textIsSelectable="false"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:elevation="2dp" />
                         </LinearLayout>
 
                     </LinearLayout>
 
-                </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
 
-            </TableLayout>
+            </com.google.android.material.card.MaterialCardView>
+
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
