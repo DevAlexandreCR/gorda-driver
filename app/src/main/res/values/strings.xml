@@ -120,4 +120,6 @@
     <string name="multiplier_minimum_value">Minimum multiplier value is 1.0</string>
     <string name="multiplier_updated">Multiplier updated to %1$.1f</string>
     <string name="distance_km">%1$.1f</string>
+    <string name="fee_details_expanded">Fee details expanded</string>
+    <string name="fee_details_collapsed">Fee details collapsed</string>
 </resources>

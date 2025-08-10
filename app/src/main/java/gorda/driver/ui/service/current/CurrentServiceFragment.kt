@@ -16,6 +16,9 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.HapticFeedbackConstants
+import android.transition.AutoTransition
+import android.transition.TransitionManager
 import android.widget.Button
 import android.widget.Chronometer
 import android.widget.EditText
@@ -27,6 +30,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
@@ -35,7 +39,9 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
+import androidx.core.view.isVisible
 import androidx.preference.PreferenceManager
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
@@ -90,7 +96,8 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var feeDetailsHeader: LinearLayout
     private lateinit var feeDetailsContent: LinearLayout
     private lateinit var expandIcon: ImageView
-    private var isExpanded = false
+    private var isFeeExpanded = false
+    private var bottomSheetBehavior: BottomSheetBehavior<*>? = null
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
     private lateinit var endTrip: String
@@ -351,32 +358,46 @@ class CurrentServiceFragment : Fragment() {
             dialog.show()
         }
 
-        // Setup collapsible fee details
-        setupFeeDetailsCollapse()
-
         toggleFragmentButton.setOnClickListener {
             toggleFragment()
         }
         return root
     }
 
-    private fun setupFeeDetailsCollapse() {
-        feeDetailsHeader.setOnClickListener {
-            toggleFeeDetails()
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        initBottomSheet()
+        setupFeeDetailsCard()
+    }
+
+    private fun setupFeeDetailsCard() {
+        val card = requireView().findViewById<View>(R.id.cardFeeDetails) as android.view.ViewGroup
+        val header = requireView().findViewById<View>(R.id.feeDetailsHeader)
+        val content = requireView().findViewById<View>(R.id.feeDetailsContent)
+        val chevron = requireView().findViewById<View>(R.id.expandIcon)
+
+        header.setOnClickListener {
+            it.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            val t = AutoTransition().apply { duration = 180 }
+            TransitionManager.beginDelayedTransition(card, t)
+            isFeeExpanded = !isFeeExpanded
+            content.visibility = if (isFeeExpanded) View.VISIBLE else View.GONE
+            chevron.animate().rotation(if (isFeeExpanded) 180f else 0f).setDuration(180L).start()
+
+            header.contentDescription = getString(
+                if (isFeeExpanded) R.string.fee_details_expanded else R.string.fee_details_collapsed
+            )
+            header.announceForAccessibility(header.contentDescription)
         }
     }
 
-    private fun toggleFeeDetails() {
-        isExpanded = !isExpanded
-
-        if (isExpanded) {
-            // Expand
-            feeDetailsContent.visibility = View.VISIBLE
-            expandIcon.animate().rotation(180f).setDuration(200).start()
+    private fun initBottomSheet() {
+        val sheet = binding.serviceLayout.root
+        val params = sheet.layoutParams
+        if (params is CoordinatorLayout.LayoutParams && params.behavior is BottomSheetBehavior<*>) {
+            bottomSheetBehavior = BottomSheetBehavior.from(sheet)
         } else {
-            // Collapse
-            feeDetailsContent.visibility = View.GONE
-            expandIcon.animate().rotation(0f).setDuration(200).start()
+            bottomSheetBehavior = null
         }
     }
 
