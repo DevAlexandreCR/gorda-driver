@@ -30,6 +30,7 @@ import androidx.activity.addCallback
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
@@ -40,6 +41,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
 import gorda.driver.background.FeesService.Companion.CURRENT_FEES
+import gorda.driver.background.FeesService.Companion.FEE_MULTIPLIER
+import gorda.driver.background.FeesService.Companion.ORIGIN
+import gorda.driver.background.FeesService.Companion.RESUME_RIDE
 import gorda.driver.databinding.FragmentCurrentServiceBinding
 import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.RideFees
@@ -512,24 +516,22 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
 
     private fun startServiceFee(origin: String, resumeRide: Boolean = false) {
         val intentFee = Intent(requireContext(), FeesService::class.java)
-        intentFee.putExtra("ORIGIN", origin)
-        intentFee.putExtra("FEE_MULTIPLIER", feeMultiplier)
+        intentFee.putExtra(ORIGIN, origin)
+        intentFee.putExtra(FEE_MULTIPLIER, feeMultiplier)
 
-        // Save RideFees to shared preferences so the service can access it
         val gson = com.google.gson.Gson()
         val feesJson = gson.toJson(fees)
         sharedPreferences.edit(commit = true) {
-            putString("CURRENT_FEES", feesJson)
+            putString(CURRENT_FEES, feesJson)
         }
 
         if (resumeRide && sharedPreferences.contains(Constants.MULTIPLIER)) {
-            intentFee.putExtra("RESUME_RIDE", true)
+            intentFee.putExtra(RESUME_RIDE, true)
             val savedMultiplier = sharedPreferences.getString(Constants.MULTIPLIER, "1.0")?.toDoubleOrNull() ?: 1.0
             feeMultiplier = savedMultiplier
             textFareMultiplier.text = feeMultiplier.toString()
         }
 
-        // Ensure we stop any existing service first
         if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
             val stopIntent = Intent(requireContext(), FeesService::class.java)
             requireContext().stopService(stopIntent)
@@ -556,7 +558,6 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         chronometer.stop()
         chronometer.base = SystemClock.elapsedRealtime()
 
-        // Clear saved ride data
         sharedPreferences.edit(commit = true) {
             remove(Constants.MULTIPLIER)
             remove(Constants.POINTS)
@@ -584,6 +585,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             textCurrentTimePrice.text = NumberHelper.toCurrency(feesService.getTimeFee())
             textCurrentDistancePrice.text = NumberHelper.toCurrency(feesService.getDistanceFee())
             textCurrentDistance.text = getString(R.string.distance_km, totalDistance / 1000)
+
+            if (feesService.getElapsedSeconds() > this.fees.timeoutToConnection && !toggleFragmentButton.isVisible && mainViewModel.nextService.value == null) {
+                toggleFragmentButton.visibility = View.VISIBLE
+            }
         }
     }
 

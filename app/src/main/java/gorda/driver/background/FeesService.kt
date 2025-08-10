@@ -241,4 +241,8 @@ class FeesService: Service() {
         stopLocationTracking()
         super.onDestroy()
     }
+
+    fun getElapsedSeconds(): Long {
+        return (SystemClock.elapsedRealtime() - startTime) / 1000
+    }
 }
