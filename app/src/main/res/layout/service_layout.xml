@@ -10,7 +10,7 @@
     <View
         android:id="@+id/slideHandle"
         android:layout_width="50dp"
-        android:layout_height="5dp"
+        android:layout_height="6dp"
         android:layout_marginTop="12dp"
         android:background="@color/secondary"
         android:alpha="0.8"
