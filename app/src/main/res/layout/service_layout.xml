@@ -221,7 +221,7 @@
                 android:gravity="center_vertical"
                 android:background="@color/primary_dark"
                 android:paddingHorizontal="16dp"
-                android:paddingVertical="20dp">
+                android:paddingVertical="8dp">
 
                 <ImageView
                     android:layout_width="24dp"
@@ -248,43 +248,27 @@
                     android:orientation="horizontal"
                     android:gravity="center">
 
-                    <com.google.android.material.button.MaterialButton
+                    <ImageButton
                         android:id="@+id/img_btn_maps"
-                        style="@style/Widget.Material3.Button.UnelevatedButton"
                         android:layout_width="56dp"
                         android:layout_height="56dp"
                         android:layout_marginEnd="12dp"
                         android:contentDescription="@string/map"
-                        android:insetLeft="0dp"
-                        android:insetTop="0dp"
-                        android:insetRight="0dp"
-                        android:insetBottom="0dp"
-                        app:backgroundTint="@color/secondary"
-                        app:cornerRadius="16dp"
-                        app:icon="@drawable/maps"
-                        app:iconGravity="textStart"
-                        app:iconPadding="0dp"
-                        app:iconSize="28dp"
-                        app:iconTint="@android:color/white"
+                        android:background="@color/fui_transparent"
+                        android:src="@drawable/maps"
+                        android:scaleType="centerInside"
+                        android:padding="0dp"
                         android:elevation="4dp" />
 
-                    <com.google.android.material.button.MaterialButton
+                    <ImageButton
                         android:id="@+id/img_btn_waze"
-                        style="@style/Widget.Material3.Button.UnelevatedButton"
                         android:layout_width="56dp"
                         android:layout_height="56dp"
                         android:contentDescription="@string/navigation"
-                        android:insetLeft="0dp"
-                        android:insetTop="0dp"
-                        android:insetRight="0dp"
-                        android:insetBottom="0dp"
-                        app:backgroundTint="@color/secondary"
-                        app:cornerRadius="16dp"
-                        app:icon="@drawable/waze"
-                        app:iconGravity="textStart"
-                        app:iconPadding="0dp"
-                        app:iconSize="28dp"
-                        app:iconTint="@android:color/white"
+                        android:background="@color/fui_transparent"
+                        android:src="@drawable/waze"
+                        android:scaleType="centerInside"
+                        android:padding="0dp"
                         android:elevation="4dp" />
 
                 </LinearLayout>

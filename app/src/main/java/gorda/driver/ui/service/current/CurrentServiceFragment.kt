@@ -19,6 +19,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Chronometer
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -33,7 +34,6 @@ import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
@@ -68,8 +68,8 @@ class CurrentServiceFragment : Fragment() {
 
     private val mainViewModel: MainViewModel by activityViewModels()
     private lateinit var btnStatus: Button
-    private lateinit var imgBtnMaps: MaterialButton
-    private lateinit var imgButtonWaze: MaterialButton
+    private lateinit var imgBtnMaps: ImageButton
+    private lateinit var imgButtonWaze: ImageButton
     private lateinit var textName: TextView
     private lateinit var textPhone: TextView
     private lateinit var textAddress: TextView
