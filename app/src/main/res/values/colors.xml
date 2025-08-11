@@ -11,7 +11,7 @@
     <color name="primary_variant">#000000</color>
 
     <!-- Enhanced Secondary Colors - Refined gold/bronze with better accessibility -->
-    <color name="secondary">#C4A47C</color>
+    <color name="secondary">#B1946D</color>
     <color name="secondary_light">#F5F5F5</color>
     <color name="secondary_dark">#8B7355</color>
     <color name="secondary_variant">#F0F0F0</color>
