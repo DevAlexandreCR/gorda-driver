@@ -25,12 +25,10 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -87,7 +85,6 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var textPriceBase: TextView
     private lateinit var textFareMultiplier: TextView
     private lateinit var textTotalFee: TextView
-    private lateinit var layoutFees: ConstraintLayout
     private lateinit var scrollViewFees: ScrollView
     private lateinit var feeDetailsHeader: LinearLayout
     private lateinit var feeDetailsContent: LinearLayout
@@ -107,8 +104,6 @@ class CurrentServiceFragment : Fragment() {
     private var totalDistance = 0.0
     private var startingRide = false
     private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var fragmentManager: FragmentManager
-    private lateinit var transaction: FragmentTransaction
     private lateinit var homeFragment: HomeFragment
     private var isServiceBound = false
 
@@ -173,14 +168,12 @@ class CurrentServiceFragment : Fragment() {
         imgBtnMaps = binding.serviceLayout.imgBtnMaps
         imgButtonWaze = binding.serviceLayout.imgBtnWaze
         chronometer = binding.chronometer
-        layoutFees = binding.layoutFees
         scrollViewFees = binding.scrollViewFees
         feeDetailsHeader = binding.feeDetailsHeader
         feeDetailsContent = binding.feeDetailsContent
         expandIcon = binding.expandIcon
 
         homeFragment = HomeFragment()
-        fragmentManager = childFragmentManager
         connectionServiceButton = binding.connectedServiceButton
 
         mainViewModel.isLoading.observe(viewLifecycleOwner) { loading ->
@@ -277,10 +270,11 @@ class CurrentServiceFragment : Fragment() {
         mainViewModel.nextService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 connectionDialog = ConnectionServiceDialog(service)
-                connectionServiceButton.visibility = ConstraintLayout.VISIBLE
+                connectionServiceButton.visibility = View.VISIBLE
+                toggleFragmentButton.visibility = View.GONE
             } else {
                 connectionDialog = null
-                connectionServiceButton.visibility = ConstraintLayout.INVISIBLE
+                connectionServiceButton.visibility = View.INVISIBLE
             }
         }
 
@@ -392,19 +386,18 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private fun toggleFragment() {
-        transaction = fragmentManager.beginTransaction()
+        val ft = childFragmentManager.beginTransaction()
 
         if (homeFragment.isAdded) {
-            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
-            transaction.remove(homeFragment)
+            ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
+            ft.remove(homeFragment)
             toggleFragmentButton.setImageResource(R.drawable.service_list_24)
         } else {
-            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-            transaction.replace(binding.root.id, homeFragment)
+            ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+            ft.replace(binding.root.id, homeFragment)
             toggleFragmentButton.setImageResource(R.drawable.current_return_24)
         }
-
-        transaction.commit()
+        ft.commit()
     }
 
     private fun setOnClickListener(service: Service) {
