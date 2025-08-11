@@ -92,12 +92,6 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var feeDetailsHeader: LinearLayout
     private lateinit var feeDetailsContent: LinearLayout
     private lateinit var expandIcon: ImageView
-
-    // New slide-up/down interface elements
-    private lateinit var collapsedHeader: LinearLayout
-    private lateinit var expandCollapseIcon: ImageView
-    private var isServiceExpanded = false
-
     private var isExpanded = false
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
