@@ -295,33 +295,4 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-
-    <!-- Enhanced Primary Action Button -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_service_status"
-        style="@style/Widget.Material3.Button.UnelevatedButton"
-        android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="20dp"
-        android:text="@string/service_have_arrived"
-        android:textAllCaps="false"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        app:backgroundTint="@color/secondary"
-        android:textColor="@android:color/white"
-        app:cornerRadius="20dp"
-        app:icon="@drawable/add_24"
-        app:iconGravity="textStart"
-        app:iconSize="24dp"
-        app:iconTint="@android:color/white"
-        android:elevation="8dp"
-        android:shadowColor="@android:color/black"
-        android:shadowDx="0"
-        android:shadowDy="4"
-        android:shadowRadius="8"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>

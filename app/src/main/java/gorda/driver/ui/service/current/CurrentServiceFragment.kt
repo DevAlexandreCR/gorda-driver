@@ -175,7 +175,7 @@ class CurrentServiceFragment : Fragment() {
         textCurrentTimePrice = binding.textPriceByTime
         textFareMultiplier = binding.textFareMultiplier
         textTotalFee = binding.textPrice
-        btnStatus = binding.serviceLayout.btnServiceStatus
+        btnStatus = binding.btnServiceStatus
         imgBtnMaps = binding.serviceLayout.imgBtnMaps
         imgButtonWaze = binding.serviceLayout.imgBtnWaze
         chronometer = binding.chronometer
