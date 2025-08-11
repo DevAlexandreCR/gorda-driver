@@ -72,16 +72,6 @@
 
         </LinearLayout>
 
-        <ImageView
-            android:id="@+id/expandCollapseIcon"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:src="@drawable/ic_expand_more_24"
-            android:contentDescription="@string/expand_collapse"
-            app:tint="@color/secondary"
-            android:rotation="180"
-            android:layout_marginStart="12dp" />
-
     </LinearLayout>
 
     <!-- Enhanced Expandable Content - Service Details -->
