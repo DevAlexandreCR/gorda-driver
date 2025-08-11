@@ -153,7 +153,7 @@
                         <ImageView
                             android:layout_width="28dp"
                             android:layout_height="28dp"
-                            android:src="@drawable/audiotrack_24"
+                            android:src="@drawable/ic_time"
                             android:contentDescription="@string/time"
                             app:tint="@color/secondary"
                             android:layout_marginBottom="12dp" />
