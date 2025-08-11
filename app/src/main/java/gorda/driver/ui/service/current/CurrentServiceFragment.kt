@@ -95,7 +95,6 @@ class CurrentServiceFragment : Fragment() {
 
     // New slide-up/down interface elements
     private lateinit var collapsedHeader: LinearLayout
-    private lateinit var expandableContent: ScrollView
     private lateinit var expandCollapseIcon: ImageView
     private var isServiceExpanded = false
 
@@ -186,17 +185,9 @@ class CurrentServiceFragment : Fragment() {
         feeDetailsContent = binding.feeDetailsContent
         expandIcon = binding.expandIcon
 
-        // Initialize new slide-up/down interface elements
-        collapsedHeader = binding.serviceLayout.collapsedHeader
-        expandableContent = binding.serviceLayout.expandableContent
-        expandCollapseIcon = binding.serviceLayout.expandCollapseIcon
-
         homeFragment = HomeFragment()
         fragmentManager = childFragmentManager
         connectionServiceButton = binding.connectedServiceButton
-
-        // Setup slide-up/down functionality
-        setupServiceSlideInterface()
 
         mainViewModel.isLoading.observe(viewLifecycleOwner) { loading ->
             btnStatus.isEnabled = !loading
@@ -384,41 +375,6 @@ class CurrentServiceFragment : Fragment() {
             toggleFragment()
         }
         return root
-    }
-
-    private fun setupServiceSlideInterface() {
-        collapsedHeader.setOnClickListener {
-            toggleServiceDetails()
-        }
-    }
-
-    private fun toggleServiceDetails() {
-        isServiceExpanded = !isServiceExpanded
-
-        if (isServiceExpanded) {
-            // Expand - slide up
-            expandableContent.visibility = View.VISIBLE
-            expandCollapseIcon.animate().rotation(0f).setDuration(300).start()
-
-            // Animate the content sliding up
-            expandableContent.alpha = 0f
-            expandableContent.animate()
-                .alpha(1f)
-                .setDuration(300)
-                .start()
-        } else {
-            // Collapse - slide down
-            expandCollapseIcon.animate().rotation(180f).setDuration(300).start()
-
-            // Animate the content sliding down
-            expandableContent.animate()
-                .alpha(0f)
-                .setDuration(300)
-                .withEndAction {
-                    expandableContent.visibility = View.GONE
-                }
-                .start()
-        }
     }
 
     private fun setupFeeDetailsCollapse() {
