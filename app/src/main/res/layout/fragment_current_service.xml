@@ -101,7 +101,7 @@
 
                     <TextView
                         android:id="@+id/textPrice"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:letterSpacing="0.02"
                         android:shadowColor="@android:color/black"
@@ -111,7 +111,10 @@
                         android:text="@string/service_running"
                         android:textColor="@android:color/white"
                         android:textSize="48sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:ellipsize="end"
+                        android:lines="1" />
 
                 </LinearLayout>
 
@@ -176,7 +179,8 @@
                             android:text=""
                             android:textColor="@android:color/white"
                             android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:lines="1"/>
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -204,7 +208,8 @@
                                 android:alpha="0.9"
                                 android:text="@string/min"
                                 android:textColor="@android:color/white"
-                                android:textSize="14sp" />
+                                android:textSize="14sp"
+                                android:lines="1"/>
 
                         </LinearLayout>
 
@@ -253,6 +258,7 @@
                             android:text=""
                             android:textColor="@android:color/white"
                             android:textSize="20sp"
+                            android:lines="1"
                             android:textStyle="bold" />
 
                         <LinearLayout
