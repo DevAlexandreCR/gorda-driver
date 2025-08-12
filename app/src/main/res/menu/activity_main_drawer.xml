@@ -3,31 +3,46 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
 
+    <!-- Main Navigation Group -->
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_home"
-            android:icon="@drawable/ic_person_pin_24"
+            android:icon="@drawable/service_list_24"
             android:title="@string/menu_home" />
         <item
-            android:id="@+id/nav_profile"
-            android:icon="@drawable/ic_profile_24"
-            android:title="@string/menu_profile" />
-        <item
-            android:id="@+id/nav_settings"
-            android:icon="@android:drawable/ic_menu_manage"
-            android:title="@string/action_settings" />
-        <item
             android:id="@+id/nav_history"
-            android:icon="@android:drawable/ic_menu_recent_history"
+            android:icon="@drawable/ic_history_24"
             android:title="@string/action_history" />
-        <item
-            android:id="@+id/nav_about"
-            android:icon="@drawable/ic_baseline_info_24"
-            android:title="@string/about" />
     </group>
-    <item
-        android:id="@+id/logout"
-        android:icon="@drawable/ic_clear_24"
-        android:title="@string/logout"
-        android:visible="true" />
+
+    <!-- Settings & Info -->
+    <item android:title="@string/action_settings">
+        <menu>
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@drawable/ic_baseline_info_24"
+                android:title="@string/notifications" />
+        </menu>
+    </item>
+
+    <!-- Account Actions -->
+    <item android:title="@string/menu_profile">
+        <menu>
+            <item
+                android:id="@+id/nav_profile"
+                android:icon="@drawable/ic_profile_24"
+                android:title="@string/menu_profile" />
+        </menu>
+    </item>
+
+    <!-- Settings & Info -->
+    <item android:title="@string/about">
+        <menu>
+            <item
+                android:id="@+id/nav_about"
+                android:icon="@drawable/ic_baseline_info_24"
+                android:title="@string/about" />
+        </menu>
+    </item>
+
 </menu>

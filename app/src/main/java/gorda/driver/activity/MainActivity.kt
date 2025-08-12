@@ -190,10 +190,6 @@ class MainActivity : AppCompatActivity() {
         snackBar.setTextColor(getColor(R.color.white))
 
         navView.setNavigationItemSelectedListener { item ->
-            if (item.itemId == R.id.logout) {
-                driver?.let { viewModel.disconnect(it) }
-                Auth.logOut(this)
-            }
             NavigationUI.onNavDestinationSelected(item, navController)
             drawerLayout.closeDrawer(GravityCompat.START)
             true
