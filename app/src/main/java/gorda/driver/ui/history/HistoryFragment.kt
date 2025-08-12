@@ -4,12 +4,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import gorda.driver.databinding.FragmentHistoryBinding
 import gorda.driver.helpers.withTimeout
 import gorda.driver.ui.MainViewModel
@@ -20,7 +18,6 @@ class HistoryFragment : Fragment() {
     private var _binding: FragmentHistoryBinding? = null
     private val viewmodel: HistoryViewModel by viewModels()
     private val mainViewModel: MainViewModel by activityViewModels()
-    private lateinit var textSummary: TextView
     private val binding get() = _binding!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,23 +37,71 @@ class HistoryFragment : Fragment() {
     ): View {
         _binding = FragmentHistoryBinding.inflate(inflater, container, false)
         val root: View = binding.root
-        val historyList: RecyclerView = binding.historyList
-        textSummary = binding.textSummary
 
-        viewmodel.summary.observe(viewLifecycleOwner) {
-            textSummary.text = NumberHelper.toCurrency(it, true)
-        }
+        setupRecyclerView()
+        setupObservers()
+        setupClickListeners()
 
-        with(historyList) {
-            viewmodel.serviceList.observe(viewLifecycleOwner) {
-                adapter = HistoryRecyclerViewAdapter(it) {service ->
+        return root
+    }
+
+    private fun setupRecyclerView() {
+        with(binding.historyList) {
+            layoutManager = LinearLayoutManager(context)
+            viewmodel.serviceList.observe(viewLifecycleOwner) { services ->
+                adapter = HistoryRecyclerViewAdapter(services) { service ->
                     val dialog = ServiceDialogFragment(service)
-                    dialog.show(childFragmentManager, ServiceDialogFragment::javaClass.toString())
+                    dialog.show(childFragmentManager, ServiceDialogFragment::class.java.toString())
+                }
+
+                // Show/hide empty state
+                if (services.isEmpty()) {
+                    binding.emptyStateLayout.visibility = View.VISIBLE
+                    binding.historyList.visibility = View.GONE
+                } else {
+                    binding.emptyStateLayout.visibility = View.GONE
+                    binding.historyList.visibility = View.VISIBLE
                 }
             }
-            layoutManager = LinearLayoutManager(context)
         }
-        return root
+    }
+
+    private fun setupObservers() {
+        // Observe summary for period text
+        viewmodel.summary.observe(viewLifecycleOwner) { summary ->
+            binding.textSummaryPeriod.text = NumberHelper.toCurrency(summary, true)
+        }
+
+        // You can add more observers here for the statistics
+        // viewmodel.totalServices.observe(viewLifecycleOwner) { count ->
+        //     binding.textTotalServices.text = count.toString()
+        // }
+        //
+        // viewmodel.totalEarnings.observe(viewLifecycleOwner) { earnings ->
+        //     binding.textTotalEarnings.text = NumberHelper.toCurrency(earnings, false)
+        // }
+        //
+        // viewmodel.averageRating.observe(viewLifecycleOwner) { rating ->
+        //     binding.textAverageRating.text = String.format("%.1f", rating)
+        // }
+    }
+
+    private fun setupClickListeners() {
+
+        // Refresh button
+        binding.btnRefreshHistory.setOnClickListener {
+            refreshData()
+        }
+    }
+
+    private fun refreshData() {
+        mainViewModel.setLoading(true)
+        viewmodel.getServices().addOnCompleteListener { _ ->
+            mainViewModel.setLoading(false)
+        }.withTimeout {
+            mainViewModel.setLoading(false)
+            mainViewModel.setErrorTimeout(true)
+        }
     }
 
     override fun onDestroyView() {

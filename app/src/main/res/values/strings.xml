@@ -120,4 +120,19 @@
     <string name="multiplier_minimum_value">Minimum multiplier value is 1.0</string>
     <string name="multiplier_updated">Multiplier updated to %1$.1f</string>
     <string name="distance_km">%1$.1f</string>
+
+    <!-- History Fragment Strings -->
+    <string name="history">History</string>
+    <string name="service_history">Service History</string>
+    <string name="history_subtitle">View your completed trips and earnings</string>
+    <string name="filter_history">Filter history</string>
+    <string name="total_services">Total Services</string>
+    <string name="total_earnings">Total Earnings</string>
+    <string name="average_rating">Average Rating</string>
+    <string name="avg_rating">Avg Rating</string>
+    <string name="no_history">No History</string>
+    <string name="no_services_yet">No services yet</string>
+    <string name="start_accepting_services_message">Start accepting services to see your trip history here</string>
+    <string name="export">Export</string>
+    <string name="refresh">Refresh</string>
 </resources>
