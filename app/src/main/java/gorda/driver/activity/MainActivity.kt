@@ -392,9 +392,9 @@ class MainActivity : AppCompatActivity() {
         alertDialog.setCancelable(false)
         alertDialog.setOnShowListener {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setTextColor(resources.getColor(R.color.primary_light, null))
+                .setTextColor(resources.getColor(R.color.secondary, null))
             alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-                .setTextColor(resources.getColor(R.color.primary_light, null))
+                .setTextColor(resources.getColor(R.color.red, null))
         }
         alertDialog.show()
     }

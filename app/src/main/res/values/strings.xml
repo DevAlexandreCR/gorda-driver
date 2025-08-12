@@ -57,6 +57,11 @@
     <string name="allow">Allow</string>
     <string name="disallow">Denny</string>
     <string name="disclosure_title">Use your location</string>
+    <string name="location_access_enables">Location access enables:</string>
+    <string name="feature_nearby_services">Nearby service assignments</string>
+    <string name="feature_realtime_tracking">Real-time tracking during rides</string>
+    <string name="feature_background_notifications">Background service notifications</string>
+    <string name="privacy_assurance">Your location data is only used for service operations and is not shared with third parties.</string>
     <string name="firebase_notification">gorda.driver.services</string>
     <string name="title_activity_start">Loading…</string>
     <string name="new_service_title">New Service!</string>

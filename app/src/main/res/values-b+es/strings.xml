@@ -50,6 +50,11 @@
     <string name="allow">Permitir</string>
     <string name="disallow">Denegar</string>
     <string name="disclosure_title">Usa tu ubicación</string>
+    <string name="location_access_enables">El acceso a la ubicación permite:</string>
+    <string name="feature_nearby_services">Asignación de servicios cercanos</string>
+    <string name="feature_realtime_tracking">Seguimiento en tiempo real durante viajes</string>
+    <string name="feature_background_notifications">Notificaciones de servicios en segundo plano</string>
+    <string name="privacy_assurance">Tus datos de ubicación solo se usan para operaciones del servicio y no se comparten con terceros.</string>
     <string name="firebase_notification">gorda.driver.services</string>
     <string name="new_service_title">Nuevo Servico!</string>
     <string name="new_service_text">Se te ha asignado un nuevo servicio!!!</string>
