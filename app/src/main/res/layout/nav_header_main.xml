@@ -4,36 +4,186 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="@dimen/nav_header_height"
-    android:background="@drawable/side_nav_bar"
+    android:background="@color/secondary_dark"
     android:gravity="bottom"
     android:orientation="vertical"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
-    android:theme="@style/Theme.GordaDriver.AppBarOverlay">
+    android:theme="@style/ThemeOverlay.AppCompat.Dark">
 
-    <ImageView
-        android:id="@+id/drawer_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="@string/nav_header_desc"
-        android:paddingTop="@dimen/nav_header_vertical_spacing"
-        app:srcCompat="@mipmap/ic_launcher_round"
-        tools:ignore="ImageContrastCheck" />
-
-    <TextView
-        android:id="@+id/drawer_name"
+    <!-- App Branding Section -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="@dimen/nav_header_vertical_spacing"
-        android:text="@string/nav_header_title"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-        tools:ignore="TextContrastCheck" />
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/drawer_email"
-        android:layout_width="wrap_content"
+        <!-- App Logo -->
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/circle_green"
+            android:backgroundTint="@android:color/white"
+            android:contentDescription="@string/app_name"
+            android:padding="6dp"
+            android:src="@mipmap/ic_launcher_round" />
+
+        <!-- App Name -->
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:alpha="0.9"
+            android:text="@string/app_name"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- Profile Section Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/nav_header_subtitle" />
+        app:cardBackgroundColor="@color/primary_dark"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="6dp"
+        app:strokeColor="@android:color/white"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Profile Picture and Name Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!-- Profile Picture -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="12dp"
+                    app:cardBackgroundColor="@color/secondary"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="4dp"
+                    app:strokeColor="@android:color/white"
+                    app:strokeWidth="1dp">
+
+                    <ImageView
+                        android:id="@+id/drawer_image"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@string/nav_header_desc"
+                        android:scaleType="centerCrop"
+                        android:src="@mipmap/ic_profile"
+                        tools:ignore="ImageContrastCheck" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Name and Status -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <!-- Driver Name -->
+                    <TextView
+                        android:id="@+id/drawer_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="2dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/nav_header_title"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        tools:ignore="TextContrastCheck" />
+
+                    <!-- Status with Dot -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <!-- Status Dot -->
+                        <View
+                            android:id="@+id/statusDot"
+                            android:layout_width="6dp"
+                            android:layout_height="6dp"
+                            android:layout_marginEnd="4dp"
+                            android:background="@drawable/circle_green"
+                            android:backgroundTint="@color/secondary" />
+
+                        <!-- Status Text -->
+                        <TextView
+                            android:id="@+id/drawer_status"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.8"
+                            android:text="@string/red_blanca_driver"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="8dp"
+                android:alpha="0.3"
+                android:background="@color/secondary" />
+
+            <!-- Email -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginEnd="8dp"
+                    android:alpha="0.7"
+                    android:contentDescription="Email"
+                    android:src="@drawable/ic_baseline_info_24"
+                    app:tint="@color/secondary" />
+
+                <TextView
+                    android:id="@+id/drawer_email"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:alpha="0.7"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/nav_header_subtitle"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
 </LinearLayout>
