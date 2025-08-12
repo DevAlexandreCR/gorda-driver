@@ -144,4 +144,10 @@
     <!-- Service History Dialog Strings -->
     <string name="service_details">Service Details</string>
     <string name="total_amount">Total Amount</string>
+
+    <!-- Profile Fragment Strings -->
+    <string name="personal_information">Personal Information</string>
+    <string name="vehicle_information">Vehicle Information</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="red_blanca_driver">Red Blanca Driver</string>
 </resources>
