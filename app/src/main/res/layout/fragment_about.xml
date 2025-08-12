@@ -183,9 +183,9 @@
                             android:textSize="14sp" />
 
                         <TextView
+                            android:id="@+id/textBuildDate"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="August 2025"
                             android:textColor="@android:color/white"
                             android:textSize="14sp"
                             android:textStyle="bold" />
