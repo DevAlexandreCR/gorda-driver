@@ -7,16 +7,16 @@
     android:background="@color/primary"
     tools:context=".ui.history.HistoryFragment">
 
-    <!-- Enhanced Header Section with Material Design -->
+    <!-- Header Section -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/headerCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="24dp"
         app:cardBackgroundColor="@color/secondary"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="12dp"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -27,14 +27,14 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingHorizontal="28dp"
-            android:paddingVertical="24dp">
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="20dp">
 
             <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:layout_marginEnd="16dp"
-                android:contentDescription="@string/history"
+                android:contentDescription="@string/action_history"
                 android:src="@drawable/ic_history_24"
                 app:tint="@android:color/white" />
 
@@ -49,7 +49,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/service_history"
                     android:textColor="@android:color/white"
-                    android:textSize="24sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -60,25 +60,23 @@
                     android:alpha="0.9"
                     android:text="@string/history_subtitle"
                     android:textColor="@android:color/white"
-                    android:textSize="14sp"
-                    android:textStyle="normal" />
+                    android:textSize="14sp" />
 
             </LinearLayout>
-
 
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Enhanced Summary Statistics Card -->
+    <!-- Statistics Dashboard -->
     <com.google.android.material.card.MaterialCardView
-        android:id="@+id/summaryCard"
+        android:id="@+id/statsCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
+        android:layout_marginHorizontal="20dp"
         android:layout_marginTop="16dp"
         app:cardBackgroundColor="@color/primary_dark"
-        app:cardCornerRadius="16dp"
+        app:cardCornerRadius="20dp"
         app:cardElevation="6dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -91,7 +89,7 @@
             android:layout_height="wrap_content"
             android:baselineAligned="false"
             android:orientation="horizontal"
-            android:padding="20dp">
+            android:padding="24dp">
 
             <!-- Total Services -->
             <LinearLayout
@@ -99,13 +97,12 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:orientation="vertical"
-                android:padding="8dp">
+                android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginBottom="12dp"
                     android:contentDescription="@string/total_services"
                     android:src="@drawable/ic_baseline_directions_car_24"
                     app:tint="@color/secondary" />
@@ -117,8 +114,7 @@
                     android:alpha="0.8"
                     android:text="@string/total_services"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
-                    android:textStyle="normal" />
+                    android:textSize="12sp" />
 
                 <TextView
                     android:id="@+id/textTotalServices"
@@ -126,17 +122,17 @@
                     android:layout_height="wrap_content"
                     android:text="@string/default_zero"
                     android:textColor="@android:color/white"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
             </LinearLayout>
 
-            <!-- Elegant Divider -->
+            <!-- Divider -->
             <View
                 android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:layout_marginHorizontal="16dp"
-                android:alpha="0.6"
+                android:layout_height="60dp"
+                android:layout_marginHorizontal="20dp"
+                android:alpha="0.3"
                 android:background="@color/secondary" />
 
             <!-- Total Earnings -->
@@ -145,13 +141,12 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:orientation="vertical"
-                android:padding="8dp">
+                android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginBottom="12dp"
                     android:contentDescription="@string/total_earnings"
                     android:src="@drawable/ic_monetization_on_24"
                     app:tint="@color/secondary" />
@@ -163,8 +158,7 @@
                     android:alpha="0.8"
                     android:text="@string/total_earnings"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
-                    android:textStyle="normal" />
+                    android:textSize="12sp" />
 
                 <TextView
                     android:id="@+id/textTotalEarnings"
@@ -172,17 +166,17 @@
                     android:layout_height="wrap_content"
                     android:text="@string/default_currency"
                     android:textColor="@android:color/white"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
             </LinearLayout>
 
-            <!-- Elegant Divider -->
+            <!-- Divider -->
             <View
                 android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:layout_marginHorizontal="16dp"
-                android:alpha="0.6"
+                android:layout_height="60dp"
+                android:layout_marginHorizontal="20dp"
+                android:alpha="0.3"
                 android:background="@color/secondary" />
 
             <!-- Average Rating -->
@@ -191,13 +185,12 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:orientation="vertical"
-                android:padding="8dp">
+                android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginBottom="12dp"
                     android:contentDescription="@string/average_rating"
                     android:src="@drawable/ic_star_24"
                     app:tint="@color/secondary" />
@@ -209,8 +202,7 @@
                     android:alpha="0.8"
                     android:text="@string/avg_rating"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
-                    android:textStyle="normal" />
+                    android:textSize="12sp" />
 
                 <TextView
                     android:id="@+id/textAverageRating"
@@ -218,7 +210,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/default_rating"
                     android:textColor="@android:color/white"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
             </LinearLayout>
@@ -227,41 +219,48 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Enhanced RecyclerView with better spacing and styling -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/historyList"
+    <!-- Services List -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
-        android:clipToPadding="false"
-        android:paddingHorizontal="16dp"
-        android:paddingBottom="16dp"
-        android:scrollbars="none"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintBottom_toTopOf="@+id/bottomSection"
+        app:layout_constraintBottom_toTopOf="@+id/summarySection"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/summaryCard" />
+        app:layout_constraintTop_toBottomOf="@+id/statsCard">
 
-    <!-- Enhanced Empty State -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/historyList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="16dp"
+            android:scrollbars="none"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Empty State -->
     <LinearLayout
         android:id="@+id/emptyStateLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="32dp"
+        android:padding="40dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@+id/bottomSection"
+        app:layout_constraintBottom_toTopOf="@+id/summarySection"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/summaryCard">
+        app:layout_constraintTop_toBottomOf="@+id/statsCard">
 
         <ImageView
-            android:layout_width="96dp"
-            android:layout_height="96dp"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
             android:layout_marginBottom="24dp"
-            android:alpha="0.6"
+            android:alpha="0.7"
             android:contentDescription="@string/no_history"
             android:src="@drawable/ic_history_empty_state"
             app:tint="@color/secondary" />
@@ -269,10 +268,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="12dp"
             android:text="@string/no_services_yet"
             android:textColor="@android:color/white"
-            android:textSize="20sp"
+            android:textSize="24sp"
             android:textStyle="bold" />
 
         <TextView
@@ -282,44 +281,39 @@
             android:gravity="center"
             android:text="@string/start_accepting_services_message"
             android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:textStyle="normal" />
+            android:textSize="16sp" />
 
     </LinearLayout>
 
-    <!-- Enhanced Bottom Section with Material Design -->
+    <!-- Summary Section -->
     <LinearLayout
-        android:id="@+id/bottomSection"
+        android:id="@+id/summarySection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/primary_dark"
         android:orientation="vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="12dp"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <!-- Period Summary Text with better styling -->
         <TextView
             android:id="@+id/textSummaryPeriod"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="16dp"
             android:alpha="0.9"
             android:text="@string/summary_text"
             android:textColor="@android:color/white"
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <!-- Enhanced Action Buttons -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_refresh_history"
-            style="@style/Widget.Material3.Button.UnelevatedButton"
+            android:id="@+id/btnRefreshHistory"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:elevation="6dp"
             android:text="@string/refresh"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
@@ -331,10 +325,9 @@
             app:iconSize="20dp"
             app:iconTint="@android:color/white" />
 
-
     </LinearLayout>
 
-    <!-- Loading Progress Indicator -->
+    <!-- Loading Indicator -->
     <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/progressIndicator"
         android:layout_width="wrap_content"

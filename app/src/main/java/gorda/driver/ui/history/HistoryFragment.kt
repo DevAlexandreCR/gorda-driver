@@ -67,23 +67,16 @@ class HistoryFragment : Fragment() {
     }
 
     private fun setupObservers() {
-        // Observe summary for period text
         viewmodel.summary.observe(viewLifecycleOwner) { summary ->
             binding.textSummaryPeriod.text = NumberHelper.toCurrency(summary, true)
+            binding.textTotalEarnings.text = NumberHelper.toCurrency(summary, false)
         }
 
-        // You can add more observers here for the statistics
-        // viewmodel.totalServices.observe(viewLifecycleOwner) { count ->
-        //     binding.textTotalServices.text = count.toString()
-        // }
-        //
-        // viewmodel.totalEarnings.observe(viewLifecycleOwner) { earnings ->
-        //     binding.textTotalEarnings.text = NumberHelper.toCurrency(earnings, false)
-        // }
-        //
-        // viewmodel.averageRating.observe(viewLifecycleOwner) { rating ->
-        //     binding.textAverageRating.text = String.format("%.1f", rating)
-        // }
+         viewmodel.serviceList.observe(viewLifecycleOwner) { list ->
+             binding.textTotalServices.text = list.size.toString()
+         }
+
+         binding.textAverageRating.text = String.format("%.1f", 5.0)
     }
 
     private fun setupClickListeners() {
