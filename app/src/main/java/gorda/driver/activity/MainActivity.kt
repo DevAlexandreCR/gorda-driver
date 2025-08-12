@@ -104,7 +104,11 @@ class MainActivity : AppCompatActivity() {
     private val locationBroadcastReceiver =
         LocationBroadcastReceiver(object : LocationUpdateInterface {
             override fun onUpdate(intent: Intent) {
-                val extra: Location? = intent.getParcelableExtra(LOCATION_EXTRA)
+                val extra: Location? = if (Utils.isNewerVersion(Build.VERSION_CODES.TIRAMISU)) {
+                    intent.getParcelableExtra(LOCATION_EXTRA, Location::class.java)
+                } else {
+                    intent.getParcelableExtra(LOCATION_EXTRA)
+                }
                 extra?.let { location ->
                     viewModel.updateLocation(location)
                 }
