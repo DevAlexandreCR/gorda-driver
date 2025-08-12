@@ -143,4 +143,8 @@
     <string name="vehicle_information">Información del Vehículo</string>
     <string name="privacy_policy">Política de Privacidad</string>
     <string name="red_blanca_driver">Conductor Red Blanca</string>
+    <string name="logout_confirmation">¿Estás seguro de que quieres cerrar sesión?</string>
+    <string name="logout_error_title">Error</string>
+    <string name="logout_error_message">Error al cerrar sesión. Por favor intenta de nuevo.</string>
+    <string name="ok">OK</string>
 </resources>

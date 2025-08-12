@@ -150,4 +150,8 @@
     <string name="vehicle_information">Vehicle Information</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="red_blanca_driver">Red Blanca Driver</string>
+    <string name="logout_confirmation">Are you sure you want to log out?</string>
+    <string name="logout_error_title">Error</string>
+    <string name="logout_error_message">Failed to logout. Please try again.</string>
+    <string name="ok">OK</string>
 </resources>
