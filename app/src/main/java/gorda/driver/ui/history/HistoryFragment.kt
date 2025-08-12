@@ -68,15 +68,12 @@ class HistoryFragment : Fragment() {
 
     private fun setupObservers() {
         viewmodel.summary.observe(viewLifecycleOwner) { summary ->
-            binding.textSummaryPeriod.text = NumberHelper.toCurrency(summary, true)
             binding.textTotalEarnings.text = NumberHelper.toCurrency(summary, false)
         }
 
          viewmodel.serviceList.observe(viewLifecycleOwner) { list ->
              binding.textTotalServices.text = list.size.toString()
          }
-
-         binding.textAverageRating.text = String.format("%.1f", 5.0)
     }
 
     private fun setupClickListeners() {

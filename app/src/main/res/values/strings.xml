@@ -122,17 +122,17 @@
     <string name="distance_km">%1$.1f</string>
 
     <!-- History Fragment Strings -->
-    <string name="history">Today&apos;s History</string>
-    <string name="service_history">Today&apos;s Services</string>
+    <string name="history">Today\'s History</string>
+    <string name="service_history">Today\'s Services</string>
     <string name="history_subtitle">View your completed trips and earnings for today</string>
     <string name="filter_history">Filter history</string>
-    <string name="total_services">Today&apos;s Services</string>
-    <string name="total_earnings">Today&apos;s Earnings</string>
+    <string name="total_services">Today\'s Services</string>
+    <string name="total_earnings">Today\'s Earnings</string>
     <string name="average_rating">Average Rating</string>
     <string name="avg_rating">Avg Rating</string>
     <string name="no_history">No History</string>
     <string name="no_services_yet">No services today</string>
-    <string name="start_accepting_services_message">Start accepting services to see today&apos;s trip history here</string>
+    <string name="start_accepting_services_message">Start accepting services to see today\'s trip history here</string>
     <string name="export">Export</string>
     <string name="refresh">Refresh</string>
 
