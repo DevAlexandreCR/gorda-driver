@@ -147,4 +147,24 @@
     <string name="logout_error_title">Error</string>
     <string name="logout_error_message">Error al cerrar sesión. Por favor intenta de nuevo.</string>
     <string name="ok">OK</string>
+
+    <!-- Navigation Drawer Menu Groups -->
+    <string name="app_settings">Configuración de la App</string>
+    <string name="support_info">Soporte e Información</string>
+    <string name="account_actions">Cuenta</string>
+
+    <!-- About Fragment Strings -->
+    <string name="build_date">Fecha de Compilación</string>
+    <string name="company_description">Servicios de transporte profesional en Colombia. Conectando conductores con pasajeros para viajes seguros y confiables.</string>
+    <string name="red_blanca_company">Red Blanca</string>
+    <string name="colombia_location">Colombia</string>
+    <string name="legal_information">Información Legal</string>
+
+    <!-- Content Descriptions -->
+    <string name="content_desc_app_logo">Logo de la App</string>
+    <string name="content_desc_about_info">Información Acerca de</string>
+    <string name="content_desc_company_info">Información de la Empresa</string>
+    <string name="content_desc_location">Ubicación</string>
+    <string name="content_desc_legal_info">Información Legal</string>
+    <string name="content_desc_privacy_policy">Política de Privacidad</string>
 </resources>

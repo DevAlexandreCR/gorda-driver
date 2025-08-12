@@ -154,4 +154,24 @@
     <string name="logout_error_title">Error</string>
     <string name="logout_error_message">Failed to logout. Please try again.</string>
     <string name="ok">OK</string>
+
+    <!-- Navigation Drawer Menu Groups -->
+    <string name="app_settings">App Settings</string>
+    <string name="support_info">Support &amp; Info</string>
+    <string name="account_actions">Account</string>
+
+    <!-- About Fragment Strings -->
+    <string name="build_date">Build Date</string>
+    <string name="company_description">Professional transportation services in Colombia. Connecting drivers with passengers for safe and reliable rides.</string>
+    <string name="red_blanca_company">Red Blanca</string>
+    <string name="colombia_location">Colombia</string>
+    <string name="legal_information">Legal Information</string>
+
+    <!-- Content Descriptions -->
+    <string name="content_desc_app_logo">App Logo</string>
+    <string name="content_desc_about_info">About Information</string>
+    <string name="content_desc_company_info">Company Information</string>
+    <string name="content_desc_location">Location</string>
+    <string name="content_desc_legal_info">Legal Information</string>
+    <string name="content_desc_privacy_policy">Privacy Policy</string>
 </resources>
