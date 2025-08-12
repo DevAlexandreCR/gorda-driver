@@ -365,6 +365,18 @@ class CurrentServiceFragment : Fragment() {
         return root
     }
 
+    override fun onResume() {
+        super.onResume()
+        checkAndBindToExistingService()
+    }
+
+    private fun checkAndBindToExistingService() {
+        if (!isServiceBound && ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
+            val intentFee = Intent(requireContext(), FeesService::class.java)
+            requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
+        }
+    }
+
     private fun setupFeeDetailsCollapse() {
         feeDetailsHeader.setOnClickListener {
             toggleFeeDetails()
