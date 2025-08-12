@@ -1,17 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:background="@color/surface"
+    android:padding="@dimen/activity_horizontal_margin">
 
-    <EditText
-        android:id="@+id/dialog_fee_multiplier"
-        android:layout_width="match_parent"
+    <!-- Enhanced input field with Material Design styling -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/multiplier_input_layout"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginStart="@dimen/activity_horizontal_margin"
-        android:layout_marginEnd="@dimen/activity_horizontal_margin"
-        android:ems="10"
-        android:inputType="numberDecimal"
-        android:textAlignment="center"
-        android:textColor="@color/secondary_light" />
-</androidx.appcompat.widget.LinearLayoutCompat>
+        android:layout_marginTop="@dimen/min_margin"
+        android:layout_marginBottom="@dimen/min_margin"
+        app:boxBackgroundMode="outline"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxStrokeColor="@color/secondary"
+        app:boxStrokeWidth="2dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.8">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/dialog_fee_multiplier"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:textAlignment="center"
+            android:textColor="@color/secondary_light"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:selectAllOnFocus="true"
+            android:maxLength="4"
+            android:minHeight="56dp"
+            tools:text="1.5" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Visual indicator for multiplier effect -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/text_margin"
+        android:orientation="horizontal"
+        android:gravity="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/multiplier_input_layout">
+
+        <!-- Base fare indicator -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/primary_light"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="1.0x"
+            android:textColor="@color/primary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            tools:ignore="HardcodedText" />
+
+        <!-- Arrow indicator -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="8dp"
+            android:text="→"
+            android:textColor="@color/secondary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            tools:ignore="HardcodedText" />
+
+        <!-- Multiplied fare indicator -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/secondary"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="X.Xx"
+            android:textColor="@color/primary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            tools:ignore="HardcodedText" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
