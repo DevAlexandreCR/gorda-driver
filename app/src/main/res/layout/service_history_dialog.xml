@@ -4,8 +4,8 @@
     android:id="@+id/dialog_history"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:minHeight="500dp"
     android:background="@color/primary"
+    android:minHeight="500dp"
     android:padding="20dp">
 
     <!-- Header Section with improved design -->
