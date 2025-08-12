@@ -133,4 +133,8 @@
     <string name="default_zero">0</string>
     <string name="default_currency">$0.00</string>
     <string name="default_rating">5.0</string>
+
+    <!-- Service History Dialog Strings -->
+    <string name="service_details">Detalles del Servicio</string>
+    <string name="total_amount">Monto Total</string>
 </resources>
