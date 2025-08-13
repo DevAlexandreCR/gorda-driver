@@ -84,6 +84,7 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var textPriceMinFee: TextView
     private lateinit var textPriceBase: TextView
     private lateinit var textFareMultiplier: TextView
+    private lateinit var textFareMultiplierDisplay: TextView
     private lateinit var textTotalFee: TextView
     private lateinit var scrollViewFees: ScrollView
     private lateinit var feeDetailsHeader: LinearLayout
@@ -163,6 +164,7 @@ class CurrentServiceFragment : Fragment() {
         textTimePrice = binding.textTimeFare
         textCurrentTimePrice = binding.textPriceByTime
         textFareMultiplier = binding.textFareMultiplier
+        textFareMultiplierDisplay = binding.textFareMultiplierDisplay
         textTotalFee = binding.textPrice
         btnStatus = binding.btnServiceStatus
         imgBtnMaps = binding.serviceLayout.imgBtnMaps
@@ -289,6 +291,7 @@ class CurrentServiceFragment : Fragment() {
             textCurrentTimePrice.text = NumberHelper.toCurrency(feeData.timeFee)
             textCurrentDistancePrice.text = NumberHelper.toCurrency(feeData.distanceFee)
             textCurrentDistance.text = getString(R.string.distance_km, feeData.totalDistance / 1000)
+            textFareMultiplierDisplay.text = feeMultiplier.toString()
 
             // Show toggle button based on elapsed time, but only if there's no next service
             if (mainViewModel.nextService.value == null) {
