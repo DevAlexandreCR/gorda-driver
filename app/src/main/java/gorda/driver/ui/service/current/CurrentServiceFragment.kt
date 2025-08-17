@@ -527,27 +527,8 @@ class CurrentServiceFragment : Fragment() {
                         val dialogFinalize: AlertDialog = builderFinalize.create()
                         dialogFinalize.show()
                     } else {
-                        service.metadata.end_trip_at = now
-                        service.updateMetadata()
-                            .addOnSuccessListener {
-                                stopFeeService()
-                                mainViewModel.setLoading(false)
-                                mainViewModel.completeCurrentService()
-                                Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
-                                findNavController().navigate(R.id.nav_home)
-                            }
-                            .addOnFailureListener {
-                                mainViewModel.setLoading(false)
-                                btnStatus.text = endTrip
-                                service.metadata.end_trip_at = null
-                                it.message?.let { message -> Log.e(TAG, message) }
-                                Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
-                            }.withTimeout {
-                                mainViewModel.setLoading(false)
-                                btnStatus.text = endTrip
-                                service.metadata.end_trip_at = null
-                                mainViewModel.setErrorTimeout(true)
-                            }
+                        Toast.makeText(requireContext(), getString(R.string.cannot_complete_service_yet, this.fees.timeoutToComplete / 60), Toast.LENGTH_SHORT).show()
+                        mainViewModel.setLoading(false)
                     }
                 }
             }
