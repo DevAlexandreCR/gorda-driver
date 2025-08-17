@@ -34,6 +34,7 @@ import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
@@ -362,6 +363,9 @@ class CurrentServiceFragment : Fragment() {
         // Setup collapsible fee details
         setupFeeDetailsCollapse()
 
+        // Setup bottom sheet behavior to start expanded
+        setupBottomSheetBehavior(BottomSheetBehavior.STATE_EXPANDED)
+
         toggleFragmentButton.setOnClickListener {
             toggleFragment()
         }
@@ -378,6 +382,14 @@ class CurrentServiceFragment : Fragment() {
             val intentFee = Intent(requireContext(), FeesService::class.java)
             requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
         }
+    }
+
+    private fun setupBottomSheetBehavior(state: Int) {
+        val serviceLayoutView = binding.serviceLayout.root
+        val bottomSheetBehavior = BottomSheetBehavior.from(serviceLayoutView)
+
+        // Expand the bottom sheet programmatically on start
+        bottomSheetBehavior.state = state
     }
 
     private fun setupFeeDetailsCollapse() {
@@ -455,6 +467,7 @@ class CurrentServiceFragment : Fragment() {
                             service.updateMetadata()
                                 .addOnSuccessListener {
                                     mainViewModel.setLoading(false)
+                                    setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
                                     val inputMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
                                     feeMultiplier = if (inputMultiplier < 1.0) 1.0 else inputMultiplier
                                     textFareMultiplier.text = feeMultiplier.toString()
