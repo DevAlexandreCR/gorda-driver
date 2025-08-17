@@ -217,7 +217,7 @@ class FeesService: Service() {
         val distanceFee = getDistanceFee()
         val baseFee = rideFees.feesBase
         val total = (baseFee + timeFee + distanceFee + rideFees.priceAddFee) * multiplier
-        val finalFee = maxOf(total, rideFees.priceMinFee)
+        val finalFee = maxOf(total, rideFees.priceMinFee * multiplier)
 
         return finalFee
     }
