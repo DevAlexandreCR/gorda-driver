@@ -375,6 +375,7 @@ class CurrentServiceFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         checkAndBindToExistingService()
+        if (btnStatus.text == endTrip) setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
     }
 
     private fun checkAndBindToExistingService() {
@@ -388,7 +389,6 @@ class CurrentServiceFragment : Fragment() {
         val serviceLayoutView = binding.serviceLayout.root
         val bottomSheetBehavior = BottomSheetBehavior.from(serviceLayoutView)
 
-        // Expand the bottom sheet programmatically on start
         bottomSheetBehavior.state = state
     }
 
