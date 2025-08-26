@@ -503,13 +503,13 @@ class CurrentServiceFragment : Fragment() {
                 else -> {
                     if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > this.fees.timeoutToComplete) {
                         val builderFinalize = AlertDialog.Builder(requireContext())
-                        val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee()))
+                        val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee(), true))
                         builderFinalize.setTitle(R.string.finalize_service)
                             .setCancelable(false)
                             .setMessage(StringHelper.getString(message))
                             .setPositiveButton(R.string.yes) { _, _ ->
                                 val tripDistance = NumberHelper.roundDouble(totalDistance).toInt()
-                                val tripFee = getTotalFee().toInt()
+                                val tripFee = NumberHelper.roundDouble(getTotalFee()).toInt()
                                 val route = ServiceMetadata.serializeRoute(feesService.getPoints())
                                 val tripMultiplier = feeMultiplier
                                 service.terminate(route, tripDistance, tripFee, tripMultiplier)
