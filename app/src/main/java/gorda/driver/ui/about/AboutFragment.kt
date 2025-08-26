@@ -2,11 +2,11 @@ package gorda.driver.ui.about
 
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.fragment.app.Fragment
 import gorda.driver.BuildConfig
 import gorda.driver.databinding.FragmentAboutBinding
 
@@ -31,6 +31,8 @@ class AboutFragment : Fragment() {
 
         textVersion.text = BuildConfig.VERSION_NAME
         textPrivacy.movementMethod = LinkMovementMethod.getInstance()
+
+        binding.textBuildDate.text = BuildConfig.BUILD_DATE
 
         return binding.root
     }

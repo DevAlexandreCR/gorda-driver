@@ -190,10 +190,6 @@ class MainActivity : AppCompatActivity() {
         snackBar.setTextColor(getColor(R.color.white))
 
         navView.setNavigationItemSelectedListener { item ->
-            if (item.itemId == R.id.logout) {
-                driver?.let { viewModel.disconnect(it) }
-                Auth.logOut(this)
-            }
             NavigationUI.onNavDestinationSelected(item, navController)
             drawerLayout.closeDrawer(GravityCompat.START)
             true
@@ -396,9 +392,9 @@ class MainActivity : AppCompatActivity() {
         alertDialog.setCancelable(false)
         alertDialog.setOnShowListener {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setTextColor(resources.getColor(R.color.primary_light, null))
+                .setTextColor(resources.getColor(R.color.secondary, null))
             alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-                .setTextColor(resources.getColor(R.color.primary_light, null))
+                .setTextColor(resources.getColor(R.color.red, null))
         }
         alertDialog.show()
     }

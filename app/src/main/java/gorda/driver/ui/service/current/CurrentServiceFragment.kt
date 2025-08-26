@@ -18,30 +18,34 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Chronometer
-import android.widget.Chronometer.OnChronometerTickListener
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
+import gorda.driver.background.FeesService.Companion.CURRENT_FEES
+import gorda.driver.background.FeesService.Companion.FEE_MULTIPLIER
+import gorda.driver.background.FeesService.Companion.ORIGIN
+import gorda.driver.background.FeesService.Companion.RESUME_RIDE
 import gorda.driver.databinding.FragmentCurrentServiceBinding
 import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.RideFees
 import gorda.driver.interfaces.ServiceMetadata
-import gorda.driver.maps.Map
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.history.ServiceDialogFragment
@@ -51,18 +55,18 @@ import gorda.driver.utils.Constants
 import gorda.driver.utils.NumberHelper
 import gorda.driver.utils.ServiceHelper
 import gorda.driver.utils.StringHelper
-import gorda.driver.utils.Utils
 import java.util.Date
 import java.util.Locale
 
-
-class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
+class CurrentServiceFragment : Fragment() {
 
     companion object {
         const val TAG = "CurrentServiceFragment"
     }
 
     private var _binding: FragmentCurrentServiceBinding? = null
+    private val binding get() = _binding!!
+
     private val mainViewModel: MainViewModel by activityViewModels()
     private lateinit var btnStatus: Button
     private lateinit var imgBtnMaps: ImageButton
@@ -70,6 +74,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var textName: TextView
     private lateinit var textPhone: TextView
     private lateinit var textAddress: TextView
+    private lateinit var textAddressPreview: TextView
     private lateinit var textComment: TextView
     private lateinit var textTimePrice: TextView
     private lateinit var textCurrentTimePrice: TextView
@@ -80,15 +85,19 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private lateinit var textPriceMinFee: TextView
     private lateinit var textPriceBase: TextView
     private lateinit var textFareMultiplier: TextView
+    private lateinit var textFareMultiplierDisplay: TextView
     private lateinit var textTotalFee: TextView
-    private lateinit var layoutFees: ConstraintLayout
+    private lateinit var scrollViewFees: ScrollView
+    private lateinit var feeDetailsHeader: LinearLayout
+    private lateinit var feeDetailsContent: LinearLayout
+    private lateinit var expandIcon: ImageView
+    private var isExpanded = false
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
     private lateinit var endTrip: String
     private lateinit var toggleFragmentButton: FloatingActionButton
     private lateinit var connectionServiceButton: FloatingActionButton
     private var connectionDialog: ConnectionServiceDialog? = null
-    private lateinit var binding: FragmentCurrentServiceBinding
     private var feesService: FeesService = FeesService()
     private lateinit var chronometer: Chronometer
     private var fees: RideFees = RideFees()
@@ -97,10 +106,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
     private var totalDistance = 0.0
     private var startingRide = false
     private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var fragmentManager: FragmentManager
-    private lateinit var transaction: FragmentTransaction
     private lateinit var homeFragment: HomeFragment
     private var isServiceBound = false
+
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             isServiceBound = true
@@ -108,8 +116,11 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             feesService = binder.getService()
             mainViewModel.changeConnectTripService(true)
             chronometer.base = feesService.getBaseTime()
-            chronometer.start()
-            chronometer.onChronometerTickListener = this@CurrentServiceFragment
+
+            // Set up callback to update MainViewModel with fee data
+            feesService.setFeeUpdateCallback { totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds ->
+                mainViewModel.updateFeeData(totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds)
+            }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -125,16 +136,24 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentCurrentServiceBinding.inflate(inflater, container, false)
+        _binding = FragmentCurrentServiceBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
         context?.let {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(it)
         }
+
+        haveArrived = getString(R.string.service_have_arrived)
+        startTrip = getString(R.string.service_start_trip)
+        endTrip = getString(R.string.service_end_trip)
+
         requireActivity().onBackPressedDispatcher.addCallback(this) {}
+
+        // Initialize views
         textName = binding.serviceLayout.currentServiceName
         textPhone = binding.serviceLayout.currentPhone
         textAddress = binding.serviceLayout.currentAddress
+        textAddressPreview = binding.serviceLayout.currentAddressPreview
         textComment = binding.serviceLayout.serviceComment
         textPriceBase = binding.textBaseFare
         textPriceMinFee = binding.textFareMin
@@ -146,24 +165,31 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         textTimePrice = binding.textTimeFare
         textCurrentTimePrice = binding.textPriceByTime
         textFareMultiplier = binding.textFareMultiplier
+        textFareMultiplierDisplay = binding.textFareMultiplierDisplay
         textTotalFee = binding.textPrice
-        btnStatus = binding.serviceLayout.btnServiceStatus
+        btnStatus = binding.btnServiceStatus
         imgBtnMaps = binding.serviceLayout.imgBtnMaps
         imgButtonWaze = binding.serviceLayout.imgBtnWaze
         chronometer = binding.chronometer
-        layoutFees = binding.layoutFees
+        scrollViewFees = binding.scrollViewFees
+        feeDetailsHeader = binding.feeDetailsHeader
+        feeDetailsContent = binding.feeDetailsContent
+        expandIcon = binding.expandIcon
+
         homeFragment = HomeFragment()
-        fragmentManager = childFragmentManager
         connectionServiceButton = binding.connectedServiceButton
+
         mainViewModel.isLoading.observe(viewLifecycleOwner) { loading ->
             btnStatus.isEnabled = !loading
         }
+
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 setOnClickListener(service)
                 textName.text = service.name
                 textPhone.text = service.phone
                 textAddress.text = service.start_loc.name
+                textAddressPreview.text = service.start_loc.name
                 textComment.text = service.comment
                 textPhone.setOnClickListener {
                     val intent = Intent(Intent.ACTION_DIAL, ("tel:" + service.phone).toUri())
@@ -193,11 +219,11 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 if (service.isInProgress()) {
                     if (service.metadata.arrived_at == null) {
                         btnStatus.text = haveArrived
-                        layoutFees.visibility = ConstraintLayout.INVISIBLE
+                        scrollViewFees.visibility = View.INVISIBLE
                         stopFeeService()
                     } else if (service.metadata.start_trip_at == null) {
                         btnStatus.text = startTrip
-                        layoutFees.visibility = ConstraintLayout.INVISIBLE
+                        scrollViewFees.visibility = View.INVISIBLE
                         stopFeeService()
                     } else {
                         btnStatus.text = endTrip
@@ -208,7 +234,7 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             builder.setMessage(R.string.ride_in_progress)
                             builder.setNegativeButton(R.string.no) { dialog, _ ->
                                 dialog.dismiss()
-                                layoutFees.visibility = ConstraintLayout.VISIBLE
+                                scrollViewFees.visibility = View.VISIBLE
                                 sharedPreferences.edit(commit = true) { remove(Constants.MULTIPLIER) }
                                 sharedPreferences.edit(commit = true) { remove(Constants.POINTS) }
                                 sharedPreferences.edit(commit = true) { remove(Constants.START_TIME) }
@@ -218,17 +244,18 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             }
                             builder.setPositiveButton(R.string.yes) { _, _ ->
                                 startServiceFee(service.start_loc.name, true)
-                                layoutFees.visibility = ConstraintLayout.VISIBLE
+                                scrollViewFees.visibility = View.VISIBLE
                                 startingRide = false
                             }
                             val dialog: AlertDialog = builder.create()
                             dialog.show()
                         }
-                        layoutFees.visibility = ConstraintLayout.VISIBLE
+                        scrollViewFees.visibility = View.VISIBLE
                     }
                 }
             }
         }
+
         mainViewModel.rideFees.observe(viewLifecycleOwner) { fees ->
             this.fees = fees
             feeMultiplier = fees.feeMultiplier
@@ -242,13 +269,38 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 feesService.setMultiplier(feeMultiplier)
             }
         }
+
         mainViewModel.nextService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
                 connectionDialog = ConnectionServiceDialog(service)
-                connectionServiceButton.visibility = ConstraintLayout.VISIBLE
+                connectionServiceButton.visibility = View.VISIBLE
+                toggleFragmentButton.visibility = View.GONE
             } else {
                 connectionDialog = null
-                connectionServiceButton.visibility = ConstraintLayout.INVISIBLE
+                connectionServiceButton.visibility = View.INVISIBLE
+            }
+        }
+
+        // Add observer for fee data that persists across fragment navigation
+        mainViewModel.currentFeeData.observe(viewLifecycleOwner) { feeData ->
+            totalRide = feeData.totalFee
+            totalDistance = feeData.totalDistance
+
+            chronometer.base = SystemClock.elapsedRealtime() - (feeData.elapsedSeconds * 1000)
+
+            textTotalFee.text = NumberHelper.toCurrency(feeData.totalFee)
+            textCurrentTimePrice.text = NumberHelper.toCurrency(feeData.timeFee)
+            textCurrentDistancePrice.text = NumberHelper.toCurrency(feeData.distanceFee)
+            textCurrentDistance.text = getString(R.string.distance_km, feeData.totalDistance / 1000)
+            textFareMultiplierDisplay.text = feeMultiplier.toString()
+
+            // Show toggle button based on elapsed time, but only if there's no next service
+            if (mainViewModel.nextService.value == null) {
+                if (feeData.elapsedSeconds > this.fees.timeoutToConnection && !toggleFragmentButton.isVisible) {
+                    toggleFragmentButton.visibility = View.VISIBLE
+                }
+            } else {
+                toggleFragmentButton.visibility = View.GONE
             }
         }
 
@@ -266,19 +318,53 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
             val builder = AlertDialog.Builder(requireContext())
             val dialogLayout: View = LayoutInflater.from(activity).inflate(R.layout.multiplier_feed, null)
             val editFeeMultiplier = dialogLayout.findViewById<EditText>(R.id.dialog_fee_multiplier)
-            editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(feesService.getMultiplier().toString())
+
+            val currentMultiplier = if (isServiceBound) {
+                feesService.getMultiplier()
+            } else {
+                feeMultiplier
+            }
+
+            editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(currentMultiplier.toString())
             builder.setTitle(R.string.edit_multiplier)
                 .setView(dialogLayout)
             builder.setNegativeButton(R.string.cancel) { dialog, _ ->
                 dialog.dismiss()
             }
             builder.setPositiveButton(R.string.save) { _, _ ->
-                feesService.setMultiplier(editFeeMultiplier.text.toString().toDouble())
-                this.feeMultiplier = editFeeMultiplier.text.toString().toDouble()
+                val inputValue = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
+                val newMultiplier = if (inputValue < 1.0) {
+                    Toast.makeText(requireContext(), R.string.multiplier_minimum_value, Toast.LENGTH_SHORT).show()
+                    1.0
+                } else {
+                    inputValue
+                }
+
+                // Update local value
+                feeMultiplier = newMultiplier
+                textFareMultiplier.text = newMultiplier.toString()
+
+                // Update service if bound
+                if (isServiceBound) {
+                    feesService.setMultiplier(newMultiplier)
+                }
+
+                // Save to SharedPreferences
+                sharedPreferences.edit(commit = true) {
+                    putString(Constants.MULTIPLIER, newMultiplier.toString())
+                }
+
+                Toast.makeText(requireContext(), getString(R.string.multiplier_updated, newMultiplier), Toast.LENGTH_SHORT).show()
             }
             val dialog: AlertDialog = builder.create()
             dialog.show()
         }
+
+        // Setup collapsible fee details
+        setupFeeDetailsCollapse()
+
+        // Setup bottom sheet behavior to start expanded
+        setupBottomSheetBehavior(BottomSheetBehavior.STATE_EXPANDED)
 
         toggleFragmentButton.setOnClickListener {
             toggleFragment()
@@ -286,59 +372,59 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         return root
     }
 
-    override fun onStart() {
-        super.onStart()
-        haveArrived = getString(R.string.service_have_arrived)
-        startTrip = getString(R.string.service_start_trip)
-        endTrip = getString(R.string.service_end_trip)
-        toggleFragmentButton.setImageResource(R.drawable.service_list_24)
-        if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java) && !startingRide) {
-            Intent(requireContext(), FeesService::class.java).also { intentFee ->
-                requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
-                mainViewModel.changeConnectTripService(true)
-            }
+    override fun onResume() {
+        super.onResume()
+        checkAndBindToExistingService()
+        if (btnStatus.text == endTrip) setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
+    }
+
+    private fun checkAndBindToExistingService() {
+        if (!isServiceBound && ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
+            val intentFee = Intent(requireContext(), FeesService::class.java)
+            requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
+        }
+    }
+
+    private fun setupBottomSheetBehavior(state: Int) {
+        val serviceLayoutView = binding.serviceLayout.root
+        val bottomSheetBehavior = BottomSheetBehavior.from(serviceLayoutView)
+
+        bottomSheetBehavior.state = state
+    }
+
+    private fun setupFeeDetailsCollapse() {
+        feeDetailsHeader.setOnClickListener {
+            toggleFeeDetails()
+        }
+    }
+
+    private fun toggleFeeDetails() {
+        isExpanded = !isExpanded
+
+        if (isExpanded) {
+            // Expand
+            feeDetailsContent.visibility = View.VISIBLE
+            expandIcon.animate().rotation(180f).setDuration(200).start()
         } else {
-            mainViewModel.changeConnectTripService(false)
+            // Collapse
+            feeDetailsContent.visibility = View.GONE
+            expandIcon.animate().rotation(0f).setDuration(200).start()
         }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        if (mainViewModel.isTripStarted.value == true) {
-            mainViewModel.changeConnectTripService(false)
-        }
-        if (isServiceBound) {
-            isServiceBound = false
-            requireContext().unbindService(serviceConnection)
-        }
-    }
-
-    override fun onPause() {
-        if (homeFragment.isAdded) {
-            toggleFragmentButton.setImageResource(R.drawable.current_return_24)
-            transaction = fragmentManager.beginTransaction()
-            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
-            transaction.remove(homeFragment)
-            transaction.commit()
-
-        }
-        super.onPause()
     }
 
     private fun toggleFragment() {
-        transaction = fragmentManager.beginTransaction()
+        val ft = childFragmentManager.beginTransaction()
 
         if (homeFragment.isAdded) {
-            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
-            transaction.remove(homeFragment)
+            ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE)
+            ft.remove(homeFragment)
             toggleFragmentButton.setImageResource(R.drawable.service_list_24)
         } else {
-            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-            transaction.replace(binding.root.id, homeFragment)
+            ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+            ft.replace(binding.root.id, homeFragment)
             toggleFragmentButton.setImageResource(R.drawable.current_return_24)
         }
-
-        transaction.commit()
+        ft.commit()
     }
 
     private fun setOnClickListener(service: Service) {
@@ -381,7 +467,9 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                             service.updateMetadata()
                                 .addOnSuccessListener {
                                     mainViewModel.setLoading(false)
-                                    feeMultiplier = editFeeMultiplier.text.toString().toDouble()
+                                    setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
+                                    val inputMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
+                                    feeMultiplier = if (inputMultiplier < 1.0) 1.0 else inputMultiplier
                                     textFareMultiplier.text = feeMultiplier.toString()
                                     sharedPreferences.edit(commit = true) {
                                         putString(
@@ -415,13 +503,13 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                 else -> {
                     if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > this.fees.timeoutToComplete) {
                         val builderFinalize = AlertDialog.Builder(requireContext())
-                        val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee()))
+                        val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee(), true))
                         builderFinalize.setTitle(R.string.finalize_service)
                             .setCancelable(false)
                             .setMessage(StringHelper.getString(message))
                             .setPositiveButton(R.string.yes) { _, _ ->
                                 val tripDistance = NumberHelper.roundDouble(totalDistance).toInt()
-                                val tripFee = getTotalFee().toInt()
+                                val tripFee = NumberHelper.roundDouble(getTotalFee()).toInt()
                                 val route = ServiceMetadata.serializeRoute(feesService.getPoints())
                                 val tripMultiplier = feeMultiplier
                                 service.terminate(route, tripDistance, tripFee, tripMultiplier)
@@ -436,21 +524,12 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                         mainViewModel.setLoading(false)
                                         btnStatus.text = endTrip
                                         service.metadata.end_trip_at = null
-                                        service.status = Service.STATUS_IN_PROGRESS
-                                        service.metadata.trip_distance = null
-                                        service.metadata.trip_fee = null
-                                        service.metadata.route = null
                                         it.message?.let { message -> Log.e(TAG, message) }
                                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
-                                    }
-                                    .withTimeout {
-                                        btnStatus.text = endTrip
+                                    }.withTimeout {
                                         mainViewModel.setLoading(false)
+                                        btnStatus.text = endTrip
                                         service.metadata.end_trip_at = null
-                                        service.metadata.trip_distance = null
-                                        service.metadata.trip_fee = null
-                                        service.metadata.route = null
-                                        service.status = Service.STATUS_IN_PROGRESS
                                         mainViewModel.setErrorTimeout(true)
                                     }
                             }
@@ -458,14 +537,10 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
                                 dialog.dismiss()
                                 mainViewModel.setLoading(false)
                             }
-                        val dialog: AlertDialog = builderFinalize.create()
-                        dialog.show()
+                        val dialogFinalize: AlertDialog = builderFinalize.create()
+                        dialogFinalize.show()
                     } else {
-                        Toast.makeText(
-                            requireContext(),
-                            R.string.cannot_complete_service_yet,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(requireContext(), getString(R.string.cannot_complete_service_yet, this.fees.timeoutToComplete / 60), Toast.LENGTH_SHORT).show()
                         mainViewModel.setLoading(false)
                     }
                 }
@@ -473,72 +548,70 @@ class CurrentServiceFragment : Fragment(), OnChronometerTickListener {
         }
     }
 
-    private fun stopFeeService() {
-        if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
-            Intent(
-                requireContext(),
-                FeesService::class.java
-            ).also { intentFee ->
-                requireContext().stopService(intentFee)
-            }
+    private fun startServiceFee(origin: String, resumeRide: Boolean = false) {
+        val intentFee = Intent(requireContext(), FeesService::class.java)
+        intentFee.putExtra(ORIGIN, origin)
+        intentFee.putExtra(FEE_MULTIPLIER, feeMultiplier)
+
+        val gson = com.google.gson.Gson()
+        val feesJson = gson.toJson(fees)
+        sharedPreferences.edit(commit = true) {
+            putString(CURRENT_FEES, feesJson)
         }
-        sharedPreferences.edit(commit = true) { remove(Constants.MULTIPLIER) }
-        sharedPreferences.edit(commit = true) { remove(Constants.POINTS) }
-        sharedPreferences.edit(commit = true) { remove(Constants.START_TIME) }
-        totalRide = 0.0
+
+        if (resumeRide && sharedPreferences.contains(Constants.MULTIPLIER)) {
+            intentFee.putExtra(RESUME_RIDE, true)
+            val savedMultiplier = sharedPreferences.getString(Constants.MULTIPLIER, "1.0")?.toDoubleOrNull() ?: 1.0
+            feeMultiplier = savedMultiplier
+            textFareMultiplier.text = feeMultiplier.toString()
+        }
+
+        if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
+            val stopIntent = Intent(requireContext(), FeesService::class.java)
+            requireContext().stopService(stopIntent)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            requireContext().startForegroundService(intentFee)
+        } else {
+            requireContext().startService(intentFee)
+        }
+
+        requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
+    }
+
+    private fun stopFeeService() {
+        if (isServiceBound) {
+            requireContext().unbindService(serviceConnection)
+            isServiceBound = false
+        }
+
+        val intentFee = Intent(requireContext(), FeesService::class.java)
+        requireContext().stopService(intentFee)
+
+        chronometer.stop()
+        chronometer.base = SystemClock.elapsedRealtime()
+
+        sharedPreferences.edit(commit = true) {
+            remove(Constants.MULTIPLIER)
+            remove(Constants.POINTS)
+            remove(Constants.START_TIME)
+            remove(CURRENT_FEES)
+        }
+
+        mainViewModel.changeConnectTripService(false)
+    }
+
+    private fun getTotalFee(): Double {
+        return if (isServiceBound) {
+            feesService.getTotalFee()
+        } else {
+            totalRide
+        }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    override fun onChronometerTick(chrono: Chronometer) {
-        var distance = 0.0
-        for (i in 0 until feesService.getPoints().size - 1) {
-            distance += Map.calculateDistanceBetween(feesService.getPoints()[i], feesService.getPoints()[i + 1])
-        }
-        if (feesService.getElapsedSeconds() > this.fees.timeoutToConnection && !toggleFragmentButton.isVisible && mainViewModel.nextService.value == null) {
-            toggleFragmentButton.visibility = View.VISIBLE
-        }
-        val priceSec = fees.priceMin / 60
-        val priceMeter = fees.priceKm / 1000
-        totalDistance = distance
-        val timeFee = priceSec * feesService.getElapsedSeconds()
-        val distanceFee = distance * priceMeter
-        totalRide = ((distanceFee + timeFee + fees.feesBase) * feesService.getMultiplier()) + fees.priceAddFee
-        if (totalRide < (fees.priceMinFee * feeMultiplier)) {
-            totalRide = NumberHelper.roundDouble((fees.priceMinFee * feeMultiplier))
-        }
-        textTotalFee.text = NumberHelper.toCurrency(totalRide)
-        textCurrentDistance.text = String.format("%.2f", totalDistance / 1000)
-        textCurrentTimePrice.text = NumberHelper.toCurrency(timeFee)
-        textCurrentDistancePrice.text = NumberHelper.toCurrency(distanceFee)
-        textFareMultiplier.text = feesService.getMultiplier().toString()
-    }
-
-    private fun getTotalFee(): Double {
-        return if (totalRide < (fees.priceMinFee * feeMultiplier)) {
-            NumberHelper.roundDouble((fees.priceMinFee * feeMultiplier))
-        } else {
-            NumberHelper.roundDouble(totalRide)
-        }
-    }
-
-    private fun startServiceFee(startLocName: String, restart: Boolean = false) {
-        Intent(requireContext(), FeesService::class.java).also { intentFee ->
-            intentFee.putExtra(Constants.LOCATION_EXTRA, startLocName)
-            intentFee.putExtra(Constants.MULTIPLIER, feeMultiplier)
-            intentFee.putExtra(Constants.RESTART_TRIP, restart)
-            if (Utils.isNewerVersion(Build.VERSION_CODES.O)) {
-                requireContext().startForegroundService(intentFee)
-                requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
-                mainViewModel.changeConnectTripService(true)
-            } else {
-                requireContext().startService(intentFee)
-                requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
-                mainViewModel.changeConnectTripService(true)
-            }
-        }
     }
 }

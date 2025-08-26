@@ -13,10 +13,14 @@ android {
         applicationId "gorda.driver"
         minSdk 24
         targetSdk 35
-        versionCode 59
-        versionName "1.1.13"
+        versionCode 62
+        versionName "1.2.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Generate build date at compile time
+        buildConfigField "String", "BUILD_DATE", "\"${new Date().format('MMM dd, yyyy')}\""
+        buildConfigField "long", "BUILD_TIMESTAMP", "${System.currentTimeMillis()}L"
     }
 
     buildTypes {

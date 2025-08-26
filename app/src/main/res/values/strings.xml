@@ -41,7 +41,7 @@
     <string name="service_start_trip">Start Trip</string>
     <string name="service_end_trip">End Trip</string>
     <string name="service_updated">Service successfully updated</string>
-    <string name="cannot_complete_service_yet">Service cannot be completed as soon as it starts</string>
+    <string name="cannot_complete_service_yet">Can complete service after %d minutes</string>
     <string name="logout_first">You have a session in other device, first logout</string>
     <string name="distance">Distance: </string>
     <string name="time">Time: </string>
@@ -57,6 +57,11 @@
     <string name="allow">Allow</string>
     <string name="disallow">Denny</string>
     <string name="disclosure_title">Use your location</string>
+    <string name="location_access_enables">Location access enables:</string>
+    <string name="feature_nearby_services">Nearby service assignments</string>
+    <string name="feature_realtime_tracking">Real-time tracking during rides</string>
+    <string name="feature_background_notifications">Background service notifications</string>
+    <string name="privacy_assurance">Your location data is only used for service operations and is not shared with third parties.</string>
     <string name="firebase_notification">gorda.driver.services</string>
     <string name="title_activity_start">Loading…</string>
     <string name="new_service_title">New Service!</string>
@@ -115,4 +120,63 @@
     <string name="fields_balance">Balance</string>
     <string name="driver_balance">Balance: <big> <b> %s</b></big> </string>
     <string name="notification_permission_required">Push notification permission required</string>
+    <string name="fee_details">Fee Details</string>
+    <string name="expand_collapse">Expand or collapse fee details</string>
+    <string name="multiplier_minimum_value">Minimum multiplier value is 1.0</string>
+    <string name="multiplier_updated">Multiplier updated to %1$.1f</string>
+    <string name="distance_km">%1$.1f</string>
+
+    <!-- History Fragment Strings -->
+    <string name="history">Today\'s History</string>
+    <string name="service_history">Today\'s Services</string>
+    <string name="history_subtitle">View your completed trips and earnings for today</string>
+    <string name="filter_history">Filter history</string>
+    <string name="total_services">Today\'s Services</string>
+    <string name="total_earnings">Today\'s Earnings</string>
+    <string name="average_rating">Average Rating</string>
+    <string name="avg_rating">Avg Rating</string>
+    <string name="no_history">No History</string>
+    <string name="no_services_yet">No services today</string>
+    <string name="start_accepting_services_message">Start accepting services to see today\'s trip history here</string>
+    <string name="export">Export</string>
+    <string name="refresh">Refresh</string>
+
+    <!-- Default placeholder values -->
+    <string name="default_zero">0</string>
+    <string name="default_currency">$0.00</string>
+    <string name="default_rating">5.0</string>
+
+    <!-- Service History Dialog Strings -->
+    <string name="service_details">Service Details</string>
+    <string name="total_amount">Total Amount</string>
+
+    <!-- Profile Fragment Strings -->
+    <string name="personal_information">Personal Information</string>
+    <string name="vehicle_information">Vehicle Information</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="red_blanca_driver">Red Blanca Driver</string>
+    <string name="logout_confirmation">Are you sure you want to log out?</string>
+    <string name="logout_error_title">Error</string>
+    <string name="logout_error_message">Failed to logout. Please try again.</string>
+    <string name="ok">OK</string>
+
+    <!-- Navigation Drawer Menu Groups -->
+    <string name="app_settings">App Settings</string>
+    <string name="support_info">Support &amp; Info</string>
+    <string name="account_actions">Account</string>
+
+    <!-- About Fragment Strings -->
+    <string name="build_date">Build Date</string>
+    <string name="company_description">Professional transportation services in Colombia. Connecting drivers with passengers for safe and reliable rides.</string>
+    <string name="red_blanca_company">Red Blanca</string>
+    <string name="colombia_location">Colombia</string>
+    <string name="legal_information">Legal Information</string>
+
+    <!-- Content Descriptions -->
+    <string name="content_desc_app_logo">App Logo</string>
+    <string name="content_desc_about_info">About Information</string>
+    <string name="content_desc_company_info">Company Information</string>
+    <string name="content_desc_location">Location</string>
+    <string name="content_desc_legal_info">Legal Information</string>
+    <string name="content_desc_privacy_policy">Privacy Policy</string>
 </resources>
