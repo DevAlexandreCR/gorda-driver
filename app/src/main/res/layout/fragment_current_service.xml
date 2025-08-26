@@ -5,20 +5,25 @@
     android:id="@+id/textNavigation"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/primary"
     tools:context=".ui.service.current.CurrentServiceFragment">
 
-
+    <!-- Top Action Buttons with improved positioning -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/toggle_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="20dp"
         android:clickable="true"
         android:contentDescription="@string/services_list"
         android:focusable="true"
         android:src="@drawable/service_list_24"
         android:visibility="invisible"
+        app:fabSize="normal"
+        app:backgroundTint="@color/secondary"
+        app:tint="@android:color/white"
+        app:elevation="6dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -26,300 +31,661 @@
         android:id="@+id/connected_service_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
         android:clickable="true"
         android:contentDescription="@string/new_service_text"
         android:focusable="true"
         android:src="@drawable/connected_service_24"
         android:visibility="invisible"
+        app:fabSize="normal"
+        app:backgroundTint="@color/secondary"
+        app:tint="@android:color/white"
+        app:elevation="6dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/layoutFees"
+    <!-- Enhanced Scrollable fees section -->
+    <ScrollView
+        android:id="@+id/scrollViewFees"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:fillViewport="true"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="90dp"
+        android:scrollbars="none"
         android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/service_layout"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout5"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0">
+        app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/textPrice"
-            android:layout_width="wrap_content"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutFees"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/service_running"
-            android:textSize="34sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:paddingBottom="24dp">
 
-        <TableLayout
-            android:id="@+id/tableLayout"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginEnd="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textPrice">
-
-            <LinearLayout
+            <!-- Total Price Card with enhanced design -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTotalPrice"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginBottom="20dp"
+                app:cardBackgroundColor="@color/secondary"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="12dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
                     android:orientation="vertical"
-                    android:weightSum="1">
+                    android:paddingHorizontal="28dp"
+                    android:paddingVertical="32dp">
 
                     <TextView
-                        android:id="@+id/textPriceByTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:alpha="0.9"
+                        android:text="@string/fields_price"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp"
+                        android:textStyle="normal" />
+
+                    <TextView
+                        android:id="@+id/textPrice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text=""
-                        android:textAlignment="center"
-                        android:textSize="24sp"
-                        android:textStyle="bold" />
+                        android:letterSpacing="0.02"
+                        android:shadowColor="@android:color/black"
+                        android:shadowDx="0"
+                        android:shadowDy="2"
+                        android:shadowRadius="4"
+                        android:text="@string/service_running"
+                        android:textColor="@android:color/white"
+                        android:textSize="48sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:ellipsize="end"
+                        android:lines="1" />
 
+                    <!-- Fee Multiplier Indicator -->
                     <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="horizontal">
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/rounded_background"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="8dp">
 
-                        <Chronometer
-                            android:id="@+id/chronometer"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="1"
-                            android:gravity="bottom"
-                            android:textAlignment="gravity"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginEnd="6dp"
+                            android:contentDescription="@string/fare_multiplier"
+                            android:src="@drawable/ic_trending_up_24"
+                            app:tint="@android:color/white" />
 
                         <TextView
-                            android:id="@+id/textView12"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="0.5"
-                            android:gravity="bottom"
-                            android:text="@string/min"
-                            android:textAlignment="textEnd" />
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.9"
+                            android:text="@string/fare_multiplier"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="normal" />
+
+                        <TextView
+                            android:id="@+id/textFareMultiplierDisplay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text=""
+                            android:textColor="@android:color/white"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
                     </LinearLayout>
+
                 </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Time and Distance Metrics Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMetrics"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/primary_dark"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="6dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/cardTotalPrice"
+                app:strokeColor="@color/secondary"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:weightSum="1">
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal"
+                    android:padding="24dp">
 
-                    <TextView
-                        android:id="@+id/textPriceByDistance"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text=""
-                        android:textAlignment="center"
-                        android:textSize="24sp"
-                        android:textStyle="bold" />
-
+                    <!-- Time Section -->
                     <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="horizontal">
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_marginBottom="12dp"
+                            android:contentDescription="@string/time"
+                            android:src="@drawable/ic_time"
+                            app:tint="@color/secondary" />
 
                         <TextView
-                            android:id="@+id/textCurrentDistance"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_marginStart="@dimen/min_margin"
-                            android:layout_weight="1"
-                            android:gravity="bottom"
-                            android:textAlignment="textStart"
-                            android:textSize="24sp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="6dp"
+                            android:alpha="0.8"
+                            android:text="@string/time_fare"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="normal" />
+
+                        <TextView
+                            android:id="@+id/textPriceByTime"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="12dp"
+                            android:text=""
+                            android:textColor="@android:color/white"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:lines="1"/>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@color/secondary"
+                            android:elevation="2dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp">
+
+                            <Chronometer
+                                android:id="@+id/chronometer"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@android:color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/textView12"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:alpha="0.9"
+                                android:text="@string/min"
+                                android:textColor="@android:color/white"
+                                android:textSize="14sp"
+                                android:lines="1"/>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- Elegant Divider -->
+                    <View
+                        android:layout_width="2dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginHorizontal="20dp"
+                        android:alpha="0.6"
+                        android:background="@color/secondary" />
+
+                    <!-- Distance Section -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_marginBottom="12dp"
+                            android:contentDescription="@string/distance"
+                            android:src="@drawable/ic_baseline_map_24"
+                            app:tint="@color/secondary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="6dp"
+                            android:alpha="0.8"
+                            android:text="@string/distance_fare"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="normal" />
+
+                        <TextView
+                            android:id="@+id/textPriceByDistance"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="12dp"
+                            android:text=""
+                            android:textColor="@android:color/white"
+                            android:textSize="20sp"
+                            android:lines="1"
                             android:textStyle="bold" />
 
-                        <TextView
-                            android:id="@+id/textView15"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="0.5"
-                            android:gravity="bottom"
-                            android:text="@string/km"
-                            android:textAlignment="textEnd" />
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@color/secondary"
+                            android:elevation="2dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp">
+
+                            <TextView
+                                android:id="@+id/textCurrentDistance"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@android:color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/textView15"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:alpha="0.9"
+                                android:text="@string/km"
+                                android:textColor="@android:color/white"
+                                android:textSize="14sp" />
+
+                        </LinearLayout>
+
                     </LinearLayout>
+
                 </LinearLayout>
-            </LinearLayout>
 
-            <LinearLayout
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Enhanced Expandable Fee Details Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardFeeDetails"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="8dp"
+                app:cardBackgroundColor="@color/primary_dark"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/cardMetrics"
+                app:strokeColor="@color/secondary"
+                app:strokeWidth="1dp">
 
-                <TextView
-                    android:id="@+id/textView17"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/base"
-                    android:textSize="20sp" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/textBaseFare"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.5"
-                    android:text=""
-                    android:textAlignment="textEnd"
-                    android:textSize="20sp" />
-            </LinearLayout>
+                    <!-- Enhanced Header with better visual design -->
+                    <LinearLayout
+                        android:id="@+id/feeDetailsHeader"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="24dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="16dp"
+                            android:contentDescription="@string/fee_details"
+                            android:src="@drawable/ic_baseline_info_24"
+                            app:tint="@color/secondary" />
 
-                <TextView
-                    android:id="@+id/textView26"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/fare_minimum"
-                    android:textSize="20sp" />
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/fee_details"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/textFareMin"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.5"
-                    android:text=""
-                    android:textAlignment="textEnd"
-                    android:textSize="20sp" />
-            </LinearLayout>
+                        <ImageView
+                            android:id="@+id/expandIcon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:alpha="0.7"
+                            android:contentDescription="@string/expand_collapse"
+                            android:rotation="0"
+                            android:src="@drawable/ic_expand_more_24"
+                            app:tint="@android:color/white" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                    </LinearLayout>
 
-                <TextView
-                    android:id="@+id/textView20"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/time_fare"
-                    android:textSize="20sp" />
+                    <!-- Enhanced Collapsible content -->
+                    <LinearLayout
+                        android:id="@+id/feeDetailsContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="24dp"
+                        android:paddingBottom="24dp"
+                        android:visibility="gone">
 
-                <TextView
-                    android:id="@+id/textTimeFare"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.5"
-                    android:text=""
-                    android:textAlignment="textEnd"
-                    android:textSize="20sp" />
-            </LinearLayout>
+                        <!-- Base Fare -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                            <TextView
+                                android:id="@+id/textView17"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:alpha="0.8"
+                                android:text="@string/base"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal" />
 
-                <TextView
-                    android:id="@+id/textView22"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/distance_fare"
-                    android:textSize="20sp" />
+                            <TextView
+                                android:id="@+id/textBaseFare"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
-                <TextView
-                    android:id="@+id/textDistanceFare"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.5"
-                    android:text=""
-                    android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                        <!-- Elegant Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:alpha="0.3"
+                            android:background="@color/secondary" />
 
-            </LinearLayout>
+                        <!-- Minimum Fare -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                            <TextView
+                                android:id="@+id/textView26"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:alpha="0.8"
+                                android:text="@string/fare_minimum"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal" />
 
-                <TextView
-                    android:id="@+id/textView23"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/fees"
-                    android:textSize="20sp" />
+                            <TextView
+                                android:id="@+id/textFareMin"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
-                <TextView
-                    android:id="@+id/textFees"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.5"
-                    android:text=""
-                    android:textAlignment="textEnd"
-                    android:textSize="20sp" />
+                        <!-- Elegant Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:alpha="0.3"
+                            android:background="@color/secondary" />
 
-            </LinearLayout>
+                        <!-- Time Fare -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                            <TextView
+                                android:id="@+id/textView20"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:alpha="0.8"
+                                android:text="@string/time_fare"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal" />
 
-                <TextView
-                    android:id="@+id/textView25"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/fare_multiplier"
-                    android:textSize="20sp" />
+                            <TextView
+                                android:id="@+id/textTimeFare"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
-                <TextView
-                    android:id="@+id/textFareMultiplier"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="0.5"
-                    android:autoLink="web"
-                    android:clickable="true"
-                    android:drawableRight="@drawable/baseline_edit_12"
-                    android:linksClickable="false"
-                    android:singleLine="false"
-                    android:text=""
-                    android:textAlignment="textEnd"
-                    android:textIsSelectable="false"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </TableLayout>
+                        <!-- Elegant Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:alpha="0.3"
+                            android:background="@color/secondary" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+                        <!-- Distance Fare -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp">
 
-    <include
-        android:id="@+id/service_layout"
-        layout="@layout/service_layout"
+                            <TextView
+                                android:id="@+id/textView22"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:alpha="0.8"
+                                android:text="@string/distance_fare"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal" />
+
+                            <TextView
+                                android:id="@+id/textDistanceFare"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Elegant Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:alpha="0.3"
+                            android:background="@color/secondary" />
+
+                        <!-- Additional Fees -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp">
+
+                            <TextView
+                                android:id="@+id/textView23"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:alpha="0.8"
+                                android:text="@string/fees"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal" />
+
+                            <TextView
+                                android:id="@+id/textFees"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Elegant Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:alpha="0.3"
+                            android:background="@color/secondary" />
+
+                        <!-- Fare Multiplier with enhanced design -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackground"
+                            android:orientation="horizontal"
+                            android:paddingVertical="16dp">
+
+                            <TextView
+                                android:id="@+id/textView25"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:alpha="0.8"
+                                android:text="@string/fare_multiplier"
+                                android:textColor="@android:color/white"
+                                android:textSize="15sp"
+                                android:textStyle="normal" />
+
+                            <TextView
+                                android:id="@+id/textFareMultiplier"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:autoLink="web"
+                                android:background="@color/secondary"
+                                android:clickable="true"
+                                android:drawablePadding="8dp"
+                                android:elevation="2dp"
+                                android:focusable="true"
+                                android:linksClickable="false"
+                                android:paddingHorizontal="12dp"
+                                android:paddingVertical="8dp"
+                                android:singleLine="false"
+                                android:text=""
+                                android:textColor="@android:color/white"
+                                android:textIsSelectable="false"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                app:drawableEndCompat="@drawable/baseline_edit_12" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+    <!-- Fixed service layout at bottom -->
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/coordinatorLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/scrollViewFees">
+
+        <include
+            android:id="@+id/service_layout"
+            layout="@layout/service_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:behavior_hideable="false"
+            app:behavior_peekHeight="30dp"
+            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior" />
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout5"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/primary_dark"
+        android:gravity="center"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- Status button fixed at bottom -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_service_status"
+            style="@style/Widget.Material3.Button.UnelevatedButton"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:layout_gravity="bottom"
+            android:layout_margin="8dp"
+            android:elevation="8dp"
+            android:text="@string/service_have_arrived"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            app:backgroundTint="@color/secondary"
+            app:cornerRadius="20dp"
+            app:icon="@drawable/add_24"
+            app:iconGravity="textStart"
+            app:iconSize="24dp"
+            app:iconTint="@android:color/white" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -11,6 +11,6 @@ object NumberHelper {
     fun toCurrency(double: Double, round: Boolean = false): String {
         val currencyFormat: NumberFormat = NumberFormat.getCurrencyInstance()
         return if (round) currencyFormat.format(roundDouble(double))
-        else currencyFormat.format(double)
+        else currencyFormat.format(double.toInt())
     }
 }

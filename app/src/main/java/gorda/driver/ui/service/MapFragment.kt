@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.scale
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -116,11 +117,13 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     paddingInPixels
                 )
             )
-            val distance = Map.calculateDistance(statLoc!!, location!!)
+            val distance = Map.calculateDistance(
+                LatLng(statLoc!!.lat, statLoc!!.lng),
+                LatLng(location!!.latitude, location!!.longitude))
             val time = Map.calculateTime(distance)
             textTime.text = Map.getTimeString(time)
             textDistance.text = Map.distanceToString(distance)
-            mainViewModel.setServiceUpdateDistTime(distance, time)
+            mainViewModel.setServiceUpdateDistTime(distance.toInt(), time)
             if (markerStartAddress != null) {
                 markerStartAddress.tag = makeInfoWindowData(
                     statLoc!!.name,
@@ -137,7 +140,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private fun getResizedBitmap(drawableId: Int): Bitmap {
         val bitmapDrawable = ResourcesCompat.getDrawable(resources, drawableId, null) as BitmapDrawable
         val bitmap = bitmapDrawable.bitmap
-        return Bitmap.createScaledBitmap(bitmap, 100, 100, false)
+        return bitmap.scale(100, 100, false)
     }
 
     private fun getDirections(url: String, listener: OnDirectionCompleteListener) {
