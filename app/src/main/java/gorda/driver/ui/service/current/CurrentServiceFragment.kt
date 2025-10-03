@@ -448,6 +448,17 @@ class CurrentServiceFragment : Fragment() {
                     val editFeeMultiplier = dialogLayout.findViewById<EditText>(R.id.dialog_fee_multiplier)
                     editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(feeMultiplier.toString())
                     service.metadata.start_trip_at = now
+                    setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
+                    val inputMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
+                    feeMultiplier = if (inputMultiplier < 1.0) 1.0 else inputMultiplier
+                    textFareMultiplier.text = feeMultiplier.toString()
+                    sharedPreferences.edit(commit = true) {
+                        putString(
+                            Constants.MULTIPLIER,
+                            feeMultiplier.toString()
+                        )
+                    }
+                    startServiceFee(service.start_loc.name)
                     builder.setTitle(R.string.start_ride)
                         .setCancelable(false)
                         .setView(dialogLayout)
@@ -457,17 +468,6 @@ class CurrentServiceFragment : Fragment() {
                             service.updateMetadata()
                                 .addOnSuccessListener {
                                     mainViewModel.setLoading(false)
-                                    setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
-                                    val inputMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
-                                    feeMultiplier = if (inputMultiplier < 1.0) 1.0 else inputMultiplier
-                                    textFareMultiplier.text = feeMultiplier.toString()
-                                    sharedPreferences.edit(commit = true) {
-                                        putString(
-                                            Constants.MULTIPLIER,
-                                            feeMultiplier.toString()
-                                        )
-                                    }
-                                    startServiceFee(service.start_loc.name)
                                 }
                                 .addOnFailureListener {
                                     btnStatus.text = startTrip
@@ -497,14 +497,12 @@ class CurrentServiceFragment : Fragment() {
                                 val tripFee = NumberHelper.roundDouble(getTotalFee()).toInt()
                                 val route = ServiceMetadata.serializeRoute(feesService.getPoints())
                                 val tripMultiplier = feeMultiplier
+                                stopFeeService()
+                                mainViewModel.setLoading(false)
+                                mainViewModel.completeCurrentService()
+                                Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
+                                findNavController().navigate(R.id.nav_home)
                                 service.terminate(route, tripDistance, tripFee, tripMultiplier)
-                                    .addOnSuccessListener {
-                                        stopFeeService()
-                                        mainViewModel.setLoading(false)
-                                        mainViewModel.completeCurrentService()
-                                        Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
-                                        findNavController().navigate(R.id.nav_home)
-                                    }
                                     .addOnFailureListener {
                                         mainViewModel.setLoading(false)
                                         btnStatus.text = endTrip
