@@ -43,7 +43,6 @@ import gorda.driver.background.FeesService.Companion.FEE_MULTIPLIER
 import gorda.driver.background.FeesService.Companion.ORIGIN
 import gorda.driver.background.FeesService.Companion.RESUME_RIDE
 import gorda.driver.databinding.FragmentCurrentServiceBinding
-import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.RideFees
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
@@ -178,10 +177,6 @@ class CurrentServiceFragment : Fragment() {
 
         homeFragment = HomeFragment()
         connectionServiceButton = binding.connectedServiceButton
-
-        mainViewModel.isLoading.observe(viewLifecycleOwner) { loading ->
-            btnStatus.isEnabled = !loading
-        }
 
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
@@ -444,11 +439,6 @@ class CurrentServiceFragment : Fragment() {
                             btnStatus.text = haveArrived
                             it.message?.let { message -> Log.e(TAG, message) }
                             Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
-                        }.withTimeout {
-                            mainViewModel.setLoading(false)
-                            service.metadata.arrived_at = null
-                            mainViewModel.setErrorTimeout(true)
-                            btnStatus.text = haveArrived
                         }
                 }
 
@@ -485,11 +475,6 @@ class CurrentServiceFragment : Fragment() {
                                     it.message?.let { message -> Log.e(TAG, message) }
                                     Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                                     service.metadata.start_trip_at = null
-                                }.withTimeout {
-                                    btnStatus.text = startTrip
-                                    mainViewModel.setLoading(false)
-                                    service.metadata.start_trip_at = null
-                                    mainViewModel.setErrorTimeout(true)
                                 }
                         }
                         .setNegativeButton(R.string.cancel) { dialog, _ ->
@@ -526,11 +511,6 @@ class CurrentServiceFragment : Fragment() {
                                         service.metadata.end_trip_at = null
                                         it.message?.let { message -> Log.e(TAG, message) }
                                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
-                                    }.withTimeout {
-                                        mainViewModel.setLoading(false)
-                                        btnStatus.text = endTrip
-                                        service.metadata.end_trip_at = null
-                                        mainViewModel.setErrorTimeout(true)
                                     }
                             }
                             .setNegativeButton(R.string.no) { dialog, _ ->
