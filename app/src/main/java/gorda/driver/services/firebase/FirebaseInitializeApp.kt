@@ -14,6 +14,7 @@ object FirebaseInitializeApp {
         this
     }
     val database: FirebaseDatabase = FirebaseDatabase.getInstance().run {
+        this.setPersistenceEnabled(true)
         if (BuildConfig.FIREBASE_USE_EMULATORS == "true")
             this.useEmulator(BuildConfig.FIREBASE_DATABASE_HOST, BuildConfig.FIREBASE_DATABASE_PORT.toInt())
         this
