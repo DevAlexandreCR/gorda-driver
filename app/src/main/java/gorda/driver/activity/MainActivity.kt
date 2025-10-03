@@ -286,7 +286,9 @@ class MainActivity : AppCompatActivity() {
                 if (navController.currentDestination?.id == R.id.nav_current_service)
                     navController.navigate(R.id.nav_home)
                 removeFeeServiceData()
+                this.switchConnect.visibility = View.VISIBLE
             } else if (currentService != null) {
+                this.switchConnect.visibility = View.GONE
                 when (currentService.status) {
                     Service.STATUS_IN_PROGRESS -> {
                         if (navController.currentDestination?.id != R.id.nav_current_service) {

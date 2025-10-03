@@ -70,13 +70,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         if (service == null) {
             _currentService.postValue(null)
         } else {
-            driver.value?.let {
-                if (it.id == service.driver_id) {
-                    _currentService.postValue(service)
-                } else {
-                    _currentService.postValue(null)
-                }
-            }
+            _currentService.postValue(service)
         }
     }
 
