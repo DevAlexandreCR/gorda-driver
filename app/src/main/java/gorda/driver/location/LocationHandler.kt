@@ -14,6 +14,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import gorda.driver.utils.Utils
+import kotlin.math.abs
 
 class LocationHandler private constructor(context: Context) {
     private var fusedLocationClient: FusedLocationProviderClient =
@@ -28,11 +29,28 @@ class LocationHandler private constructor(context: Context) {
 
     private val listeners = mutableListOf<LocationCallback>()
 
+    private var lastValidLocation: Location? = null
+    private var lastLocationTime: Long = 0
+    private var consecutiveInvalidLocations = 0
+
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             val location = locationResult.lastLocation
             location?.let {
-                notifyListeners(it)
+                if (isValidLocation(it)) {
+                    lastValidLocation = it
+                    lastLocationTime = System.currentTimeMillis()
+                    consecutiveInvalidLocations = 0
+                    notifyListeners(it)
+                } else {
+                    consecutiveInvalidLocations++
+                    if (consecutiveInvalidLocations >= MAX_CONSECUTIVE_INVALID_LOCATIONS) {
+                        lastValidLocation = it
+                        lastLocationTime = System.currentTimeMillis()
+                        consecutiveInvalidLocations = 0
+                        notifyListeners(it)
+                    }
+                }
             }
         }
     }
@@ -44,6 +62,11 @@ class LocationHandler private constructor(context: Context) {
         private const val LOCATION_REFRESH_TIME: Long = 2000
         private const val LOCATION_FASTEST_REFRESH_TIME: Long = 1000
         private const val LOCATION_MIN_METERS: Float = 2.0f
+        private const val MAX_SPEED_KMH = 200.0
+        private const val MAX_ACCURACY_METERS = 100.0
+        private const val MIN_TIME_BETWEEN_UPDATES = 500L
+        private const val MAX_DISTANCE_JUMP_METERS = 500.0
+        private const val MAX_CONSECUTIVE_INVALID_LOCATIONS = 5
 
         fun getInstance(context: Context): LocationHandler {
             return INSTANCE ?: synchronized(this) {
@@ -101,6 +124,46 @@ class LocationHandler private constructor(context: Context) {
                 )
             }
         }
+    }
+
+    private fun isValidLocation(location: Location): Boolean {
+        val currentTime = System.currentTimeMillis()
+
+        if (!location.hasAccuracy() || location.accuracy > MAX_ACCURACY_METERS) {
+            return false
+        }
+
+        val lastLocation = lastValidLocation
+        if (lastLocation == null) {
+            return true
+        }
+
+        val timeDiff = currentTime - lastLocationTime
+        if (timeDiff < MIN_TIME_BETWEEN_UPDATES) {
+            return false
+        }
+
+        val distance = lastLocation.distanceTo(location)
+
+        if (distance > MAX_DISTANCE_JUMP_METERS) {
+            return false
+        }
+
+        val speedMPS = distance / (timeDiff / 1000.0)
+        val speedKMH = speedMPS * 3.6
+
+        if (speedKMH > MAX_SPEED_KMH) {
+            return false
+        }
+
+        if (location.hasAltitude() && lastLocation.hasAltitude()) {
+            val altitudeDiff = abs(location.altitude - lastLocation.altitude)
+            if (altitudeDiff > 200.0) {
+                return false
+            }
+        }
+
+        return true
     }
 
     fun addListener(listener: LocationCallback) {

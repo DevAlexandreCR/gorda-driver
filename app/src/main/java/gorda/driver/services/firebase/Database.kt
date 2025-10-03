@@ -6,15 +6,21 @@ object Database {
     private val reference: DatabaseReference = FirebaseInitializeApp.database.getReference("/")
 
     fun dbServices(): DatabaseReference {
-        return reference.child("services").ref
+        val ref =  reference.child("services").ref
+        ref.keepSynced(true)
+        return ref
     }
 
     fun dbDriversAssigned(): DatabaseReference {
-        return reference.child("drivers_assigned").ref
+        val ref =  reference.child("drivers_assigned").ref
+        ref.keepSynced(true)
+        return ref
     }
 
     fun dbServiceConnections(): DatabaseReference {
-        return reference.child("service_connections").ref
+        val ref = reference.child("service_connections").ref
+        ref.keepSynced(true)
+        return ref
     }
 
     fun dbDrivers(): DatabaseReference {
