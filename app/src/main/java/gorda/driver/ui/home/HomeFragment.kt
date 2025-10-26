@@ -21,6 +21,9 @@ import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
@@ -36,6 +39,7 @@ import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
+import kotlinx.coroutines.launch
 
 class HomeFragment : Fragment() {
 
@@ -108,28 +112,39 @@ class HomeFragment : Fragment() {
             }
         }
 
-        mainViewModel.isNetWorkConnected.observe(viewLifecycleOwner) {
-            if (it) {
-                this.recyclerView.visibility = View.VISIBLE
-            } else {
-                this.recyclerView.visibility = View.INVISIBLE
+        // Observe StateFlow for network connectivity
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainViewModel.isNetWorkConnected.collect { isConnected ->
+                    if (isConnected) {
+                        recyclerView.visibility = View.VISIBLE
+                    } else {
+                        recyclerView.visibility = View.INVISIBLE
+                    }
+                }
             }
         }
 
-        mainViewModel.driverStatus.observe(viewLifecycleOwner) {
-            when (it) {
-                is DriverUpdates.IsConnected -> {
-                    if (it.connected) {
-                        this.recyclerView.visibility = View.VISIBLE
-                        homeViewModel.startListenServices()
-                    } else {
-                        homeViewModel.stopListenServices()
-                        this.recyclerView.visibility = View.INVISIBLE
+        // Observe StateFlow for driver status
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainViewModel.driverStatus.collect { driverUpdates ->
+                    when (driverUpdates) {
+                        is DriverUpdates.IsConnected -> {
+                            if (driverUpdates.connected) {
+                                recyclerView.visibility = View.VISIBLE
+                                homeViewModel.startListenServices()
+                            } else {
+                                homeViewModel.stopListenServices()
+                                recyclerView.visibility = View.INVISIBLE
+                            }
+                        }
+                        else -> {}
                     }
                 }
-                else -> {}
             }
         }
+
         return root
     }
 
@@ -239,4 +254,3 @@ class HomeFragment : Fragment() {
         _binding = null
     }
 }
-
