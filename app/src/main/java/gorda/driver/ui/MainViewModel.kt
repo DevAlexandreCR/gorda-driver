@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.android.gms.tasks.Task
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -24,6 +25,10 @@ import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     companion object {
@@ -31,12 +36,26 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     private val _lastLocation = MutableLiveData<LocationUpdates>()
-    private val _driverState = MutableLiveData<DriverUpdates>()
+
+    // Migrated to StateFlow
+    private val _driverState = MutableStateFlow<DriverUpdates?>(null)
+    val driverStatus: StateFlow<DriverUpdates?> = _driverState.asStateFlow()
+
+    private val _isNetWorkConnected = MutableStateFlow(true)
+    val isNetWorkConnected: StateFlow<Boolean> = _isNetWorkConnected.asStateFlow()
+
+    // Track if driver was connected before losing internet (for auto-reconnection)
+    private val _wasConnectedBeforeDisconnect = MutableStateFlow(false)
+    val wasConnectedBeforeDisconnect: StateFlow<Boolean> = _wasConnectedBeforeDisconnect.asStateFlow()
+
+    private val _shouldAttemptReconnect = MutableStateFlow(false)
+    val shouldAttemptReconnect: StateFlow<Boolean> = _shouldAttemptReconnect.asStateFlow()
+
+    // Keep remaining LiveData
     private val _driver: MutableLiveData<Driver?> = savedStateHandle.getLiveData(Driver.TAG)
     private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
     private val _currentService = MutableLiveData<Service?>()
     private val _nextService = MutableLiveData<Service?>()
-    private val _isNetWorkConnected = MutableLiveData(true)
     private val _isTripStarted = MutableLiveData(false)
     private val _rideFees = MutableLiveData<RideFees>()
     private val _isLoading = MutableLiveData(false)
@@ -75,12 +94,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
-    var driverStatus: LiveData<DriverUpdates> = _driverState
     var driver: LiveData<Driver?> = _driver
     var serviceUpdates: LiveData<ServiceUpdates> = _serviceUpdates
     val currentService: LiveData<Service?> = _currentService
     val nextService: LiveData<Service?> = _nextService
-    val isNetWorkConnected: LiveData<Boolean> = _isNetWorkConnected
     val isTripStarted: LiveData<Boolean> = _isTripStarted
     val rideFees: LiveData<RideFees> = _rideFees
     val isLoading: LiveData<Boolean> = _isLoading
@@ -106,7 +123,34 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun changeNetWorkStatus(isConnected: Boolean) {
-        _isNetWorkConnected.postValue(isConnected)
+        viewModelScope.launch {
+            val previousState = _isNetWorkConnected.value
+            val currentDriverState = _driverState.value
+
+            Log.d(TAG, "Network status changed: $isConnected (previous: $previousState)")
+
+            _isNetWorkConnected.emit(isConnected)
+
+            // If network was lost, remember if we were connected
+            if (!isConnected && previousState) {
+                if (currentDriverState is DriverUpdates.IsConnected && currentDriverState.connected) {
+                    Log.d(TAG, "Network lost while driver was connected, saving state for reconnection")
+                    _wasConnectedBeforeDisconnect.emit(true)
+                    _shouldAttemptReconnect.emit(true)
+                }
+            }
+
+            // If network is recovered and we should reconnect
+            if (isConnected && !previousState) {
+                Log.d(TAG, "Network recovered! shouldAttemptReconnect=${_shouldAttemptReconnect.value}")
+                if (_shouldAttemptReconnect.value) {
+                    Log.d(TAG, "Triggering automatic reconnection...")
+                    // Force emit to ensure MainActivity detects the change
+                    _shouldAttemptReconnect.emit(false)
+                    _shouldAttemptReconnect.emit(true)
+                }
+            }
+        }
     }
 
     fun setServiceUpdateStartLocation(starLoc: LocType) {
@@ -183,23 +227,33 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun isConnected(driverId: String) {
-        _driverState.postValue(DriverUpdates.connecting(true))
-        _isLoading.postValue(true)
-        DriverRepository.isConnected(driverId) { connected ->
-            _isLoading.postValue(false)
-            _driverState.postValue(DriverUpdates.connecting(false))
-            _driverState.postValue(DriverUpdates.setConnected(connected))
+        viewModelScope.launch {
+            _driverState.emit(DriverUpdates.connecting(true))
+            _isLoading.postValue(true)
+            DriverRepository.isConnected(driverId) { connected ->
+                _isLoading.postValue(false)
+                viewModelScope.launch {
+                    _driverState.emit(DriverUpdates.connecting(false))
+                    _driverState.emit(DriverUpdates.setConnected(connected))
+                }
+            }
         }
     }
 
     fun connecting() {
-        _driverState.postValue(DriverUpdates.connecting(true))
+        viewModelScope.launch {
+            _driverState.emit(DriverUpdates.connecting(true))
+        }
         _isLoading.postValue(true)
     }
 
     fun connected() {
-        _driverState.postValue(DriverUpdates.connecting(false))
-        _driverState.postValue(DriverUpdates.setConnected(true))
+        viewModelScope.launch {
+            _driverState.emit(DriverUpdates.connecting(false))
+            _driverState.emit(DriverUpdates.setConnected(true))
+            _shouldAttemptReconnect.emit(false)
+            _wasConnectedBeforeDisconnect.emit(false)
+        }
         _isLoading.postValue(false)
     }
 
@@ -208,30 +262,54 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun disconnect(driver: Driver) {
-        _driverState.postValue(DriverUpdates.connecting(true))
+        viewModelScope.launch {
+            _driverState.emit(DriverUpdates.connecting(true))
+        }
         _isLoading.postValue(true)
         driver.disconnect().addOnSuccessListener {
-            _driverState.postValue(DriverUpdates.connecting(false))
-            _driverState.postValue(DriverUpdates.setConnected(false))
+            viewModelScope.launch {
+                _driverState.emit(DriverUpdates.connecting(false))
+                _driverState.emit(DriverUpdates.setConnected(false))
+                _wasConnectedBeforeDisconnect.emit(false)
+                _shouldAttemptReconnect.emit(false)
+            }
             _isLoading.postValue(false)
         }.addOnFailureListener { e ->
-            _driverState.postValue(DriverUpdates.setConnected(true))
-            _driverState.postValue(DriverUpdates.connecting(false))
+            viewModelScope.launch {
+                _driverState.emit(DriverUpdates.setConnected(true))
+                _driverState.emit(DriverUpdates.connecting(false))
+            }
             _isLoading.postValue(false)
             e.message?.let { message -> Log.e(TAG, message) }
         }.withTimeout {
-            _driverState.postValue(DriverUpdates.setConnected(true))
-            _driverState.postValue(DriverUpdates.connecting(false))
+            viewModelScope.launch {
+                _driverState.emit(DriverUpdates.setConnected(true))
+                _driverState.emit(DriverUpdates.connecting(false))
+            }
             this.setErrorTimeout(true)
         }
     }
 
     fun setConnectedLocal(connected: Boolean) {
-        _driverState.postValue(DriverUpdates.setConnected(connected))
+        viewModelScope.launch {
+            _driverState.emit(DriverUpdates.setConnected(connected))
+            if (!connected) {
+                _wasConnectedBeforeDisconnect.emit(false)
+                _shouldAttemptReconnect.emit(false)
+            }
+        }
     }
 
     fun setConnecting(connecting: Boolean) {
-        _driverState.postValue(DriverUpdates.connecting(connecting))
+        viewModelScope.launch {
+            _driverState.emit(DriverUpdates.connecting(connecting))
+        }
+    }
+
+    fun clearReconnectionFlag() {
+        viewModelScope.launch {
+            _shouldAttemptReconnect.emit(false)
+        }
     }
 
     // Add method to update fee data from the service

@@ -32,6 +32,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.edit
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
@@ -66,6 +69,7 @@ import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
 import gorda.driver.utils.Utils
+import kotlinx.coroutines.launch
 
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -246,21 +250,90 @@ class MainActivity : AppCompatActivity() {
 
         this.observeDriver(navView)
 
-        viewModel.isNetWorkConnected.observe(this) {
-            if (!it) {
-                connectionBar.visibility = View.VISIBLE
-                viewModel.setLoading(true)
-                viewModel.setConnecting(true)
-            } else {
-                driver?.let { d ->
-                    Auth.reloadUser().addOnSuccessListener {
-                        viewModel.isConnected(d.id)
-                    }.withTimeout {
-                        viewModel.setErrorTimeout(true)
+        // Observe StateFlow for network connectivity
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.isNetWorkConnected.collect { isConnected ->
+                    if (!isConnected) {
+                        connectionBar.visibility = View.VISIBLE
+                        viewModel.setLoading(true)
+                        viewModel.setConnecting(true)
+                    } else {
+                        driver?.let { d ->
+                            Auth.reloadUser().addOnSuccessListener {
+                                viewModel.isConnected(d.id)
+                            }.withTimeout {
+                                viewModel.setErrorTimeout(true)
+                            }
+                        }
+                        connectionBar.visibility = View.GONE
+                        viewModel.setLoading(false)
                     }
                 }
-                connectionBar.visibility = View.GONE
-                viewModel.setLoading(false)
+            }
+        }
+
+        // Observe StateFlow for automatic reconnection
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.shouldAttemptReconnect.collect { shouldReconnect ->
+                    Log.d(TAG, "shouldAttemptReconnect changed to: $shouldReconnect, networkConnected: ${viewModel.isNetWorkConnected.value}, switchChecked: ${switchConnect.isChecked}")
+
+                    if (shouldReconnect && viewModel.isNetWorkConnected.value) {
+                        Log.d(TAG, "Attempting automatic reconnection...")
+                        // Only reconnect if switch was checked (user intended to be connected)
+                        if (switchConnect.isChecked) {
+                            driver?.let { d ->
+                                // Small delay to ensure network is fully stabilized
+                                kotlinx.coroutines.delay(500)
+                                attemptReconnection(d)
+                            }
+                        } else {
+                            // User manually disconnected, clear the flag
+                            Log.d(TAG, "Switch is OFF, clearing reconnection flag")
+                            viewModel.clearReconnectionFlag()
+                        }
+                    }
+                }
+            }
+        }
+
+        // Observe StateFlow for driver status
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.driverStatus.collect { driverUpdates ->
+                    when (driverUpdates) {
+                        is DriverUpdates.IsConnected -> {
+                            switchConnect.isChecked = driverUpdates.connected
+                            switchConnect.isEnabled = true
+                            if (driverUpdates.connected) {
+                                switchConnect.setText(R.string.status_connected)
+                                if (!LocationHandler.checkPermissions(this@MainActivity)) {
+                                    viewModel.setConnectedLocal(false)
+                                    this@MainActivity.stopLocationService()
+                                } else {
+                                    this@MainActivity.startLocationService()
+                                }
+                            } else {
+                                switchConnect.setText(R.string.status_disconnected)
+                                stopLocationService()
+                            }
+                        }
+
+                        is DriverUpdates.Connecting -> {
+                            if (driverUpdates.connecting) {
+                                switchConnect.setText(R.string.status_connecting)
+                                switchConnect.isEnabled = false
+                            } else {
+                                switchConnect.isEnabled = true
+                            }
+                        }
+
+                        else -> {
+                            switchConnect.isEnabled = true
+                        }
+                    }
+                }
             }
         }
 
@@ -303,6 +376,58 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun attemptReconnection(driver: Driver) {
+        Log.d(TAG, "Starting reconnection process...")
+
+        // Check if we have a valid location
+        if (!::lastLocation.isInitialized) {
+            Log.w(TAG, "No location available for reconnection, waiting...")
+            // Register for connection broadcast to get location
+            LocalBroadcastManager.getInstance(this)
+                .registerReceiver(
+                    connectionBroadcastReceiver,
+                    IntentFilter(ConnectionBroadcastReceiver.ACTION_CONNECTION)
+                )
+            viewModel.connecting()
+            startLocationService()
+            return
+        }
+
+        // Attempt to reconnect with last known location
+        viewModel.connecting()
+        driver.connect(object: LocInterface {
+            override var lat = lastLocation.latitude
+            override var lng = lastLocation.longitude
+        }).addOnSuccessListener {
+            Log.d(TAG, "Automatic reconnection successful")
+            viewModel.setLoading(false)
+            viewModel.setConnectedLocal(true)
+            viewModel.setConnecting(false)
+            viewModel.connected()
+            startLocationService()
+        }.addOnFailureListener { e ->
+            Log.e(TAG, "Automatic reconnection failed: ${e.message}")
+            stopLocationService()
+            viewModel.setLoading(false)
+            viewModel.setConnectedLocal(false)
+            viewModel.setConnecting(false)
+            viewModel.clearReconnectionFlag()
+            switchConnect.setText(R.string.status_disconnected)
+            switchConnect.isChecked = false
+            Toast.makeText(this, R.string.error_reconnection_failed, Toast.LENGTH_SHORT).show()
+        }.withTimeout {
+            Log.e(TAG, "Automatic reconnection timeout")
+            stopLocationService()
+            viewModel.setConnecting(false)
+            viewModel.setLoading(false)
+            viewModel.setConnectedLocal(false)
+            viewModel.setErrorTimeout(true)
+            viewModel.clearReconnectionFlag()
+            switchConnect.setText(R.string.status_disconnected)
+            switchConnect.isChecked = false
         }
     }
 
@@ -424,42 +549,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeDriver(navView: NavigationView) {
-        viewModel.driverStatus.observe(this) { driverUpdates ->
-            when (driverUpdates) {
-                is DriverUpdates.IsConnected -> {
-                    switchConnect.isChecked = driverUpdates.connected
-                    switchConnect.setEnabled(true)
-                    switchConnect.setText(R.string.status_connected)
-                    if (driverUpdates.connected) {
-                        switchConnect.setText(R.string.status_connected)
-                        if (!LocationHandler.checkPermissions(this)) {
-                            DriverUpdates.setConnected(false)
-                            this.stopLocationService()
-                        } else {
-                            this.startLocationService()
-                            switchConnect.setText(R.string.status_connected)
-                        }
-                    } else {
-                        switchConnect.setText(R.string.status_disconnected)
-                        stopLocationService()
-                    }
-                }
-
-                is DriverUpdates.Connecting -> {
-                    if (driverUpdates.connecting) {
-                        switchConnect.setText(R.string.status_connecting)
-                        switchConnect.setEnabled(false)
-                    } else {
-                        switchConnect.setEnabled(true)
-                    }
-                }
-
-                else -> {
-                    switchConnect.setEnabled(true)
-                }
-            }
-        }
-
         viewModel.driver.observe(this) {
             when (it) {
                 is Driver -> {
