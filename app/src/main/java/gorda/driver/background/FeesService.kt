@@ -88,9 +88,9 @@ class FeesService: Service() {
                     val loadedFees = gson.fromJson(feesJson, RideFees::class.java)
                     if (loadedFees != null) {
                         rideFees = loadedFees
-                        android.util.Log.d("FeesService", "Loaded fees: base=${rideFees.feesBase}, km=${rideFees.priceKm}, min=${rideFees.priceMin}")
+                        Log.d("FeesService", "Loaded fees: base=${rideFees.feesBase}, km=${rideFees.priceKm}, min=${rideFees.priceMin}")
                     } else {
-                        android.util.Log.w("FeesService", "Failed to parse fees, using defaults")
+                        Log.w("FeesService", "Failed to parse fees, using defaults")
                         rideFees = RideFees()
                     }
                 } catch (e: Exception) {
@@ -192,9 +192,9 @@ class FeesService: Service() {
                 if (points.isNotEmpty()) {
                     // Recalculate distance from points as a validation
                     calculateTotalDistance()
-                    android.util.Log.d("FeesService", "Restored ride data: ${points.size} points, distance: $totalDistance km, saved: $savedDistance km")
+                    Log.d("FeesService", "Restored ride data: ${points.size} points, distance: $totalDistance km, saved: $savedDistance km")
                 } else {
-                    android.util.Log.w("FeesService", "Points list is empty after restoration")
+                    Log.w("FeesService", "Points list is empty after restoration")
                     totalDistance = savedDistance
                 }
             } catch (e: Exception) {
@@ -219,17 +219,17 @@ class FeesService: Service() {
 
     private fun startLocationTracking() {
         locationHandler.addListener(locationCallback)
-        android.util.Log.d("FeesService", "Started location tracking")
+        Log.d("FeesService", "Started location tracking")
     }
 
     private fun stopLocationTracking() {
         locationHandler.removeListener(locationCallback)
-        android.util.Log.d("FeesService", "Stopped location tracking")
+        Log.d("FeesService", "Stopped location tracking")
     }
 
     private fun addLocationPoint(latLng: LatLng) {
         points.add(latLng)
-        android.util.Log.d("FeesService", "Added location point: ${latLng.latitude}, ${latLng.longitude}. Total points: ${points.size}")
+        Log.d("FeesService", "Added location point: ${latLng.latitude}, ${latLng.longitude}. Total points: ${points.size}")
         savePoints()
         calculateTotalDistance()
     }
@@ -284,7 +284,7 @@ class FeesService: Service() {
         }
         totalDistance = distance
         saveTotalDistance()
-        android.util.Log.d("FeesService", "Total distance calculated: $totalDistance meters from ${points.size} points")
+        Log.d("FeesService", "Total distance calculated: $totalDistance meters from ${points.size} points")
     }
 
     fun getPoints(): ArrayList<LatLng> = points
