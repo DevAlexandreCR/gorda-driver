@@ -85,9 +85,13 @@ class NetworkMonitor(private val context: Context,
 
             connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
 
-            // Check initial state
-            currentNetworkState = isCurrentlyConnected()
-            Log.d(TAG, "Initial network state: ${if (currentNetworkState) "CONNECTED" else "DISCONNECTED"}")
+            // Check initial state and notify
+            val initialState = isCurrentlyConnected()
+            currentNetworkState = initialState
+            Log.d(TAG, "Initial network state: ${if (initialState) "CONNECTED" else "DISCONNECTED"}")
+
+            // Notify the callback with the current state to update UI properly
+            onNetworkChange.invoke(initialState)
 
             isMonitoring = true
         }
@@ -98,8 +102,6 @@ class NetworkMonitor(private val context: Context,
             Log.d(TAG, "Stopping network monitoring")
             connectivityManager.unregisterNetworkCallback(networkCallback)
             isMonitoring = false
-            currentNetworkState = false
-            onNetworkChange.invoke(false)
         }
     }
 
