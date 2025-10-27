@@ -230,9 +230,12 @@ class CurrentServiceFragment : Fragment() {
                             builder.setNegativeButton(R.string.no) { dialog, _ ->
                                 dialog.dismiss()
                                 scrollViewFees.visibility = View.VISIBLE
-                                sharedPreferences.edit(commit = true) { remove(Constants.MULTIPLIER) }
-                                sharedPreferences.edit(commit = true) { remove(Constants.POINTS) }
-                                sharedPreferences.edit(commit = true) { remove(Constants.START_TIME) }
+                                sharedPreferences.edit(commit = true) {
+                                    remove(Constants.MULTIPLIER)
+                                    remove(Constants.POINTS)
+                                    remove(Constants.START_TIME)
+                                    remove(FeesService.TOTAL_DISTANCE)
+                                }
                                 totalRide = 0.0
                                 startServiceFee(service.start_loc.name)
                                 startingRide = true
@@ -575,6 +578,7 @@ class CurrentServiceFragment : Fragment() {
             remove(Constants.POINTS)
             remove(Constants.START_TIME)
             remove(CURRENT_FEES)
+            remove(FeesService.TOTAL_DISTANCE)
         }
 
         mainViewModel.changeConnectTripService(false)
