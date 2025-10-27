@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
@@ -36,6 +37,7 @@ class FeesService: Service() {
         const val CURRENT_FEES = "CURRENT_FEES"
         const val FEE_MULTIPLIER = "FEE_MULTIPLIER"
         const val RESUME_RIDE = "RESUME_RIDE"
+        const val TOTAL_DISTANCE = "TOTAL_DISTANCE"
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "FeesServiceChannel"
         private const val UPDATE_INTERVAL = 1000L // Update every second
@@ -78,14 +80,25 @@ class FeesService: Service() {
             multiplier = it.getDoubleExtra(FEE_MULTIPLIER, 1.0)
             val resumeRide = it.getBooleanExtra(RESUME_RIDE, false)
 
+            // Load fees from SharedPreferences with validation
             val feesJson = sharedPreferences.getString(CURRENT_FEES, null)
             if (!feesJson.isNullOrEmpty()) {
                 try {
                     val gson = Gson()
-                    rideFees = gson.fromJson(feesJson, RideFees::class.java) ?: RideFees()
+                    val loadedFees = gson.fromJson(feesJson, RideFees::class.java)
+                    if (loadedFees != null) {
+                        rideFees = loadedFees
+                        android.util.Log.d("FeesService", "Loaded fees: base=${rideFees.feesBase}, km=${rideFees.priceKm}, min=${rideFees.priceMin}")
+                    } else {
+                        android.util.Log.w("FeesService", "Failed to parse fees, using defaults")
+                        rideFees = RideFees()
+                    }
                 } catch (e: Exception) {
+                    Log.e("FeesService", "Error loading fees: ${e.message}")
                     rideFees = RideFees()
                 }
+            } else {
+                Log.w("FeesService", "No fees found in SharedPreferences, using defaults")
             }
 
             if (resumeRide) {
@@ -93,7 +106,9 @@ class FeesService: Service() {
             } else {
                 startTime = SystemClock.elapsedRealtime()
                 points.clear()
+                totalDistance = 0.0
                 saveStartTime()
+                saveTotalDistance()
             }
             startLocationTracking()
         }
@@ -152,21 +167,44 @@ class FeesService: Service() {
         }
     }
 
+    private fun saveTotalDistance() {
+        sharedPreferences.edit(commit = true) {
+            putString(TOTAL_DISTANCE, totalDistance.toString())
+        }
+    }
+
     private fun restoreRideData() {
         startTime = sharedPreferences.getLong(Constants.START_TIME, SystemClock.elapsedRealtime())
         val savedMultiplier = sharedPreferences.getString(Constants.MULTIPLIER, "1.0")?.toDoubleOrNull() ?: 1.0
         multiplier = if (savedMultiplier < 1.0) 1.0 else savedMultiplier
 
+        // Restore total distance first
+        val savedDistance = sharedPreferences.getString(TOTAL_DISTANCE, "0.0")?.toDoubleOrNull() ?: 0.0
+        totalDistance = savedDistance
+
         val pointsJson = sharedPreferences.getString(Constants.POINTS, null)
         if (!pointsJson.isNullOrEmpty()) {
-            val gson = Gson()
-            val type = object : TypeToken<ArrayList<LatLng>>() {}.type
-            points = gson.fromJson(pointsJson, type) ?: ArrayList()
+            try {
+                val gson = Gson()
+                val type = object : TypeToken<ArrayList<LatLng>>() {}.type
+                points = gson.fromJson(pointsJson, type) ?: ArrayList()
 
-            if (points.isNotEmpty()) {
-                calculateTotalDistance()
-                android.util.Log.d("FeesService", "Restored ride data: ${points.size} points, distance: $totalDistance km")
+                if (points.isNotEmpty()) {
+                    // Recalculate distance from points as a validation
+                    calculateTotalDistance()
+                    android.util.Log.d("FeesService", "Restored ride data: ${points.size} points, distance: $totalDistance km, saved: $savedDistance km")
+                } else {
+                    android.util.Log.w("FeesService", "Points list is empty after restoration")
+                    totalDistance = savedDistance
+                }
+            } catch (e: Exception) {
+                Log.e("FeesService", "Error restoring points: ${e.message}")
+                points = ArrayList()
+                totalDistance = savedDistance
             }
+        } else {
+            Log.w("FeesService", "No points found in SharedPreferences, using saved distance: $savedDistance km")
+            points = ArrayList()
         }
     }
 
@@ -181,14 +219,17 @@ class FeesService: Service() {
 
     private fun startLocationTracking() {
         locationHandler.addListener(locationCallback)
+        android.util.Log.d("FeesService", "Started location tracking")
     }
 
     private fun stopLocationTracking() {
         locationHandler.removeListener(locationCallback)
+        android.util.Log.d("FeesService", "Stopped location tracking")
     }
 
     private fun addLocationPoint(latLng: LatLng) {
         points.add(latLng)
+        android.util.Log.d("FeesService", "Added location point: ${latLng.latitude}, ${latLng.longitude}. Total points: ${points.size}")
         savePoints()
         calculateTotalDistance()
     }
@@ -242,6 +283,8 @@ class FeesService: Service() {
             }
         }
         totalDistance = distance
+        saveTotalDistance()
+        android.util.Log.d("FeesService", "Total distance calculated: $totalDistance meters from ${points.size} points")
     }
 
     fun getPoints(): ArrayList<LatLng> = points
