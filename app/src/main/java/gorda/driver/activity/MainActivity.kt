@@ -281,15 +281,16 @@ class MainActivity : AppCompatActivity() {
 
                     if (shouldReconnect && viewModel.isNetWorkConnected.value) {
                         Log.d(TAG, "Attempting automatic reconnection...")
-                        // Only reconnect if switch was checked (user intended to be connected)
                         if (switchConnect.isChecked) {
                             driver?.let { d ->
-                                // Small delay to ensure network is fully stabilized
-                                kotlinx.coroutines.delay(500)
-                                attemptReconnection(d)
+                                kotlinx.coroutines.delay(2000)
+                                if (viewModel.isNetWorkConnected.value) {
+                                    attemptReconnection(d)
+                                } else {
+                                    Log.d(TAG, "Network lost again during delay, aborting reconnection")
+                                }
                             }
                         } else {
-                            // User manually disconnected, clear the flag
                             Log.d(TAG, "Switch is OFF, clearing reconnection flag")
                             viewModel.clearReconnectionFlag()
                         }
@@ -675,5 +676,10 @@ class MainActivity : AppCompatActivity() {
         if (navController.currentDestination != null && navController.currentDestination?.id != R.id.nav_home) {
             super.onBackPressed()
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        networkMonitor.cleanup()
     }
 }

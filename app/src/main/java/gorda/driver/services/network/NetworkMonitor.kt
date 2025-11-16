@@ -6,93 +6,117 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-class NetworkMonitor(private val context: Context,
-                     private val onNetworkChange: (isConnected: Boolean) -> Unit) {
+class NetworkMonitor(
+    private val context: Context,
+    private val onNetworkChange: (isConnected: Boolean) -> Unit
+) {
 
     companion object {
         private const val TAG = "NetworkMonitor"
+        private const val DEBOUNCE_DELAY = 1000L
     }
 
     private val connectivityManager =
-        this.context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private var isMonitoring = false
     private var currentNetworkState = false
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var debounceJob: Job? = null
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             Log.d(TAG, "Network available: $network")
-            if (hasInternetConnectivity(network)) {
-                Log.d(TAG, "Network has internet connectivity")
-                updateNetworkState(true)
-            }
         }
 
         override fun onLost(network: Network) {
             Log.d(TAG, "Network lost: $network")
-            // Check if there are any other active networks
-            if (!hasAnyActiveNetwork()) {
-                Log.d(TAG, "No active networks available")
-                updateNetworkState(false)
-            }
+            scheduleNetworkCheck(false)
         }
 
-        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+        override fun onCapabilitiesChanged(
+            network: Network,
+            networkCapabilities: NetworkCapabilities
+        ) {
             Log.d(TAG, "Network capabilities changed: $network")
             val hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
                     networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-            updateNetworkState(hasInternet)
+
+            Log.d(TAG, "Network has internet: $hasInternet")
+            scheduleNetworkCheck(hasInternet)
         }
 
         override fun onUnavailable() {
             Log.d(TAG, "Network unavailable")
-            updateNetworkState(false)
+            scheduleNetworkCheck(false)
         }
+    }
 
-        private fun hasInternetConnectivity(network: Network): Boolean {
-            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    private fun scheduleNetworkCheck(hasInternet: Boolean) {
+        debounceJob?.cancel()
+        debounceJob = scope.launch {
+            delay(DEBOUNCE_DELAY)
+            val actualState = if (hasInternet) {
+                hasInternet
+            } else {
+                // Double-check if there are any active networks
+                hasAnyActiveNetwork()
+            }
+            updateNetworkState(actualState)
         }
+    }
 
-        private fun hasAnyActiveNetwork(): Boolean {
+    private fun hasAnyActiveNetwork(): Boolean {
+        return try {
             val activeNetwork = connectivityManager.activeNetwork ?: return false
             val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-        }
 
-        private fun updateNetworkState(isConnected: Boolean) {
-            if (currentNetworkState != isConnected) {
-                currentNetworkState = isConnected
-                Log.d(TAG, "Network state changed to: ${if (isConnected) "CONNECTED" else "DISCONNECTED"}")
-                onNetworkChange.invoke(isConnected)
-            }
+            val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            val isValidated = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+
+            Log.d(TAG, "Active network check - Internet: $hasInternet, Validated: $isValidated")
+            hasInternet && isValidated
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking active network: ${e.message}")
+            false
+        }
+    }
+
+    private fun updateNetworkState(isConnected: Boolean) {
+        if (currentNetworkState != isConnected) {
+            currentNetworkState = isConnected
+            Log.d(TAG, "Network state CHANGED to: ${if (isConnected) "CONNECTED" else "DISCONNECTED"}")
+            onNetworkChange(isConnected)
+        } else {
+            Log.d(TAG, "Network state UNCHANGED: ${if (isConnected) "CONNECTED" else "DISCONNECTED"}")
         }
     }
 
     fun startMonitoring() {
         if (!isMonitoring) {
             Log.d(TAG, "Starting network monitoring")
-            val networkRequest =
-                NetworkRequest.Builder()
-                    .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
-                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                    .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
-                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                    .build()
+
+            val networkRequest = NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
 
             connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
 
-            // Check initial state and notify
             val initialState = isCurrentlyConnected()
             currentNetworkState = initialState
             Log.d(TAG, "Initial network state: ${if (initialState) "CONNECTED" else "DISCONNECTED"}")
 
-            // Notify the callback with the current state to update UI properly
-            onNetworkChange.invoke(initialState)
-
+            onNetworkChange(initialState)
             isMonitoring = true
         }
     }
@@ -100,15 +124,22 @@ class NetworkMonitor(private val context: Context,
     fun stopMonitoring() {
         if (isMonitoring) {
             Log.d(TAG, "Stopping network monitoring")
-            connectivityManager.unregisterNetworkCallback(networkCallback)
+            debounceJob?.cancel()
+            try {
+                connectivityManager.unregisterNetworkCallback(networkCallback)
+            } catch (e: IllegalArgumentException) {
+                Log.w(TAG, "NetworkCallback was already unregistered")
+            }
             isMonitoring = false
         }
     }
 
     private fun isCurrentlyConnected(): Boolean {
-        val activeNetwork = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        return hasAnyActiveNetwork()
+    }
+
+    fun cleanup() {
+        stopMonitoring()
+        scope.cancel()
     }
 }
