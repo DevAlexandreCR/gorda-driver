@@ -1,5 +1,18 @@
 # Gorda Driver - Project Agents Documentation
 
+## ⚠️ Important: Coding Guidelines
+
+**When working on this project:**
+- **DO NOT** create documentation files for code changes (no README, SUMMARY, CHANGELOG files for individual changes)
+- **DO NOT** create markdown files explaining what was done
+- **DO** make changes directly to the code
+- **DO** use clear commit messages
+- **DO** add inline comments in English when necessary
+- **DO** update CHANGELOG.md only for version releases
+- Focus on code implementation, not documentation of changes
+
+---
+
 ## Table of Contents
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
