@@ -179,6 +179,8 @@ class CurrentServiceFragment : Fragment() {
         connectionServiceButton = binding.connectedServiceButton
 
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
+            toggleFragmentButton.visibility = View.GONE
+
             if (service != null) {
                 setOnClickListener(service)
                 textName.text = service.name
@@ -207,7 +209,7 @@ class CurrentServiceFragment : Fragment() {
                     val wazeIntent = Intent(Intent.ACTION_VIEW, uri.toUri())
                     try {
                         startActivity(wazeIntent)
-                    } catch (e: ActivityNotFoundException) {
+                    } catch (_: ActivityNotFoundException) {
                         Toast.makeText(requireContext(), R.string.not_waze, Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -582,6 +584,7 @@ class CurrentServiceFragment : Fragment() {
         }
 
         mainViewModel.changeConnectTripService(false)
+        toggleFragmentButton.visibility = View.GONE
     }
 
     private fun getTotalFee(): Double {
