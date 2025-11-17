@@ -14,13 +14,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
-import gorda.driver.BuildConfig
 import gorda.driver.R
 import gorda.driver.databinding.ActivityStartBinding
 import gorda.driver.services.firebase.Auth
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
-import io.sentry.Sentry
 
 
 class StartActivity : AppCompatActivity() {
@@ -80,12 +78,6 @@ class StartActivity : AppCompatActivity() {
             notificationManager.createNotificationChannel(servicesChannel)
             notificationManager.createNotificationChannel(messagesChannel)
         }
-
-        setupSentry()
-    }
-
-    private fun setupSentry() {
-        Sentry.init(BuildConfig.SENTRY_DSN);
     }
 
     override fun onResume() {
