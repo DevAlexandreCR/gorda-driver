@@ -37,10 +37,11 @@ android {
     }
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
     packagingOptions {
         jniLibs {
-            useLegacyPackaging true
+            useLegacyPackaging false
         }
     }
     namespace 'gorda.driver'
