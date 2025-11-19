@@ -122,14 +122,12 @@ android {
     namespace 'gorda.driver'
 }
 
-afterEvaluate {
-    android.applicationVariants.all { variant ->
-        if (variant.buildType.name == "release") {
-            def flavorName = (variant.productFlavors && !variant.productFlavors.isEmpty()) ? variant.productFlavors[0].name : "redblanca"
-            def signing = android.signingConfigs.findByName(flavorName) ?: android.signingConfigs.findByName("redblanca")
-            if (signing != null) {
-                variant.signingConfig = signing
-            }
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        def flavorName = variant.productFlavors.find { it.first == "brand" }?.second ?: variant.flavorName ?: "redblanca"
+        def signing = project.android.signingConfigs.findByName(flavorName) ?: project.android.signingConfigs.findByName("redblanca")
+        if (signing != null) {
+            variant.signingConfig?.setConfig(signing)
         }
     }
 }
