@@ -41,7 +41,7 @@ android {
     }
     packagingOptions {
         jniLibs {
-            useLegacyPackaging false
+            useLegacyPackaging = false
         }
     }
     namespace 'gorda.driver'
