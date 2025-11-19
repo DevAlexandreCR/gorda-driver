@@ -45,6 +45,21 @@ The app reads and writes data to Firebase Realtime Database and Firestore. It al
 ## WhatsApp Integration Flow
 Clients can request a ride through WhatsApp. The backend processes the message and creates a `Service` record in Firebase, referencing the client via `wp_client_id`. Drivers receive a push notification and can accept or reject the request directly from the app.
 
+## White-label build
+Add new brands using the `brand` flavor dimension (published flavor: `redblanca` / `gorda.driver`).
+
+1. Duplicate the sample brand folders: create `app/src/<brand>/res` plus `app/src/<brand>/google-services.json` (match the applicationId).
+2. Add `app_name`, navigation header strings, and any brand-only strings in `app/src/<brand>/res/values/strings.xml`.
+3. Drop brand icons/splash assets by overriding `ic_launcher*` (and optional splash) under `app/src/<brand>/res/mipmap-*` or `drawable`.
+4. Override colors/themes if needed via `app/src/<brand>/res/values/colors.xml`.
+5. Provide brand Firebase config in `app/src/<brand>/google-services.json` and matching FCM/OAuth keys in `local.properties` or CI secrets.
+6. In `app/build.gradle`, add a new `productFlavors { <brand> { ... } }` block with `applicationId`, manifest placeholders (deep links/OAuth), `buildConfigField` values (BASE_URL, SUPPORT_EMAIL, etc.), and a `versionCode = brandOffset + baseVersion`.
+7. (Optional) Add a signingConfig `<brand>` keyed from Gradle properties (`<Brand>StoreFile`, `<Brand>StorePassword`, `<Brand>KeyAlias`, `<Brand>KeyPassword`).
+8. Build with `./gradlew :app:bundle<Brand>Release` (release signing auto-picks the matching signingConfig when present).
+9. Upload the generated AAB to the corresponding Play Console track; keep `redblanca` using `applicationId=gorda.driver` for continuity.
+
+CI matrix hint: run a matrix over `brand ∈ {redblanca,demo}` and `buildType ∈ {debug,release}` to produce one AAB per brand and upload with brand-specific service-account credentials.
+
 ## Contributing
 1. Fork the project and create your feature branch from `master`.
 2. Commit your changes with clear messages.
