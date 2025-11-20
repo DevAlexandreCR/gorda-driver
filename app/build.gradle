@@ -22,6 +22,81 @@ android {
         buildConfigField "long", "BUILD_TIMESTAMP", "${System.currentTimeMillis()}L"
     }
 
+    flavorDimensions += "brand"
+
+    def baseVersionCode = 69
+    def versionCodeSpacing = 1_000_000
+
+    signingConfigs {
+        redblanca {
+            if (project.hasProperty("RedBlancaStoreFile")) {
+                storeFile file(project.property("RedBlancaStoreFile"))
+            }
+            if (project.hasProperty("RedBlancaStorePassword")) {
+                storePassword project.property("RedBlancaStorePassword")
+            }
+            if (project.hasProperty("RedBlancaKeyAlias")) {
+                keyAlias project.property("RedBlancaKeyAlias")
+            }
+            if (project.hasProperty("RedBlancaKeyPassword")) {
+                keyPassword project.property("RedBlancaKeyPassword")
+            }
+        }
+
+        demo {
+            if (project.hasProperty("DemoStoreFile")) {
+                storeFile file(project.property("DemoStoreFile"))
+            }
+            if (project.hasProperty("DemoStorePassword")) {
+                storePassword project.property("DemoStorePassword")
+            }
+            if (project.hasProperty("DemoKeyAlias")) {
+                keyAlias project.property("DemoKeyAlias")
+            }
+            if (project.hasProperty("DemoKeyPassword")) {
+                keyPassword project.property("DemoKeyPassword")
+            }
+        }
+    }
+
+    productFlavors {
+        redblanca {
+            dimension "brand"
+            applicationId "gorda.driver"
+            versionCode baseVersionCode
+            manifestPlaceholders = [
+                    appAuthRedirectScheme: "gorda",
+                    deeplinkHost        : "driver.redblanca.app",
+                    deeplinkScheme      : "https",
+                    appName             : "Red Blanca",
+                    MAPS_API_KEY        : (project.findProperty("MAPS_API_KEY") ?: "")
+            ]
+            buildConfigField "String", "BRAND_NAME", '"Red Blanca"'
+            buildConfigField "String", "SUPPORT_EMAIL", '"driver@redblanca.com.co"'
+            buildConfigField "String", "BASE_URL", '"https://api.redblanca.com"'
+            buildConfigField "String", "PRIVACY_URL", '"https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764"'
+            buildConfigField "String", "TERMS_URL", '"https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764"'
+        }
+
+        demo {
+            dimension "brand"
+            applicationId "gorda.demo"
+            versionCode versionCodeSpacing + baseVersionCode
+            manifestPlaceholders = [
+                    appAuthRedirectScheme: "gordademo",
+                    deeplinkHost        : "demo.gorda.app",
+                    deeplinkScheme      : "https",
+                    appName             : "Gorda Demo",
+                    MAPS_API_KEY        : (project.findProperty("MAPS_API_KEY_DEMO") ?: (project.findProperty("MAPS_API_KEY") ?: ""))
+            ]
+            buildConfigField "String", "BRAND_NAME", '"Gorda Demo"'
+            buildConfigField "String", "SUPPORT_EMAIL", '"support@gorda.demo"'
+            buildConfigField "String", "BASE_URL", '"https://api.demo.gorda.app"'
+            buildConfigField "String", "PRIVACY_URL", '"https://demo.gorda.app/privacy"'
+            buildConfigField "String", "TERMS_URL", '"https://demo.gorda.app/terms"'
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -45,6 +120,16 @@ android {
         }
     }
     namespace 'gorda.driver'
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        def flavorName = variant.productFlavors.find { it.first == "brand" }?.second ?: variant.flavorName ?: "redblanca"
+        def signing = project.android.signingConfigs.findByName(flavorName) ?: project.android.signingConfigs.findByName("redblanca")
+        if (signing != null) {
+            variant.signingConfig?.setConfig(signing)
+        }
+    }
 }
 
 dependencies {
