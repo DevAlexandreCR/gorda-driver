@@ -268,6 +268,27 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }
     }
 
+    fun reconnectFirebaseIfNeeded() {
+        // Force Firebase to go back online when network is restored
+        viewModelScope.launch {
+            try {
+                // Enable Firebase Database connection
+                com.google.firebase.database.FirebaseDatabase.getInstance().goOnline()
+                Log.d(TAG, "Firebase reconnection triggered after network restoration")
+
+                // Check if driver was previously connected and try to reconnect
+                driver.value?.let { currentDriver ->
+                    // Small delay to allow Firebase to establish connection
+                    kotlinx.coroutines.delay(500)
+
+                    // Re-check connection status
+                    isConnected(currentDriver.id)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error reconnecting Firebase: ${e.message}")
+            }
+        }
+    }
 
     // Add method to update fee data from the service
     fun updateFeeData(totalFee: Double, timeFee: Double, distanceFee: Double, totalDistance: Double, elapsedSeconds: Long) {
