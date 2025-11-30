@@ -47,7 +47,6 @@ import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
-import com.google.android.material.snackbar.Snackbar
 import gorda.driver.R
 import gorda.driver.background.LocationService
 import gorda.driver.databinding.ActivityMainBinding
@@ -149,8 +148,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-    private lateinit var snackBar: Snackbar
-
     @SuppressLint("HardwareIds")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -183,17 +180,6 @@ class MainActivity : AppCompatActivity() {
 
         networkMonitor = NetworkMonitor(this) { isConnected ->
             onNetWorkChange(isConnected)
-        }
-
-        snackBar = Snackbar.make(
-            binding.root,
-            resources.getString(R.string.connection_lost),
-            Snackbar.LENGTH_INDEFINITE
-        ).apply {
-            setTextColor(getColor(R.color.white))
-            setBackgroundTint(getColor(R.color.warning))
-            // Position at top to be less intrusive
-            view.translationY = 0f
         }
 
         navView.setNavigationItemSelectedListener { item ->
@@ -258,12 +244,10 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.isNetWorkConnected.collect { isConnected ->
                     if (!isConnected) {
-                        // Show small, non-blocking connection alert
-                        snackBar.setText(resources.getString(R.string.connection_lost))
-                        snackBar.show()
+                        viewModel.setLoading(true)
                     } else {
-                        // Hide alert when connection is restored
-                        snackBar.dismiss()
+                        viewModel.reconnectFirebaseIfNeeded()
+                        viewModel.setLoading(false)
                     }
                 }
             }
