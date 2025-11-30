@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-# Release Notes for 1.1.0
+# Release Notes for 1.2.*
+
+## [1.2.4 (2025-11-30)](https://github.com/DevAlexandreCR/gorda-driver/compare/v1.2.4...v1.2.3]
+
+### Added
+
+- Destination added to detail. ([#99])(https://github.com/DevAlexandreCR/gorda-driver/pull/99) 
+
+# Release Notes for 1.1.*
 
 ## [1.1.6 (2025-03-19)](https://github.com/DevAlexandreCR/gorda-driver/compare/v1.1.6...v1.1.5)
 
