@@ -48,7 +48,7 @@
     <string name="service_already_assigned">El servicio ya tiene un conductor asignado</string>
     <string name="service_not_available">El servicio ya no está disponible</string>
     <string name="text_connected">Estás disponible para recibir servicios</string>
-    <string name="connection_lost">Sin internet. Conectando…</string>
+    <string name="connection_lost">⚠️ Sin conexión a internet. Intentando reconectar…</string>
     <string name="text_disclosure">Red Blanca Conductor necesita conocer tu ubicación para habilitar la función de "Conectado" y asignarte servicios cercanos incluso cuando la app está cerrada o no está en uso. \nPermite Red Blanca Conductor usar tu ubicación en tiempo real</string>
     <string name="allow">Permitir</string>
     <string name="disallow">Denegar</string>

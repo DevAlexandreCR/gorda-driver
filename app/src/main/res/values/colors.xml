@@ -23,6 +23,11 @@
     <color name="light_blue_A400">#FF00B0FF</color>
     <color name="black_overlay">#66000000</color>
 
+    <!-- Status Colors -->
+    <color name="warning">#FFA726</color>
+    <color name="error">#F44336</color>
+    <color name="success">#66BB6A</color>
+
     <!-- Additional Enhancement Colors for Better UX -->
     <color name="surface">#1A1A1A</color>
     <color name="surface_variant">#2A2A2A</color>

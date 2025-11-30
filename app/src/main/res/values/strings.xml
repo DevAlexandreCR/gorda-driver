@@ -55,7 +55,7 @@
     <string name="service_already_assigned">Service already has a driver assigned</string>
     <string name="service_not_available">Service is no longer available</string>
     <string name="text_connected">You are available to receive services</string>
-    <string name="connection_lost"><strong>Network lost!</strong> Connecting…</string>
+    <string name="connection_lost">⚠️ No internet connection. Attempting to reconnect…</string>
     <string name="text_disclosure">Red Blanca Conductor needs to know your location to enable the "Connected" feature and assign nearby services to you even when the app is closed or not in use. \nAllows Red Blanca Conductor to use your real-time location</string>
     <string name="allow">Allow</string>
     <string name="disallow">Denny</string>

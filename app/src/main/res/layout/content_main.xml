@@ -29,7 +29,7 @@
         android:indeterminateOnly="true"
         android:indeterminateTint="@color/secondary"
         android:padding="0dp"
-        android:visibility="invisible"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

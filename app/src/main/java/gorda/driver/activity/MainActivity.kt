@@ -189,9 +189,12 @@ class MainActivity : AppCompatActivity() {
             binding.root,
             resources.getString(R.string.connection_lost),
             Snackbar.LENGTH_INDEFINITE
-        )
-
-        snackBar.setTextColor(getColor(R.color.white))
+        ).apply {
+            setTextColor(getColor(R.color.white))
+            setBackgroundTint(getColor(R.color.warning))
+            // Position at top to be less intrusive
+            view.translationY = 0f
+        }
 
         navView.setNavigationItemSelectedListener { item ->
             NavigationUI.onNavDestinationSelected(item, navController)
@@ -250,50 +253,17 @@ class MainActivity : AppCompatActivity() {
 
         this.observeDriver(navView)
 
-        // Observe StateFlow for network connectivity
+        // Observe StateFlow for network connectivity - show non-blocking alert
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.isNetWorkConnected.collect { isConnected ->
                     if (!isConnected) {
-                        connectionBar.visibility = View.VISIBLE
-                        viewModel.setLoading(true)
-                        viewModel.setConnecting(true)
+                        // Show small, non-blocking connection alert
+                        snackBar.setText(resources.getString(R.string.connection_lost))
+                        snackBar.show()
                     } else {
-                        driver?.let { d ->
-                            Auth.reloadUser().addOnSuccessListener {
-                                viewModel.isConnected(d.id)
-                            }.withTimeout {
-                                viewModel.setErrorTimeout(true)
-                            }
-                        }
-                        connectionBar.visibility = View.GONE
-                        viewModel.setLoading(false)
-                    }
-                }
-            }
-        }
-
-        // Observe StateFlow for automatic reconnection
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.shouldAttemptReconnect.collect { shouldReconnect ->
-                    Log.d(TAG, "shouldAttemptReconnect changed to: $shouldReconnect, networkConnected: ${viewModel.isNetWorkConnected.value}, switchChecked: ${switchConnect.isChecked}")
-
-                    if (shouldReconnect && viewModel.isNetWorkConnected.value) {
-                        Log.d(TAG, "Attempting automatic reconnection...")
-                        if (switchConnect.isChecked) {
-                            driver?.let { d ->
-                                kotlinx.coroutines.delay(2000)
-                                if (viewModel.isNetWorkConnected.value) {
-                                    attemptReconnection(d)
-                                } else {
-                                    Log.d(TAG, "Network lost again during delay, aborting reconnection")
-                                }
-                            }
-                        } else {
-                            Log.d(TAG, "Switch is OFF, clearing reconnection flag")
-                            viewModel.clearReconnectionFlag()
-                        }
+                        // Hide alert when connection is restored
+                        snackBar.dismiss()
                     }
                 }
             }
@@ -377,58 +347,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-        }
-    }
-
-    private fun attemptReconnection(driver: Driver) {
-        Log.d(TAG, "Starting reconnection process...")
-
-        // Check if we have a valid location
-        if (!::lastLocation.isInitialized) {
-            Log.w(TAG, "No location available for reconnection, waiting...")
-            // Register for connection broadcast to get location
-            LocalBroadcastManager.getInstance(this)
-                .registerReceiver(
-                    connectionBroadcastReceiver,
-                    IntentFilter(ConnectionBroadcastReceiver.ACTION_CONNECTION)
-                )
-            viewModel.connecting()
-            startLocationService()
-            return
-        }
-
-        // Attempt to reconnect with last known location
-        viewModel.connecting()
-        driver.connect(object: LocInterface {
-            override var lat = lastLocation.latitude
-            override var lng = lastLocation.longitude
-        }).addOnSuccessListener {
-            Log.d(TAG, "Automatic reconnection successful")
-            viewModel.setLoading(false)
-            viewModel.setConnectedLocal(true)
-            viewModel.setConnecting(false)
-            viewModel.connected()
-            startLocationService()
-        }.addOnFailureListener { e ->
-            Log.e(TAG, "Automatic reconnection failed: ${e.message}")
-            stopLocationService()
-            viewModel.setLoading(false)
-            viewModel.setConnectedLocal(false)
-            viewModel.setConnecting(false)
-            viewModel.clearReconnectionFlag()
-            switchConnect.setText(R.string.status_disconnected)
-            switchConnect.isChecked = false
-            Toast.makeText(this, R.string.error_reconnection_failed, Toast.LENGTH_SHORT).show()
-        }.withTimeout {
-            Log.e(TAG, "Automatic reconnection timeout")
-            stopLocationService()
-            viewModel.setConnecting(false)
-            viewModel.setLoading(false)
-            viewModel.setConnectedLocal(false)
-            viewModel.setErrorTimeout(true)
-            viewModel.clearReconnectionFlag()
-            switchConnect.setText(R.string.status_disconnected)
-            switchConnect.isChecked = false
         }
     }
 

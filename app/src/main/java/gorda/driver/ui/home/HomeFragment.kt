@@ -112,19 +112,6 @@ class HomeFragment : Fragment() {
             }
         }
 
-        // Observe StateFlow for network connectivity
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mainViewModel.isNetWorkConnected.collect { isConnected ->
-                    if (isConnected) {
-                        recyclerView.visibility = View.VISIBLE
-                    } else {
-                        recyclerView.visibility = View.INVISIBLE
-                    }
-                }
-            }
-        }
-
         // Observe StateFlow for driver status
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
