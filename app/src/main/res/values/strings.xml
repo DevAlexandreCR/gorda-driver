@@ -51,6 +51,9 @@
     <string name="wait_for_assign">Applied success to &lt;b> %s &lt;/b>, please wait…</string>
     <string name="cancelApply">The Request has been cancelled</string>
     <string name="service_canceled">Service has been canceled</string>
+    <string name="service_not_exists">Service no longer exists</string>
+    <string name="service_already_assigned">Service already has a driver assigned</string>
+    <string name="service_not_available">Service is no longer available</string>
     <string name="text_connected">You are available to receive services</string>
     <string name="connection_lost"><strong>Network lost!</strong> Connecting…</string>
     <string name="text_disclosure">Red Blanca Conductor needs to know your location to enable the "Connected" feature and assign nearby services to you even when the app is closed or not in use. \nAllows Red Blanca Conductor to use your real-time location</string>

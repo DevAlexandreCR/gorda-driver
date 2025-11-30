@@ -57,6 +57,10 @@ data class Service(
         return ServiceRepository.addApplicant(this.id, driver.id, distance, time, connection)
     }
 
+    fun validateForApply(): Task<Service> {
+        return ServiceRepository.validateServiceForApply(this.id)
+    }
+
     fun cancelApplicant(driver: Driver): Task<Void> {
         return ServiceRepository.cancelApply(this.id, driver.id)
     }
