@@ -35,6 +35,7 @@ class ServiceAdapter(
         val textComment: TextView = view.findViewById(R.id.text_comment)
         val textDestination: TextView = view.findViewById(R.id.text_destination)
         val destinationRow: View = view.findViewById(R.id.destination_row)
+        val destinationDivider: View = view.findViewById(R.id.destination_divider)
         val serviceTimer: Chronometer = view.findViewById(R.id.service_timer)
         val btnShowMap: Button = view.findViewById(R.id.btn_show_map)
         val btnApply: Button = view.findViewById(R.id.btn_apply)
@@ -66,9 +67,11 @@ class ServiceAdapter(
         val destinationName = service.end_loc?.name?.takeIf { it.isNotBlank() }
         if (destinationName != null) {
             holder.destinationRow.visibility = View.VISIBLE
+            holder.destinationDivider.visibility = View.VISIBLE
             holder.textDestination.text = destinationName
         } else {
             holder.destinationRow.visibility = View.GONE
+            holder.destinationDivider.visibility = View.GONE
             holder.textDestination.text = ""
         }
         val startLoc = Location("last")

@@ -194,11 +194,13 @@ class CurrentServiceFragment : Fragment() {
                 val destinationName = service.end_loc?.name?.takeIf { it.isNotBlank() }
                 if (destinationName != null) {
                     binding.serviceLayout.destinationContainer.visibility = View.VISIBLE
+                    binding.serviceLayout.destinationDivider.visibility = View.VISIBLE
                     textDestination.text = destinationName
                     textDestinationPreview.visibility = View.VISIBLE
                     textDestinationPreview.text = destinationName
                 } else {
                     binding.serviceLayout.destinationContainer.visibility = View.GONE
+                    binding.serviceLayout.destinationDivider.visibility = View.GONE
                     textDestination.text = ""
                     textDestinationPreview.visibility = View.GONE
                 }
