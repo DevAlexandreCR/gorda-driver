@@ -104,28 +104,59 @@ class ApplyFragment : Fragment() {
                         mainViewModel.currentService.value?.let {_ ->
                             connection = service.id
                         }
-                        service.addApplicant(driver, distance, time, connection).addOnSuccessListener {
-                            if (isAdded) {
-                                val applyText = requireActivity().resources.getString(R.string.wait_for_assign, service.start_loc.name)
-                                textView.text = StringHelper.getString(applyText)
-                                btnCancel.isEnabled = true
-                                mainViewModel.setLoading(false)
+
+                        // Validate service before applying
+                        service.validateForApply().addOnSuccessListener { validatedService ->
+                            if (!isAdded) return@addOnSuccessListener
+
+                            // Update service with validated data
+                            service = validatedService
+
+                            // Proceed with application
+                            service.addApplicant(driver, distance, time, connection).addOnSuccessListener {
+                                if (isAdded) {
+                                    val applyText = requireActivity().resources.getString(R.string.wait_for_assign, service.start_loc.name)
+                                    textView.text = StringHelper.getString(applyText)
+                                    btnCancel.isEnabled = true
+                                    mainViewModel.setLoading(false)
+                                }
+                            }.addOnFailureListener { e ->
+                                if (isAdded) {
+                                    e.message?.let { message -> Log.e(TAG, message) }
+                                    Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
+                                    if (findNavController().currentDestination?.id == R.id.nav_apply)
+                                        findNavController().navigate(R.id.action_cancel_apply)
+                                }
+                            }.withTimeout {
+                                if (isAdded) {
+                                    mainViewModel.setLoading(false)
+                                    mainViewModel.setErrorTimeout(true)
+                                    btnCancel.isEnabled = true
+                                    if (findNavController().currentDestination?.id == R.id.nav_apply)
+                                        findNavController().navigate(R.id.action_cancel_apply)
+                                }
                             }
                         }.addOnFailureListener { e ->
-                            if (isAdded) {
-                                e.message?.let { message -> Log.e(TAG, message) }
-                                Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
-                                if (findNavController().currentDestination?.id == R.id.nav_apply)
-                                    findNavController().navigate(R.id.action_cancel_apply)
+                            if (!isAdded) return@addOnFailureListener
+
+                            e.message?.let { message -> Log.e(TAG, "Service validation failed: $message") }
+
+                            // Show specific error message based on validation failure
+                            val errorMessage = when {
+                                e.message?.contains("does not exist", ignoreCase = true) == true ->
+                                    R.string.service_not_exists
+                                e.message?.contains("already has a driver", ignoreCase = true) == true ->
+                                    R.string.service_already_assigned
+                                e.message?.contains("no longer available", ignoreCase = true) == true ->
+                                    R.string.service_not_available
+                                else -> R.string.common_error
                             }
-                        }.withTimeout {
-                            if (isAdded) {
-                                mainViewModel.setLoading(false)
-                                mainViewModel.setErrorTimeout(true)
-                                btnCancel.isEnabled = true
-                                if (findNavController().currentDestination?.id == R.id.nav_apply)
-                                    findNavController().navigate(R.id.action_cancel_apply)
-                            }
+
+                            Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show()
+                            mainViewModel.setLoading(false)
+
+                            if (findNavController().currentDestination?.id == R.id.nav_apply)
+                                findNavController().navigate(R.id.action_cancel_apply)
                         }
                     }
                 }

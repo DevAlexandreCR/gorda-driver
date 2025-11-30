@@ -138,6 +138,41 @@ object ServiceRepository {
             .removeValue()
     }
 
+    fun validateServiceForApply(serviceId: String): Task<Service> {
+        val taskCompletionSource = TaskCompletionSource<Service>()
+
+        Database.dbServices().child(serviceId).get()
+            .addOnSuccessListener { snapshot ->
+                if (!snapshot.exists()) {
+                    taskCompletionSource.setException(Exception("Service does not exist"))
+                    return@addOnSuccessListener
+                }
+
+                val service = snapshot.getValue(Service::class.java)
+                if (service == null) {
+                    taskCompletionSource.setException(Exception("Service data is invalid"))
+                    return@addOnSuccessListener
+                }
+
+                if (service.driver_id != null && service.driver_id!!.isNotEmpty()) {
+                    taskCompletionSource.setException(Exception("Service already has a driver assigned"))
+                    return@addOnSuccessListener
+                }
+
+                if (service.status != Service.STATUS_PENDING) {
+                    taskCompletionSource.setException(Exception("Service is no longer available"))
+                    return@addOnSuccessListener
+                }
+
+                taskCompletionSource.setResult(service)
+            }
+            .addOnFailureListener { e ->
+                taskCompletionSource.setException(e)
+            }
+
+        return taskCompletionSource.task
+    }
+
     fun onStatusChange(serviceId: String, listener: ValueEventListener) {
         getStatusReference(serviceId).addValueEventListener(listener)
     }

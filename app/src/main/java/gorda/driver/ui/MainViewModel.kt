@@ -43,15 +43,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     private val _isNetWorkConnected = MutableStateFlow(true)
     val isNetWorkConnected: StateFlow<Boolean> = _isNetWorkConnected.asStateFlow()
-
-    // Track if driver was connected before losing internet (for auto-reconnection)
-    private val _wasConnectedBeforeDisconnect = MutableStateFlow(false)
-    val wasConnectedBeforeDisconnect: StateFlow<Boolean> = _wasConnectedBeforeDisconnect.asStateFlow()
-
-    private val _shouldAttemptReconnect = MutableStateFlow(false)
-    val shouldAttemptReconnect: StateFlow<Boolean> = _shouldAttemptReconnect.asStateFlow()
-
-    // Keep remaining LiveData
     private val _driver: MutableLiveData<Driver?> = savedStateHandle.getLiveData(Driver.TAG)
     private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
     private val _currentService = MutableLiveData<Service?>()
@@ -125,31 +116,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     fun changeNetWorkStatus(isConnected: Boolean) {
         viewModelScope.launch {
             val previousState = _isNetWorkConnected.value
-            val currentDriverState = _driverState.value
 
             Log.d(TAG, "Network status changed: $isConnected (previous: $previousState)")
 
             _isNetWorkConnected.emit(isConnected)
-
-            // If network was lost, remember if we were connected
-            if (!isConnected && previousState) {
-                if (currentDriverState is DriverUpdates.IsConnected && currentDriverState.connected) {
-                    Log.d(TAG, "Network lost while driver was connected, saving state for reconnection")
-                    _wasConnectedBeforeDisconnect.emit(true)
-                    _shouldAttemptReconnect.emit(true)
-                }
-            }
-
-            // If network is recovered and we should reconnect
-            if (isConnected && !previousState) {
-                Log.d(TAG, "Network recovered! shouldAttemptReconnect=${_shouldAttemptReconnect.value}")
-                if (_shouldAttemptReconnect.value) {
-                    Log.d(TAG, "Triggering automatic reconnection...")
-                    // Force emit to ensure MainActivity detects the change
-                    _shouldAttemptReconnect.emit(false)
-                    _shouldAttemptReconnect.emit(true)
-                }
-            }
         }
     }
 
@@ -251,8 +221,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         viewModelScope.launch {
             _driverState.emit(DriverUpdates.connecting(false))
             _driverState.emit(DriverUpdates.setConnected(true))
-            _shouldAttemptReconnect.emit(false)
-            _wasConnectedBeforeDisconnect.emit(false)
         }
         _isLoading.postValue(false)
     }
@@ -270,8 +238,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             viewModelScope.launch {
                 _driverState.emit(DriverUpdates.connecting(false))
                 _driverState.emit(DriverUpdates.setConnected(false))
-                _wasConnectedBeforeDisconnect.emit(false)
-                _shouldAttemptReconnect.emit(false)
             }
             _isLoading.postValue(false)
         }.addOnFailureListener { e ->
@@ -293,10 +259,6 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     fun setConnectedLocal(connected: Boolean) {
         viewModelScope.launch {
             _driverState.emit(DriverUpdates.setConnected(connected))
-            if (!connected) {
-                _wasConnectedBeforeDisconnect.emit(false)
-                _shouldAttemptReconnect.emit(false)
-            }
         }
     }
 
@@ -306,9 +268,25 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }
     }
 
-    fun clearReconnectionFlag() {
+    fun reconnectFirebaseIfNeeded() {
+        // Force Firebase to go back online when network is restored
         viewModelScope.launch {
-            _shouldAttemptReconnect.emit(false)
+            try {
+                // Enable Firebase Database connection
+                com.google.firebase.database.FirebaseDatabase.getInstance().goOnline()
+                Log.d(TAG, "Firebase reconnection triggered after network restoration")
+
+                // Check if driver was previously connected and try to reconnect
+                driver.value?.let { currentDriver ->
+                    // Small delay to allow Firebase to establish connection
+                    kotlinx.coroutines.delay(500)
+
+                    // Re-check connection status
+                    isConnected(currentDriver.id)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error reconnecting Firebase: ${e.message}")
+            }
         }
     }
 

@@ -16,29 +16,118 @@
         android:layout_height="wrap_content"
         android:padding="12dp">
 
-        <!-- Compact Service Address Section -->
-        <ImageView
-            android:id="@+id/address_icon"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
-            android:contentDescription="@string/map"
-            android:src="@drawable/ic_location_24"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/secondary" />
-
-        <TextView
-            android:id="@+id/service_address"
+        <!-- Modern Pickup/Destination Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/route_card"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="0dp"
-            android:layout_marginEnd="0dp"
-            android:textColor="@android:color/white"
-            android:textSize="18sp"
-            android:textStyle="bold"
+            android:layout_marginEnd="6dp"
+            app:cardBackgroundColor="@color/primary_dark"
+            app:cardCornerRadius="10dp"
+            app:strokeColor="@color/secondary"
+            app:strokeWidth="0dp"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/btn_show_map"
-            app:layout_constraintStart_toEndOf="@+id/address_icon"
-            app:layout_constraintTop_toTopOf="@+id/address_icon" />
+            app:layout_constraintTop_toTopOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_location_24"
+                        android:contentDescription="@string/service_address"
+                        android:tint="@color/secondary" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/text_pickup_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/service_address"
+                            android:textColor="@color/secondary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.04" />
+
+                        <TextView
+                            android:id="@+id/service_address"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:ellipsize="end"
+                            android:maxLines="2" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View
+                    android:id="@+id/destination_divider"
+                    android:layout_width="match_parent"
+                    android:layout_height="0.5dp"
+                    android:layout_marginVertical="4dp"
+                    android:alpha="0.6"
+                    android:background="@color/secondary" />
+
+                <LinearLayout
+                    android:id="@+id/destination_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_location_24"
+                        android:contentDescription="@string/service_destination"
+                        android:tint="@android:color/white" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/text_destination_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/service_destination"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:maxLines="2"
+                            android:letterSpacing="0.04" />
+
+                        <TextView
+                            android:id="@+id/text_destination"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:maxLines="2" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Compact Map Button -->
         <com.google.android.material.button.MaterialButton
@@ -73,7 +162,7 @@
             android:paddingVertical="6dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_show_map">
+            app:layout_constraintTop_toBottomOf="@+id/route_card">
 
             <!-- User Name - Compact -->
             <ImageView
@@ -157,13 +246,12 @@
             style="@style/Widget.Material3.Button.UnelevatedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
             android:minWidth="100dp"
-            android:textSize="14sp"
             android:paddingHorizontal="16dp"
             android:text="@string/apply"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
+            android:textSize="14sp"
             android:textStyle="bold"
             app:backgroundTint="@color/secondary"
             app:cornerRadius="10dp"

@@ -21,6 +21,7 @@ class ConnectionServiceDialog(private val service: Service): DialogFragment() {
     private lateinit var textName: TextView
     private lateinit var textPhone: TextView
     private lateinit var textAddress: TextView
+    private lateinit var textDestination: TextView
     private lateinit var textComment: TextView
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -33,11 +34,15 @@ class ConnectionServiceDialog(private val service: Service): DialogFragment() {
         textName = view.findViewById(R.id.current_service_name)
         textPhone = view.findViewById(R.id.current_phone)
         textAddress = view.findViewById(R.id.current_address)
+        textDestination = view.findViewById(R.id.current_destination)
         textComment = view.findViewById(R.id.service_comment)
 
         textName.text = service.name
         textPhone.text = service.phone
         textAddress.text = service.start_loc.name
+        val destinationName = service.end_loc?.name?.takeIf { it.isNotBlank() }
+            ?: getString(R.string.destination_unknown)
+        textDestination.text = destinationName
         textComment.text = service.comment
         textPhone.setOnClickListener {
             val intent = Intent(Intent.ACTION_DIAL, ("tel:" + service.phone).toUri())
