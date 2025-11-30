@@ -1,6 +1,7 @@
 *.iml
 .gradle
 /local.properties
+/gradle.properties
 .idea/
 .DS_Store
 /build
@@ -11,3 +12,4 @@ local.properties
 app/release/
 /app/debug
 gradle/wrapper/*.jar
+/app/redblanca/release/

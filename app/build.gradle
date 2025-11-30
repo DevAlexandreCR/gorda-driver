@@ -24,7 +24,7 @@ android {
 
     flavorDimensions += "brand"
 
-    def baseVersionCode = 69
+    def baseVersionCode = 70
     def versionCodeSpacing = 1_000_000
 
     signingConfigs {
@@ -101,6 +101,13 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            productFlavors.all { flavor ->
+                if (flavor.name == "redblanca") {
+                    signingConfig signingConfigs.redblanca
+                } else if (flavor.name == "demo") {
+                    signingConfig signingConfigs.demo
+                }
+            }
         }
     }
     compileOptions {

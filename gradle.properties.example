@@ -24,17 +24,16 @@ android.nonTransitiveRClass=true
 android.nonFinalResIds=false
 kotlin.stdlib.jdk.variants.substitution=false
 
-# Propiedades para firmar el flavor REDBLANCA
-RedBlancaStoreFile=/Users/alexandrecr/Documents/RedBlanca/keystore.jks
-RedBlancaStorePassword=Pspapis123*
-RedBlancaKeyAlias=key-red-blanca
-RedBlancaKeyPassword=Pspapis123*
-# Propiedades para firmar el flavor DEMO
-# (Puedes usar las mismas de redblanca si lo deseas)
+RedBlancaStoreFile=/ruta/a/tu/keystore_redblanca.jks
+RedBlancaStorePassword=tu_contraseña_de_keystore
+RedBlancaKeyAlias=tu_alias_de_clave
+RedBlancaKeyPassword=tu_contraseña_de_clave
+
 DemoStoreFile=/ruta/a/tu/keystore_demo.jks
-DemoStorePassword=tu_contrase�a_de_keystore_demo
+DemoStorePassword=tu_contraseña_de_keystore_demo
 DemoKeyAlias=tu_alias_de_clave_demo
-DemoKeyPassword=tu_contrase�a_de_clave_demo
+DemoKeyPassword=tu_contraseña_de_clave_demo
+
 # Otras propiedades como MAPS_API_KEY...
 MAPS_API_KEY=AIza...
 MAPS_API_KEY_DEMO=AIza...
