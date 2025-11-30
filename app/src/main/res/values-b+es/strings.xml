@@ -174,4 +174,6 @@
     <string name="content_desc_location">Ubicación</string>
     <string name="content_desc_legal_info">Información Legal</string>
     <string name="content_desc_privacy_policy">Política de Privacidad</string>
+    <string name="service_destination">Destino: </string>
+    <string name="destination_unknown">Destino pendiente</string>
 </resources>

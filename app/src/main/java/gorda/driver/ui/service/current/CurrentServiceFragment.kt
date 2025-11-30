@@ -73,7 +73,9 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var textName: TextView
     private lateinit var textPhone: TextView
     private lateinit var textAddress: TextView
+    private lateinit var textDestination: TextView
     private lateinit var textAddressPreview: TextView
+    private lateinit var textDestinationPreview: TextView
     private lateinit var textComment: TextView
     private lateinit var textTimePrice: TextView
     private lateinit var textCurrentTimePrice: TextView
@@ -152,7 +154,9 @@ class CurrentServiceFragment : Fragment() {
         textName = binding.serviceLayout.currentServiceName
         textPhone = binding.serviceLayout.currentPhone
         textAddress = binding.serviceLayout.currentAddress
+        textDestination = binding.serviceLayout.currentDestination
         textAddressPreview = binding.serviceLayout.currentAddressPreview
+        textDestinationPreview = binding.serviceLayout.currentDestinationPreview
         textComment = binding.serviceLayout.serviceComment
         textPriceBase = binding.textBaseFare
         textPriceMinFee = binding.textFareMin
@@ -187,6 +191,17 @@ class CurrentServiceFragment : Fragment() {
                 textPhone.text = service.phone
                 textAddress.text = service.start_loc.name
                 textAddressPreview.text = service.start_loc.name
+                val destinationName = service.end_loc?.name?.takeIf { it.isNotBlank() }
+                if (destinationName != null) {
+                    binding.serviceLayout.destinationContainer.visibility = View.VISIBLE
+                    textDestination.text = destinationName
+                    textDestinationPreview.visibility = View.VISIBLE
+                    textDestinationPreview.text = destinationName
+                } else {
+                    binding.serviceLayout.destinationContainer.visibility = View.GONE
+                    textDestination.text = ""
+                    textDestinationPreview.visibility = View.GONE
+                }
                 textComment.text = service.comment
                 textPhone.setOnClickListener {
                     val intent = Intent(Intent.ACTION_DIAL, ("tel:" + service.phone).toUri())

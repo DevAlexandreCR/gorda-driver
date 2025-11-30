@@ -180,4 +180,6 @@
     <string name="content_desc_location">Location</string>
     <string name="content_desc_legal_info">Legal Information</string>
     <string name="content_desc_privacy_policy">Privacy Policy</string>
+    <string name="service_destination">Destination: </string>
+    <string name="destination_unknown">Destination pending</string>
 </resources>
