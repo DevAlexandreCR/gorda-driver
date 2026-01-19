@@ -203,18 +203,8 @@ class MainActivity : AppCompatActivity() {
 
         switchConnect.setOnClickListener {
             driver?.let { driver ->
-                // Prevent disconnection if there's no network and user tries to disconnect
-                if (!viewModel.isNetWorkConnected.value && !switchConnect.isChecked) {
-                    Toast.makeText(
-                        this,
-                        R.string.cannot_disconnect_no_network,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    switchConnect.isChecked = true
-                    return@setOnClickListener
-                }
-
                 if (switchConnect.isChecked) {
+                    // User wants to connect
                     LocalBroadcastManager.getInstance(this)
                         .registerReceiver(
                             connectionBroadcastReceiver,
@@ -223,6 +213,19 @@ class MainActivity : AppCompatActivity() {
                     viewModel.connecting()
                     this.startLocationService()
                 } else {
+                    // User wants to disconnect
+                    // Prevent disconnection if there's no network
+                    if (!viewModel.isNetWorkConnected.value) {
+                        Toast.makeText(
+                            this,
+                            R.string.cannot_disconnect_no_network,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        // Revert the switch back to checked
+                        switchConnect.isChecked = true
+                        return@setOnClickListener
+                    }
+                    // Network is available, allow disconnection
                     LocalBroadcastManager.getInstance(this).unregisterReceiver(connectionBroadcastReceiver)
                     this.stopLocationService()
                     viewModel.disconnect(driver)
