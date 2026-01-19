@@ -29,6 +29,7 @@ import gorda.driver.interfaces.RideFees
 import gorda.driver.location.LocationHandler
 import gorda.driver.maps.Map
 import gorda.driver.utils.Constants
+import gorda.driver.utils.NumberHelper
 
 class FeesService: Service() {
 
@@ -258,7 +259,8 @@ class FeesService: Service() {
         val distanceFee = getDistanceFee()
         val baseFee = rideFees.feesBase
         val total = (baseFee + timeFee + distanceFee + rideFees.priceAddFee) * multiplier
-        val finalFee = maxOf(total, rideFees.priceMinFee * multiplier)
+        val minFeeWithMultiplier = NumberHelper.roundToMultipleOf500(rideFees.priceMinFee * multiplier)
+        val finalFee = maxOf(total, minFeeWithMultiplier)
 
         return finalFee
     }

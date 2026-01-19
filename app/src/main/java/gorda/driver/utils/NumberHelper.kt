@@ -8,6 +8,10 @@ object NumberHelper {
         return round(double / 100) * 100
     }
 
+    fun roundToMultipleOf500(double: Double): Double {
+        return round(double / 500) * 500
+    }
+
     fun toCurrency(double: Double, round: Boolean = false): String {
         val currencyFormat: NumberFormat = NumberFormat.getCurrencyInstance()
         return if (round) currencyFormat.format(roundDouble(double))
