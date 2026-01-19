@@ -102,21 +102,17 @@ class NetworkMonitor(
                     // When network is restored, tell Firebase to go back online
                     FirebaseDatabase.getInstance().goOnline()
                     Log.d(TAG, "Firebase set to ONLINE")
-                    // Give Firebase time to reconnect before notifying
-                    scope.launch {
-                        delay(1000)
-                        onNetworkChange(isConnected)
-                    }
                 } else {
                     if (enableOfflineMode) {
                         // Don't disconnect Firebase, just notify network loss
-                        Log.d(TAG, "Network lost - Firebase remains in offline mode")
+                        Log.d(TAG, "Network lost - Firebase will handle offline mode")
                     }
-                    onNetworkChange(isConnected)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error managing Firebase state: ${e.message}")
             }
+
+            onNetworkChange(isConnected)
         } else {
             Log.d(TAG, "Network state UNCHANGED: ${if (isConnected) "CONNECTED" else "DISCONNECTED"}")
         }
