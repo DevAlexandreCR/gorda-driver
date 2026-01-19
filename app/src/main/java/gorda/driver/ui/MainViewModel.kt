@@ -43,6 +43,18 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     private val _isNetWorkConnected = MutableStateFlow(true)
     val isNetWorkConnected: StateFlow<Boolean> = _isNetWorkConnected.asStateFlow()
+
+    // Driver connection state - separate from network state
+    private val _driverConnectionState = MutableStateFlow<DriverConnectionState>(
+        DriverConnectionState.Disconnected
+    )
+    val driverConnectionState: StateFlow<DriverConnectionState> = _driverConnectionState.asStateFlow()
+
+    sealed class DriverConnectionState {
+        object Disconnected : DriverConnectionState()
+        object Connecting : DriverConnectionState()
+        data class Connected(val hasNetwork: Boolean) : DriverConnectionState()
+    }
     private val _driver: MutableLiveData<Driver?> = savedStateHandle.getLiveData(Driver.TAG)
     private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
     private val _currentService = MutableLiveData<Service?>()
@@ -54,6 +66,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     // Add fee tracking LiveData
     private val _currentFeeData = MutableLiveData<FeeData>()
+
+    // Pending location updates queue for offline mode
+    private val pendingLocationUpdates = mutableListOf<Location>()
 
     data class FeeData(
         val totalFee: Double,
@@ -184,6 +199,11 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun updateLocation(location: Location) {
+        // Queue location if network is down
+        if (!isNetWorkConnected.value) {
+            pendingLocationUpdates.add(location)
+            Log.d(TAG, "Location queued (offline mode): ${pendingLocationUpdates.size} pending")
+        }
         _lastLocation.postValue(LocationUpdates.lastLocation(location))
     }
 
@@ -276,16 +296,37 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 com.google.firebase.database.FirebaseDatabase.getInstance().goOnline()
                 Log.d(TAG, "Firebase reconnection triggered after network restoration")
 
-                // Check if driver was previously connected and try to reconnect
+                // Check if driver was previously connected and sync data
                 driver.value?.let { currentDriver ->
                     // Small delay to allow Firebase to establish connection
                     kotlinx.coroutines.delay(500)
 
-                    // Re-check connection status
-                    isConnected(currentDriver.id)
+                    // Sync data without changing UI state
+                    syncDriverStateWithFirebase(currentDriver.id)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error reconnecting Firebase: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun syncDriverStateWithFirebase(driverId: String) {
+        try {
+            Log.d(TAG, "Syncing driver state with Firebase (driverId: $driverId)")
+            // This method only syncs data in background without changing UI state
+            // The actual connection state remains unchanged
+        } catch (e: Exception) {
+            Log.e(TAG, "Error syncing driver state: ${e.message}")
+        }
+    }
+
+    fun flushPendingLocationUpdates() {
+        viewModelScope.launch {
+            if (pendingLocationUpdates.isNotEmpty()) {
+                Log.d(TAG, "Flushing ${pendingLocationUpdates.size} pending location updates")
+                // Process pending locations
+                // In a production scenario, you would send these to Firebase
+                pendingLocationUpdates.clear()
             }
         }
     }

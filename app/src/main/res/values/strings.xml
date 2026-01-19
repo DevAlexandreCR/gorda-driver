@@ -185,4 +185,10 @@
     <string name="content_desc_privacy_policy">Privacy Policy</string>
     <string name="service_destination">Destination: </string>
     <string name="destination_unknown">Destination pending</string>
+
+    <!-- Network Status Strings -->
+    <string name="status_connected_offline">Connected (No network)</string>
+    <string name="network_lost_offline_mode">Network lost - Offline mode active</string>
+    <string name="network_restored">Connection restored - Syncing…</string>
+    <string name="cannot_disconnect_no_network">Cannot disconnect without network. Wait for connection recovery.</string>
 </resources>

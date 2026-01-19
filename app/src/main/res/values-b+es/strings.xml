@@ -179,4 +179,10 @@
     <string name="content_desc_privacy_policy">Política de Privacidad</string>
     <string name="service_destination">Destino: </string>
     <string name="destination_unknown">Destino pendiente</string>
+
+    <!-- Network Status Strings -->
+    <string name="status_connected_offline">Conectado (Sin red)</string>
+    <string name="network_lost_offline_mode">Red perdida - Modo sin conexión activo</string>
+    <string name="network_restored">Conexión restaurada - Sincronizando…</string>
+    <string name="cannot_disconnect_no_network">No se puede desconectar sin red. Espere a recuperar la conexión.</string>
 </resources>

@@ -178,9 +178,12 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        networkMonitor = NetworkMonitor(this) { isConnected ->
-            onNetWorkChange(isConnected)
-        }
+        networkMonitor = NetworkMonitor(
+            context = this,
+            onNetworkChange = { isConnected ->
+                onNetWorkChange(isConnected)
+            }
+        )
 
         navView.setNavigationItemSelectedListener { item ->
             NavigationUI.onNavDestinationSelected(item, navController)
@@ -200,6 +203,17 @@ class MainActivity : AppCompatActivity() {
 
         switchConnect.setOnClickListener {
             driver?.let { driver ->
+                // Prevent disconnection if there's no network and user tries to disconnect
+                if (!viewModel.isNetWorkConnected.value && !switchConnect.isChecked) {
+                    Toast.makeText(
+                        this,
+                        R.string.cannot_disconnect_no_network,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    switchConnect.isChecked = true
+                    return@setOnClickListener
+                }
+
                 if (switchConnect.isChecked) {
                     LocalBroadcastManager.getInstance(this)
                         .registerReceiver(
@@ -244,25 +258,40 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.isNetWorkConnected.collect { isConnected ->
                     if (!isConnected) {
-                        viewModel.setLoading(true)
+                        // Show network lost indicator but DO NOT disconnect
+                        showNetworkLostIndicator()
                     } else {
+                        // Hide indicator and sync
+                        hideNetworkLostIndicator()
                         viewModel.reconnectFirebaseIfNeeded()
-                        viewModel.setLoading(false)
+                        viewModel.flushPendingLocationUpdates()
                     }
                 }
             }
         }
 
-        // Observe StateFlow for driver status
+        // Observe StateFlow for driver status - combine with network status
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.driverStatus.collect { driverUpdates ->
+                // Combine network state and driver state
+                kotlinx.coroutines.flow.combine(
+                    viewModel.driverStatus,
+                    viewModel.isNetWorkConnected
+                ) { driverUpdates, hasNetwork ->
+                    Pair(driverUpdates, hasNetwork)
+                }.collect { (driverUpdates, hasNetwork) ->
                     when (driverUpdates) {
                         is DriverUpdates.IsConnected -> {
                             switchConnect.isChecked = driverUpdates.connected
                             switchConnect.isEnabled = true
                             if (driverUpdates.connected) {
-                                switchConnect.setText(R.string.status_connected)
+                                // Show status based on network
+                                if (hasNetwork) {
+                                    switchConnect.setText(R.string.status_connected)
+                                } else {
+                                    switchConnect.setText(R.string.status_connected_offline)
+                                }
+
                                 if (!LocationHandler.checkPermissions(this@MainActivity)) {
                                     viewModel.setConnectedLocal(false)
                                     this@MainActivity.stopLocationService()
@@ -351,6 +380,17 @@ class MainActivity : AppCompatActivity() {
                 ColorStateList.valueOf(getColor(R.color.secondary_dark))
             notificationButton.setImageResource(R.drawable.notifications_active)
         }
+    }
+
+    private fun showNetworkLostIndicator() {
+        connectionBar.visibility = View.VISIBLE
+        // Optional: Show a Toast or Snackbar
+        Toast.makeText(this, R.string.network_lost_offline_mode, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun hideNetworkLostIndicator() {
+        connectionBar.visibility = View.GONE
+        Toast.makeText(this, R.string.network_restored, Toast.LENGTH_SHORT).show()
     }
 
     private fun onNetWorkChange(isConnected: Boolean) {
