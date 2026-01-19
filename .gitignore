@@ -13,3 +13,4 @@ app/release/
 /app/debug
 gradle/wrapper/*.jar
 /app/redblanca/release/
+docs

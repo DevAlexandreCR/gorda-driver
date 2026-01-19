@@ -7,8 +7,10 @@
 - **DO NOT** create markdown files explaining what was done
 - **DO** make changes directly to the code
 - **DO** use clear commit messages
-- **DO** add inline comments in English when necessary
+- **DO** add inline comments in English when necessary (avoid comments unless absolutely necessary)
 - **DO** update CHANGELOG.md only for version releases
+- **ALL documentation files MUST be written in English**
+- **ALL code comments MUST be written in English**
 - Focus on code implementation, not documentation of changes
 
 ---
