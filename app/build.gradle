@@ -12,8 +12,8 @@ android {
         applicationId "gorda.driver"
         minSdk 24
         targetSdk 35
-        versionCode 70
-        versionName "1.2.4"
+        versionCode 71
+        versionName "1.2.5"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -24,7 +24,7 @@ android {
 
     flavorDimensions += "brand"
 
-    def baseVersionCode = 70
+    def baseVersionCode = 71
     def versionCodeSpacing = 1_000_000
 
     signingConfigs {
@@ -66,14 +66,14 @@ android {
             versionCode baseVersionCode
             manifestPlaceholders = [
                     appAuthRedirectScheme: "gorda",
-                    deeplinkHost        : "driver.redblanca.app",
+                    deeplinkHost        : "redblanca.com.co",
                     deeplinkScheme      : "https",
                     appName             : "Red Blanca",
                     MAPS_API_KEY        : (project.findProperty("MAPS_API_KEY") ?: "")
             ]
             buildConfigField "String", "BRAND_NAME", '"Red Blanca"'
             buildConfigField "String", "SUPPORT_EMAIL", '"driver@redblanca.com.co"'
-            buildConfigField "String", "BASE_URL", '"https://api.redblanca.com"'
+            buildConfigField "String", "BASE_URL", '"https://redblanca.gorda.com.co"'
             buildConfigField "String", "PRIVACY_URL", '"https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764"'
             buildConfigField "String", "TERMS_URL", '"https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764"'
         }
