@@ -46,6 +46,7 @@ import gorda.driver.databinding.FragmentCurrentServiceBinding
 import gorda.driver.interfaces.RideFees
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
+import gorda.driver.repositories.SettingsRepository
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.history.ServiceDialogFragment
 import gorda.driver.ui.home.HomeFragment
@@ -143,6 +144,7 @@ class CurrentServiceFragment : Fragment() {
         context?.let {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(it)
         }
+        loadFrozenFeesFromStorage()
 
         haveArrived = getString(R.string.service_have_arrived)
         startTrip = getString(R.string.service_start_trip)
@@ -274,17 +276,7 @@ class CurrentServiceFragment : Fragment() {
         }
 
         mainViewModel.rideFees.observe(viewLifecycleOwner) { fees ->
-            this.fees = fees
-            feeMultiplier = fees.feeMultiplier
-            textPriceBase.text = NumberHelper.toCurrency(fees.feesBase)
-            textPriceMinFee.text = NumberHelper.toCurrency(fees.priceMinFee)
-            textPriceAddFee.text = NumberHelper.toCurrency(fees.priceAddFee)
-            textDistancePrice.text = NumberHelper.toCurrency(fees.priceKm)
-            textTimePrice.text = NumberHelper.toCurrency(fees.priceMin)
-            textFareMultiplier.text = feeMultiplier.toString()
-            if (isServiceBound) {
-                feesService.setMultiplier(feeMultiplier)
-            }
+            applyRideFees(fees)
         }
 
         mainViewModel.nextService.observe(viewLifecycleOwner) { service ->
@@ -465,46 +457,18 @@ class CurrentServiceFragment : Fragment() {
                 }
 
                 startTrip -> {
-                    val builder = AlertDialog.Builder(requireContext())
-                    val dialogLayout: View = LayoutInflater.from(activity).inflate(R.layout.multiplier_feed, null)
-                    val editFeeMultiplier = dialogLayout.findViewById<EditText>(R.id.dialog_fee_multiplier)
-                    editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(feeMultiplier.toString())
-                    service.metadata.start_trip_at = now
-                    setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
-                    val inputMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
-                    feeMultiplier = if (inputMultiplier < 1.0) 1.0 else inputMultiplier
-                    textFareMultiplier.text = feeMultiplier.toString()
-                    sharedPreferences.edit(commit = true) {
-                        putString(
-                            Constants.MULTIPLIER,
-                            feeMultiplier.toString()
-                        )
-                    }
-                    startServiceFee(service.start_loc.name)
-                    builder.setTitle(R.string.start_ride)
-                        .setCancelable(false)
-                        .setView(dialogLayout)
-                        .setMessage(R.string.start_ride_message)
-                        .setPositiveButton(R.string.start_ride) { _, _ ->
-                            startingRide = true
-                            service.updateMetadata()
-                                .addOnSuccessListener {
-                                    mainViewModel.setLoading(false)
-                                }
-                                .addOnFailureListener {
-                                    btnStatus.text = startTrip
-                                    mainViewModel.setLoading(false)
-                                    it.message?.let { message -> Log.e(TAG, message) }
-                                    Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
-                                    service.metadata.start_trip_at = null
-                                }
-                        }
-                        .setNegativeButton(R.string.cancel) { dialog, _ ->
-                            dialog.dismiss()
+                    SettingsRepository.getRideFees(
+                        onSuccess = { rideFees ->
                             mainViewModel.setLoading(false)
+                            mainViewModel.setRideFees(rideFees)
+                            setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
+                            showStartTripDialog(service, now)
+                        },
+                        onError = {
+                            mainViewModel.setLoading(false)
+                            Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                         }
-                    val dialog: AlertDialog = builder.create()
-                    dialog.show()
+                    )
                 }
 
                 else -> {
@@ -578,6 +542,71 @@ class CurrentServiceFragment : Fragment() {
         }
 
         requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
+    }
+
+    private fun applyRideFees(rideFees: RideFees) {
+        this.fees = rideFees
+        feeMultiplier = rideFees.feeMultiplier
+        textPriceBase.text = NumberHelper.toCurrency(rideFees.feesBase)
+        textPriceMinFee.text = NumberHelper.toCurrency(rideFees.priceMinFee)
+        textPriceAddFee.text = NumberHelper.toCurrency(rideFees.priceAddFee)
+        textDistancePrice.text = NumberHelper.toCurrency(rideFees.priceKm)
+        textTimePrice.text = NumberHelper.toCurrency(rideFees.priceMin)
+        textFareMultiplier.text = feeMultiplier.toString()
+        if (isServiceBound) {
+            feesService.setMultiplier(feeMultiplier)
+        }
+    }
+
+    private fun loadFrozenFeesFromStorage() {
+        val feesJson = sharedPreferences.getString(CURRENT_FEES, null) ?: return
+        try {
+            val loadedFees = com.google.gson.Gson().fromJson(feesJson, RideFees::class.java) ?: return
+            applyRideFees(loadedFees)
+            mainViewModel.setRideFees(loadedFees)
+        } catch (exception: Exception) {
+            Log.e(TAG, exception.message ?: "Unable to restore pricing snapshot")
+        }
+    }
+
+    private fun showStartTripDialog(service: Service, now: Long) {
+        val builder = AlertDialog.Builder(requireContext())
+        val dialogLayout: View = LayoutInflater.from(activity).inflate(R.layout.multiplier_feed, null)
+        val editFeeMultiplier = dialogLayout.findViewById<EditText>(R.id.dialog_fee_multiplier)
+        editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(feeMultiplier.toString())
+
+        builder.setTitle(R.string.start_ride)
+            .setCancelable(false)
+            .setView(dialogLayout)
+            .setMessage(R.string.start_ride_message)
+            .setPositiveButton(R.string.start_ride) { _, _ ->
+                val inputMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
+                feeMultiplier = if (inputMultiplier < 1.0) 1.0 else inputMultiplier
+                textFareMultiplier.text = feeMultiplier.toString()
+                sharedPreferences.edit(commit = true) {
+                    putString(Constants.MULTIPLIER, feeMultiplier.toString())
+                }
+                service.metadata.start_trip_at = now
+                startingRide = true
+                service.updateMetadata()
+                    .addOnSuccessListener {
+                        startServiceFee(service.start_loc.name)
+                        mainViewModel.setLoading(false)
+                    }
+                    .addOnFailureListener {
+                        btnStatus.text = startTrip
+                        mainViewModel.setLoading(false)
+                        it.message?.let { message -> Log.e(TAG, message) }
+                        Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                        service.metadata.start_trip_at = null
+                    }
+            }
+            .setNegativeButton(R.string.cancel) { dialog, _ ->
+                dialog.dismiss()
+                mainViewModel.setLoading(false)
+            }
+
+        builder.create().show()
     }
 
     private fun stopFeeService() {

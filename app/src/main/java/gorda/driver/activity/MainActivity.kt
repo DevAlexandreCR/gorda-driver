@@ -339,8 +339,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.getRideFees()
-
         viewModel.currentService.observe(this) { currentService ->
             if (currentService == null && viewModel.isLoading.value == false) {
                 if (navController.currentDestination?.id == R.id.nav_current_service)

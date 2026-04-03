@@ -20,7 +20,6 @@ import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
-import gorda.driver.repositories.SettingsRepository
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.dataclasses.LocationUpdates
@@ -110,10 +109,8 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val errorTimeout: LiveData<Boolean> = _errorTimeout
     val currentFeeData: LiveData<FeeData> = _currentFeeData
 
-    fun getRideFees() {
-        SettingsRepository.getRideFees {
-            _rideFees.postValue(it)
-        }
+    fun setRideFees(fees: RideFees) {
+        _rideFees.postValue(fees)
     }
 
     fun setLoading(loading: Boolean) {
