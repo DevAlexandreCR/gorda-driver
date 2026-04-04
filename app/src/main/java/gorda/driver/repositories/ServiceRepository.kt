@@ -14,11 +14,15 @@ import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
 import gorda.driver.services.firebase.Database
-import gorda.driver.services.firebase.FirestoreDatabase
+import gorda.driver.services.masterData.MasterDataApiService
+import gorda.driver.services.retrofit.MasterDataRetrofit
 import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.ServicesEventListener
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.Serializable
-import java.util.Calendar
 
 object ServiceRepository {
 
@@ -184,31 +188,30 @@ object ServiceRepository {
     fun getHistoryFromDriver(): Task<MutableList<Service>> {
         val taskCompletionSource = TaskCompletionSource<MutableList<Service>>()
 
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        val startOfDayTimestamp = calendar.timeInMillis / 1000
+        if (Auth.getCurrentUserUUID() == null) {
+            taskCompletionSource.setException(IllegalStateException("User UUID is null"))
+            return taskCompletionSource.task
+        }
 
-        Auth.getCurrentUserUUID()?.let { driverId ->
-            FirestoreDatabase.fsServices()
-                .whereGreaterThanOrEqualTo(Service.CREATED_AT, startOfDayTimestamp)
-                .whereEqualTo(Service.DRIVER_ID, driverId)
-                .get()
-                .addOnSuccessListener { querySnapshot ->
-                    val services = mutableListOf<Service>()
-                    querySnapshot.documents.forEach { document ->
-                        document.toObject(Service::class.java)?.let { service ->
-                            services.add(service)
-                        }
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = MasterDataRetrofit.getRetrofit()
+                    .create(MasterDataApiService::class.java)
+                    .getDriverHistory()
+
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        val services = response.body()?.data?.services?.toMutableList() ?: mutableListOf()
+                        taskCompletionSource.setResult(services)
+                    } else {
+                        taskCompletionSource.setException(IllegalStateException(response.message()))
                     }
-                    taskCompletionSource.setResult(services)
                 }
-                .addOnFailureListener { exception ->
+            } catch (exception: Exception) {
+                withContext(Dispatchers.Main) {
                     taskCompletionSource.setException(exception)
                 }
-        } ?: run {
-            taskCompletionSource.setException(IllegalStateException("User UUID is null"))
+            }
         }
 
         return taskCompletionSource.task
