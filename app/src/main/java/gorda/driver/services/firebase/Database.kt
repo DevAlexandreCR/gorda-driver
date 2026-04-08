@@ -27,15 +27,7 @@ object Database {
         return reference.child("drivers").ref
     }
 
-    fun dbTokens(): DatabaseReference {
-        return reference.child("tokens").ref
-    }
-
     fun dbOnlineDrivers(): DatabaseReference {
         return reference.child("online_drivers").ref
-    }
-
-    fun dbRideFees(): DatabaseReference {
-        return reference.child("settings").child("ride_fees").ref
     }
 }
