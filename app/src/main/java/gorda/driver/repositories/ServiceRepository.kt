@@ -10,6 +10,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
+import gorda.driver.BuildConfig
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
 import gorda.driver.services.firebase.Auth
@@ -204,6 +205,16 @@ object ServiceRepository {
                         val services = response.body()?.data?.services?.toMutableList() ?: mutableListOf()
                         taskCompletionSource.setResult(services)
                     } else {
+                        val errorBody = try {
+                            response.errorBody()?.string()
+                        } catch (_: Exception) {
+                            null
+                        }
+
+                        Log.e(
+                            ServiceRepository::class.java.toString(),
+                            "History request failed baseUrl=${BuildConfig.BASE_URL} code=${response.code()} message=${response.message()} body=${errorBody ?: "n/a"}"
+                        )
                         taskCompletionSource.setException(IllegalStateException(response.message()))
                     }
                 }

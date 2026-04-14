@@ -5,6 +5,8 @@ plugins {
     id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
 }
 
+def baseUrl = project.findProperty("BASE_URL") ?: ""
+
 android {
     compileSdk 35
 
@@ -73,7 +75,7 @@ android {
             ]
             buildConfigField "String", "BRAND_NAME", '"Red Blanca"'
             buildConfigField "String", "SUPPORT_EMAIL", '"driver@redblanca.com.co"'
-            buildConfigField "String", "BASE_URL", '"https://redblanca.gorda.com.co"'
+            buildConfigField "String", "BASE_URL", "\"${baseUrl}\""
             buildConfigField "String", "PRIVACY_URL", '"https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764"'
             buildConfigField "String", "TERMS_URL", '"https://www.termsfeed.com/live/0f4bfadc-6c3b-48a4-b45a-6583d65c0764"'
         }
@@ -91,7 +93,7 @@ android {
             ]
             buildConfigField "String", "BRAND_NAME", '"Gorda Demo"'
             buildConfigField "String", "SUPPORT_EMAIL", '"support@gorda.demo"'
-            buildConfigField "String", "BASE_URL", '"https://api.demo.gorda.app"'
+            buildConfigField "String", "BASE_URL", "\"${baseUrl}\""
             buildConfigField "String", "PRIVACY_URL", '"https://demo.gorda.app/privacy"'
             buildConfigField "String", "TERMS_URL", '"https://demo.gorda.app/terms"'
         }

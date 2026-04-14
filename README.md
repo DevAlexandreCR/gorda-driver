@@ -21,16 +21,21 @@ Gorda Driver is the Android application for drivers in the Gorda ride platform. 
 
 ### Local setup
 1. Clone the repository.
-2. Copy `local.properties.example` to `local.properties` and fill the required keys. The template contains the variables used by the build such as `MAPS_API_KEY` and Firebase emulator hosts.
+2. Copy `local.properties.example` to `local.properties` and fill the required keys. The template contains the variables used by the build such as `MAPS_API_KEY`, `BASE_URL`, and Firebase emulator hosts.
 3. Open the project in Android Studio and let it download the Gradle dependencies.
 4. Connect an Android device or start an emulator.
 5. Build and run from Android Studio or execute `./gradlew installDebug`.
 
 ### Production build
-Run `./gradlew assembleRelease` to generate a release APK or App Bundle. Configure signing information in your Gradle properties or via Android Studio.
+Run `./gradlew assembleRelease` to generate a release APK or App Bundle. Configure signing information and `BASE_URL` in your Gradle properties or via Android Studio.
 
 ## API Usage
 The app reads and writes data to Firebase Realtime Database and Firestore. It also uses the Google Maps Directions API through `maps/MapApiService.kt`. Provide your own credentials in `local.properties`.
+
+Set `BASE_URL` through Gradle properties for the environment you are targeting:
+- Android Emulator local API: `http://10.0.2.2:3000/`
+- Physical device local API: `http://<host-lan-ip>:3000/`
+- Production: the deployed backend URL
 
 ## Components
 - **activity** – Application entry points (`StartActivity`, `MainActivity`).

@@ -9,6 +9,7 @@ sdk.dir=C\:\\Users\\alexandrecr\\AppData\\Local\\Android\\Sdk
 MAPS_API_KEY=
 SENTRY_DSN=https://3ac6df812ee744f3807f61c56e12345@o13071234.ingest.us.sentry.io/1233456
 MAPS_BASE_URL=https://maps.googleapis.com/maps/api/
+BASE_URL=http://10.0.2.2:3000/
 FIREBASE_USE_EMULATORS=true
 FIREBASE_AUTH_HOST=10.0.2.2
 FIREBASE_DATABASE_HOST=10.0.2.2
