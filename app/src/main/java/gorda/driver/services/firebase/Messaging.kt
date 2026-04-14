@@ -7,7 +7,7 @@ object Messaging {
 
     fun init(driverId: String): Unit {
         getToken(driverId)
-        subscribeToTopic()
+        unsubscribeFromLegacyTopic()
     }
 
     private fun getToken(driverId: String): Unit {
@@ -30,13 +30,13 @@ object Messaging {
         }
     }
 
-    private fun subscribeToTopic() {
-        FirebaseInitializeApp.messaging.subscribeToTopic("drivers")
+    private fun unsubscribeFromLegacyTopic() {
+        FirebaseInitializeApp.messaging.unsubscribeFromTopic("drivers")
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    Log.d("Messaging", "Subscribed to topic for drivers")
+                    Log.d("Messaging", "Unsubscribed from legacy drivers topic")
                 } else {
-                    Log.d("Messaging", "Failed to subscribe to topic for drivers", task.exception)
+                    Log.d("Messaging", "Failed to unsubscribe from legacy drivers topic", task.exception)
                 }
             }
     }
