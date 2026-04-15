@@ -1,6 +1,7 @@
 package gorda.driver.activity
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
@@ -30,6 +31,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Lifecycle
@@ -50,6 +52,7 @@ import com.google.android.material.navigation.NavigationView
 import gorda.driver.R
 import gorda.driver.background.LocationService
 import gorda.driver.databinding.ActivityMainBinding
+import gorda.driver.exceptions.UnsupportedAppVersionException
 import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.DeviceInterface
 import gorda.driver.interfaces.LocInterface
@@ -85,6 +88,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var preferences: SharedPreferences
     private lateinit var connectionBar: ProgressBar
+    private var unsupportedVersionDialog: AlertDialog? = null
     private lateinit var deviceID: String
     private lateinit var deviceName: String
     private var driver: Driver? = null
@@ -133,7 +137,11 @@ class MainActivity : AppCompatActivity() {
                             viewModel.setLoading(false)
                             viewModel.setConnectedLocal(false)
                             viewModel.setConnecting(false)
+                            switchConnect.isChecked = false
                             switchConnect.setText(R.string.status_disconnected)
+                            if (e is UnsupportedAppVersionException) {
+                                showUnsupportedVersionDialog()
+                            }
                             e.message?.let { message -> Log.e(TAG, message) }
                         }.withTimeout {
                             stopLocationService()
@@ -369,6 +377,49 @@ class MainActivity : AppCompatActivity() {
         preferences.edit(true) { remove(Constants.START_TIME) }
         preferences.edit(true) { remove(Constants.MULTIPLIER) }
         preferences.edit(true) { remove(Constants.POINTS) }
+    }
+
+    private fun showUnsupportedVersionDialog() {
+        unsupportedVersionDialog?.let { dialog ->
+            if (dialog.isShowing) {
+                return
+            }
+        }
+
+        unsupportedVersionDialog = AlertDialog.Builder(this)
+            .setTitle(R.string.unsupported_version_title)
+            .setMessage(R.string.unsupported_version_message)
+            .setCancelable(false)
+            .setPositiveButton(R.string.update_app) { _, _ ->
+                openPlayStore()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .create()
+
+        unsupportedVersionDialog?.setOnDismissListener {
+            unsupportedVersionDialog = null
+        }
+        unsupportedVersionDialog?.show()
+    }
+
+    private fun openPlayStore() {
+        val appPackageName = packageName
+        val marketIntent = Intent(
+            Intent.ACTION_VIEW,
+            "market://details?id=$appPackageName".toUri()
+        ).apply {
+            setPackage("com.android.vending")
+        }
+        val webIntent = Intent(
+            Intent.ACTION_VIEW,
+            "https://play.google.com/store/apps/details?id=$appPackageName".toUri()
+        )
+
+        try {
+            startActivity(marketIntent)
+        } catch (_: ActivityNotFoundException) {
+            startActivity(webIntent)
+        }
     }
 
     private fun setIconNotificationButton(isNotificationMute: Boolean) {

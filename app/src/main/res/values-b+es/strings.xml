@@ -185,4 +185,7 @@
     <string name="network_lost_offline_mode">Red perdida - Modo sin conexión activo</string>
     <string name="network_restored">Conexión restaurada - Sincronizando…</string>
     <string name="cannot_disconnect_no_network">No se puede desconectar sin red. Espere a recuperar la conexión.</string>
+    <string name="unsupported_version_title">Actualización requerida</string>
+    <string name="unsupported_version_message">Esta versión de la app ya no puede conectarse en línea. Actualiza la aplicación para seguir recibiendo servicios.</string>
+    <string name="update_app">Actualizar app</string>
 </resources>

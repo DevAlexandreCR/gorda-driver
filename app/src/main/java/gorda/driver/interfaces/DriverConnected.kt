@@ -4,4 +4,5 @@ interface DriverConnected {
     var id: String
     var location: LocInterface
     var version: String
+    var versionCode: Int
 }

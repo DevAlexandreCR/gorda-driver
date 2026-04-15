@@ -3,7 +3,9 @@ package gorda.driver.repositories
 import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.TaskCompletionSource
+import com.google.firebase.database.DatabaseError
 import gorda.driver.BuildConfig
+import gorda.driver.exceptions.UnsupportedAppVersionException
 import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.Device
 import gorda.driver.interfaces.DeviceInterface
@@ -25,11 +27,24 @@ object DriverRepository {
     val TAG = DriverRepository::class.java.toString()
 
     fun connect(driver: DriverInterface, location: LocInterface): Task<Void> {
-        return Database.dbOnlineDrivers().child(driver.id).setValue(object : DriverConnected {
+        val taskSource = TaskCompletionSource<Void>()
+
+        Database.dbOnlineDrivers().child(driver.id).setValue(object : DriverConnected {
             override var id: String = driver.id
             override var location: LocInterface = location
             override var version: String = BuildConfig.VERSION_NAME
-        })
+            override var versionCode: Int = BuildConfig.VERSION_CODE
+        }) { error, _ ->
+            when {
+                error == null -> taskSource.setResult(null)
+                error.code == DatabaseError.PERMISSION_DENIED -> {
+                    taskSource.setException(UnsupportedAppVersionException())
+                }
+                else -> taskSource.setException(error.toException())
+            }
+        }
+
+        return taskSource.task
     }
 
     fun disconnect(driverId: String): Task<Void> {

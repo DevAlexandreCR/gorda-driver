@@ -191,4 +191,7 @@
     <string name="network_lost_offline_mode">Network lost - Offline mode active</string>
     <string name="network_restored">Connection restored - Syncing…</string>
     <string name="cannot_disconnect_no_network">Cannot disconnect without network. Wait for connection recovery.</string>
+    <string name="unsupported_version_title">Update required</string>
+    <string name="unsupported_version_message">This app version can no longer connect online. Update the app to continue receiving services.</string>
+    <string name="update_app">Update app</string>
 </resources>
