@@ -9,9 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+# Release Notes for 2.0.*
+
+## [2.0.0(2026-04-14)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.0...1.2.4)
+
+### Added
+
+- Change firestore by SQL database
+
 # Release Notes for 1.2.*
 
-## [1.2.4 (2025-11-30)](https://github.com/DevAlexandreCR/gorda-driver/compare/v1.2.4...v1.2.3]
+## [1.2.4 (2025-11-30)](https://github.com/DevAlexandreCR/gorda-driver/compare/v1.2.4...v1.2.3)
 
 ### Added
 

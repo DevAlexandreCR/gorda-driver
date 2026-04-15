@@ -14,8 +14,8 @@ android {
         applicationId "gorda.driver"
         minSdk 24
         targetSdk 35
-        versionCode 71
-        versionName "1.2.5"
+        versionCode 72
+        versionName "2.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -26,7 +26,7 @@ android {
 
     flavorDimensions += "brand"
 
-    def baseVersionCode = 71
+    def baseVersionCode = 72
     def versionCodeSpacing = 1_000_000
 
     signingConfigs {
