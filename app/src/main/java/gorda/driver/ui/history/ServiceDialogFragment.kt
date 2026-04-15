@@ -27,6 +27,7 @@ class ServiceDialogFragment(private val service: Service): DialogFragment(), OnM
 
     private lateinit var mapView: MapView
     private var googleMap: GoogleMap? = null
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val builder = AlertDialog.Builder(requireContext())
         val inflater = requireActivity().layoutInflater
@@ -74,6 +75,49 @@ class ServiceDialogFragment(private val service: Service): DialogFragment(), OnM
         drawRoute(routePoints)
     }
 
+    override fun onStart() {
+        super.onStart()
+        if (::mapView.isInitialized) {
+            mapView.onStart()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::mapView.isInitialized) {
+            mapView.onResume()
+        }
+    }
+
+    override fun onPause() {
+        if (::mapView.isInitialized) {
+            mapView.onPause()
+        }
+        super.onPause()
+    }
+
+    override fun onStop() {
+        if (::mapView.isInitialized) {
+            mapView.onStop()
+        }
+        super.onStop()
+    }
+
+    override fun onDestroyView() {
+        if (::mapView.isInitialized) {
+            mapView.onDestroy()
+        }
+        googleMap = null
+        super.onDestroyView()
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        if (::mapView.isInitialized) {
+            mapView.onLowMemory()
+        }
+    }
+
     private fun parseRoute(jsonString: String): ArrayList<LatLng> {
         val routePoints = ArrayList<LatLng>()
         val json = JSONObject(jsonString)
@@ -108,9 +152,23 @@ class ServiceDialogFragment(private val service: Service): DialogFragment(), OnM
                 boundsBuilder.include(routePoints.first())
                 boundsBuilder.include(routePoints.last())
                 val bounds = boundsBuilder.build()
+                fitRouteBounds(bounds, routePoints.first())
+            }
+        }
+    }
+
+    private fun fitRouteBounds(bounds: LatLngBounds, fallbackPoint: LatLng) {
+        mapView.post {
+            val map = googleMap ?: return@post
+            val width = mapView.width
+            val height = mapView.height
+
+            if (width > 0 && height > 0) {
                 val padding = resources.getDimensionPixelSize(R.dimen.map_margin_small)
-                val cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, padding)
-                googleMap?.animateCamera(cameraUpdate)
+                val cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding)
+                map.animateCamera(cameraUpdate)
+            } else {
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(fallbackPoint, 14f))
             }
         }
     }
