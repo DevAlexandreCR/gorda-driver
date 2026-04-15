@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import gorda.driver.R
 import gorda.driver.databinding.FragmentHistoryBinding
 import gorda.driver.helpers.withTimeout
 import gorda.driver.ui.MainViewModel
@@ -19,30 +20,19 @@ class HistoryFragment : Fragment() {
     private val viewmodel: HistoryViewModel by viewModels()
     private val mainViewModel: MainViewModel by activityViewModels()
     private val binding get() = _binding!!
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        mainViewModel.setLoading(true)
-        viewmodel.getServices().addOnCompleteListener { _ ->
-            mainViewModel.setLoading(false)
-        }.withTimeout {
-            mainViewModel.setLoading(false)
-            mainViewModel.setErrorTimeout(true)
-        }
-    }
+    private var isRefreshInProgress = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHistoryBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-
         setupRecyclerView()
         setupObservers()
-        setupClickListeners()
+        setupSwipeRefresh()
+        refreshData(isUserRefresh = false)
 
-        return root
+        return binding.root
     }
 
     private fun setupRecyclerView() {
@@ -73,29 +63,61 @@ class HistoryFragment : Fragment() {
 
          viewmodel.serviceList.observe(viewLifecycleOwner) { list ->
              binding.textTotalServices.text = list.size.toString()
-         }
-    }
-
-    private fun setupClickListeners() {
-
-        // Refresh button
-        binding.btnRefreshHistory.setOnClickListener {
-            refreshData()
         }
     }
 
-    private fun refreshData() {
-        mainViewModel.setLoading(true)
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.setColorSchemeResources(R.color.secondary)
+        binding.swipeRefreshLayout.setProgressBackgroundColorSchemeResource(R.color.primary_dark)
+        binding.swipeRefreshLayout.setProgressViewOffset(
+            false,
+            0,
+            resources.getDimensionPixelSize(R.dimen.map_margin_big)
+        )
+        binding.swipeRefreshLayout.setOnChildScrollUpCallback { _, _ ->
+            binding.historyList.canScrollVertically(-1)
+        }
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            refreshData(isUserRefresh = true)
+        }
+    }
+
+    private fun refreshData(isUserRefresh: Boolean) {
+        if (isRefreshInProgress) {
+            if (isUserRefresh) {
+                binding.swipeRefreshLayout.isRefreshing = false
+            }
+            return
+        }
+
+        isRefreshInProgress = true
+
+        if (isUserRefresh) {
+            binding.swipeRefreshLayout.isRefreshing = true
+        } else {
+            mainViewModel.setLoading(true)
+        }
+
         viewmodel.getServices().addOnCompleteListener { _ ->
-            mainViewModel.setLoading(false)
+            finishRefresh(isUserRefresh)
         }.withTimeout {
-            mainViewModel.setLoading(false)
+            finishRefresh(isUserRefresh)
             mainViewModel.setErrorTimeout(true)
+        }
+    }
+
+    private fun finishRefresh(isUserRefresh: Boolean) {
+        isRefreshInProgress = false
+        if (isUserRefresh) {
+            _binding?.swipeRefreshLayout?.isRefreshing = false
+        } else {
+            mainViewModel.setLoading(false)
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        isRefreshInProgress = false
         _binding = null
     }
 }
