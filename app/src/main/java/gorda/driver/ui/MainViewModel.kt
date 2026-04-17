@@ -1,5 +1,6 @@
 package gorda.driver.ui
 
+import android.content.SharedPreferences
 import android.location.Location
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -10,10 +11,13 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.tasks.Task
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
+import gorda.driver.R
 import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.DeviceInterface
+import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.RideFees
 import gorda.driver.models.Driver
@@ -24,6 +28,10 @@ import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
+import gorda.driver.utils.Constants
+import java.util.UUID
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,42 +40,35 @@ import kotlinx.coroutines.launch
 class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     companion object {
         private val TAG: String = MainViewModel::class.java.toString()
+        private const val PRESENCE_HEARTBEAT_SECONDS = 5L
     }
 
-    private val _lastLocation = MutableLiveData<LocationUpdates>()
+    sealed class DriverLoadState {
+        object Idle : DriverLoadState()
+        data class Loading(val driverId: String) : DriverLoadState()
+        data class Loaded(val driver: Driver) : DriverLoadState()
+        data class Failed(val driverId: String) : DriverLoadState()
+    }
 
-    // Migrated to StateFlow
-    private val _driverState = MutableStateFlow<DriverUpdates?>(null)
-    val driverStatus: StateFlow<DriverUpdates?> = _driverState.asStateFlow()
+    enum class DriverPresencePhase {
+        DISCONNECTED,
+        PRECHECKING,
+        WAITING_FOR_BIND,
+        WAITING_FOR_LOCATION,
+        WRITING_PRESENCE,
+        CONNECTED,
+        DISCONNECTING
+    }
 
-    private val _isNetWorkConnected = MutableStateFlow(true)
-    val isNetWorkConnected: StateFlow<Boolean> = _isNetWorkConnected.asStateFlow()
-
-    // Driver connection state - separate from network state
-    private val _driverConnectionState = MutableStateFlow<DriverConnectionState>(
-        DriverConnectionState.Disconnected
+    data class DriverPresenceState(
+        val desiredOnline: Boolean = false,
+        val actualOnline: Boolean = false,
+        val phase: DriverPresencePhase = DriverPresencePhase.DISCONNECTED,
+        val hasNetwork: Boolean = true,
+        val lastError: String? = null,
+        val attemptId: Long = 0L,
+        val sessionId: String? = null
     )
-    val driverConnectionState: StateFlow<DriverConnectionState> = _driverConnectionState.asStateFlow()
-
-    sealed class DriverConnectionState {
-        object Disconnected : DriverConnectionState()
-        object Connecting : DriverConnectionState()
-        data class Connected(val hasNetwork: Boolean) : DriverConnectionState()
-    }
-    private val _driver: MutableLiveData<Driver?> = savedStateHandle.getLiveData(Driver.TAG)
-    private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
-    private val _currentService = MutableLiveData<Service?>()
-    private val _nextService = MutableLiveData<Service?>()
-    private val _isTripStarted = MutableLiveData(false)
-    private val _rideFees = MutableLiveData<RideFees>()
-    private val _isLoading = MutableLiveData(false)
-    private val _errorTimeout = MutableLiveData(false)
-
-    // Add fee tracking LiveData
-    private val _currentFeeData = MutableLiveData<FeeData>()
-
-    // Pending location updates queue for offline mode
-    private val pendingLocationUpdates = mutableListOf<Location>()
 
     data class FeeData(
         val totalFee: Double,
@@ -76,6 +77,42 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         val totalDistance: Double,
         val elapsedSeconds: Long
     )
+
+    private val _lastLocation = MutableLiveData<LocationUpdates>()
+    private val _driverState = MutableStateFlow<DriverUpdates?>(null)
+    val driverStatus: StateFlow<DriverUpdates?> = _driverState.asStateFlow()
+
+    private val _isNetWorkConnected = MutableStateFlow(true)
+    val isNetWorkConnected: StateFlow<Boolean> = _isNetWorkConnected.asStateFlow()
+
+    private val _presenceState = MutableStateFlow(DriverPresenceState())
+    val presenceState: StateFlow<DriverPresenceState> = _presenceState.asStateFlow()
+
+    private val _driver: MutableLiveData<Driver?> = savedStateHandle.getLiveData(Driver.TAG)
+    private val _driverLoadState = MutableLiveData<DriverLoadState>(DriverLoadState.Idle)
+    private val _serviceUpdates = MutableLiveData<ServiceUpdates>()
+    private val _currentService = MutableLiveData<Service?>()
+    private val _nextService = MutableLiveData<Service?>()
+    private val _isTripStarted = MutableLiveData(false)
+    private val _rideFees = MutableLiveData<RideFees>()
+    private val _isLoading = MutableLiveData(false)
+    private val _errorTimeout = MutableLiveData(false)
+    private val _currentFeeData = MutableLiveData<FeeData>()
+    private val _errorMessageRes = MutableLiveData<Int?>()
+    private val _unsupportedVersion = MutableLiveData(false)
+
+    private var preferences: SharedPreferences? = null
+    private var presenceListener: ValueEventListener? = null
+    private var observedDriverId: String? = null
+    private var nextAttemptId: Long = 0L
+    private var latestLocation: Location? = null
+    private var lastPresenceUpdateAt: Long = 0L
+    private var preserveDesiredOnlineOnFailure = false
+    private var bindTimeoutJob: Job? = null
+    private var locationTimeoutJob: Job? = null
+    private var presenceWriteTimeoutJob: Job? = null
+
+    private val pendingLocationUpdates = mutableListOf<Location>()
 
     private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
         if (service == null) {
@@ -100,6 +137,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driver: LiveData<Driver?> = _driver
+    val driverLoadState: LiveData<DriverLoadState> = _driverLoadState
     var serviceUpdates: LiveData<ServiceUpdates> = _serviceUpdates
     val currentService: LiveData<Service?> = _currentService
     val nextService: LiveData<Service?> = _nextService
@@ -108,6 +146,16 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val isLoading: LiveData<Boolean> = _isLoading
     val errorTimeout: LiveData<Boolean> = _errorTimeout
     val currentFeeData: LiveData<FeeData> = _currentFeeData
+    val errorMessageRes: LiveData<Int?> = _errorMessageRes
+    val unsupportedVersion: LiveData<Boolean> = _unsupportedVersion
+
+    fun initializePreferences(preferences: SharedPreferences) {
+        this.preferences = preferences
+        val desiredOnline = preferences.getBoolean(Constants.DRIVER_DESIRED_ONLINE, false)
+        updatePresenceState { current ->
+            current.copy(desiredOnline = desiredOnline)
+        }
+    }
 
     fun setRideFees(fees: RideFees) {
         _rideFees.postValue(fees)
@@ -121,17 +169,25 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         _errorTimeout.postValue(error)
     }
 
+    fun consumeErrorMessage() {
+        _errorMessageRes.postValue(null)
+    }
+
+    fun consumeUnsupportedVersion() {
+        _unsupportedVersion.postValue(false)
+    }
+
     fun changeConnectTripService(connect: Boolean) {
         _isTripStarted.postValue(connect)
     }
 
     fun changeNetWorkStatus(isConnected: Boolean) {
-        viewModelScope.launch {
-            val previousState = _isNetWorkConnected.value
+        val previousState = _isNetWorkConnected.value
+        Log.d(TAG, "Network status changed: $isConnected (previous: $previousState)")
 
-            Log.d(TAG, "Network status changed: $isConnected (previous: $previousState)")
-
-            _isNetWorkConnected.emit(isConnected)
+        _isNetWorkConnected.value = isConnected
+        updatePresenceState { current ->
+            current.copy(hasNetwork = isConnected)
         }
     }
 
@@ -196,141 +252,566 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     fun updateLocation(location: Location) {
-        // Queue location if network is down
+        latestLocation = location
         if (!isNetWorkConnected.value) {
             pendingLocationUpdates.add(location)
             Log.d(TAG, "Location queued (offline mode): ${pendingLocationUpdates.size} pending")
+        } else {
+            maybeSendPresenceHeartbeat(location, force = false)
         }
         _lastLocation.postValue(LocationUpdates.lastLocation(location))
     }
 
     fun getDriver(driverId: String) {
         _isLoading.postValue(true)
+        _driver.postValue(null)
+        _driverLoadState.postValue(DriverLoadState.Loading(driverId))
         DriverRepository.getDriver(driverId) { driver ->
             _isLoading.postValue(false)
-            _driver.postValue(driver)
+            if (driver != null) {
+                _driver.postValue(driver)
+                _driverLoadState.postValue(DriverLoadState.Loaded(driver))
+            } else {
+                _driver.postValue(null)
+                _driverLoadState.postValue(DriverLoadState.Failed(driverId))
+            }
             savedStateHandle[Driver.TAG] = driver
         }
     }
 
-    fun isConnected(driverId: String) {
-        viewModelScope.launch {
-            _driverState.emit(DriverUpdates.connecting(true))
-            _isLoading.postValue(true)
-            DriverRepository.isConnected(driverId) { connected ->
-                _isLoading.postValue(false)
-                viewModelScope.launch {
-                    _driverState.emit(DriverUpdates.connecting(false))
-                    _driverState.emit(DriverUpdates.setConnected(connected))
+    fun startPresenceObservation(driverId: String) {
+        if (observedDriverId == driverId && presenceListener != null) {
+            return
+        }
+
+        stopPresenceObservation()
+        observedDriverId = driverId
+        presenceListener = DriverRepository.observePresence(driverId) { presence ->
+            val currentState = _presenceState.value
+            val localAttemptActive = currentState.phase in setOf(
+                DriverPresencePhase.PRECHECKING,
+                DriverPresencePhase.WAITING_FOR_BIND,
+                DriverPresencePhase.WAITING_FOR_LOCATION,
+                DriverPresencePhase.WRITING_PRESENCE,
+                DriverPresencePhase.DISCONNECTING
+            )
+
+            if (
+                presence?.sessionId != null &&
+                currentState.sessionId != null &&
+                presence.sessionId == currentState.sessionId
+            ) {
+                lastPresenceUpdateAt = presence.lastSeenAt ?: currentUnixSeconds()
+                updatePresenceState { state ->
+                    state.copy(
+                        actualOnline = true,
+                        phase = DriverPresencePhase.CONNECTED,
+                        lastError = null
+                    )
                 }
+                flushPendingLocationUpdates()
+                return@observePresence
+            }
+
+            if (localAttemptActive) {
+                Log.d(
+                    TAG,
+                    "Ignoring presence update while local attempt is active: ${currentState.phase}"
+                )
+                return@observePresence
+            }
+
+            if (presence == null) {
+                val previousOnline = currentState.actualOnline
+                updatePresenceState { state ->
+                    state.copy(
+                        actualOnline = false,
+                        phase = DriverPresencePhase.DISCONNECTED
+                    )
+                }
+
+                if (
+                    previousOnline &&
+                    currentState.desiredOnline &&
+                    currentState.hasNetwork
+                ) {
+                    reconnectFirebaseIfNeeded(latestLocation)
+                }
+                return@observePresence
+            }
+
+            lastPresenceUpdateAt = presence.lastSeenAt ?: currentUnixSeconds()
+            updatePresenceState { state ->
+                state.copy(
+                    actualOnline = true,
+                    phase = DriverPresencePhase.CONNECTED,
+                    sessionId = presence.sessionId ?: state.sessionId,
+                    lastError = null
+                )
             }
         }
     }
 
-    fun connecting() {
-        viewModelScope.launch {
-            _driverState.emit(DriverUpdates.connecting(true))
+    fun stopPresenceObservation() {
+        val driverId = observedDriverId
+        val listener = presenceListener
+        if (driverId != null && listener != null) {
+            DriverRepository.removePresenceObserver(driverId, listener)
         }
-        _isLoading.postValue(true)
+        presenceListener = null
+        observedDriverId = null
     }
 
-    fun connected() {
-        viewModelScope.launch {
-            _driverState.emit(DriverUpdates.connecting(false))
-            _driverState.emit(DriverUpdates.setConnected(true))
+    fun requestConnect() {
+        if (!isNetWorkConnected.value) {
+            emitErrorMessage(R.string.connection_lost)
+            return
         }
-        _isLoading.postValue(false)
+
+        beginPresenceAttempt(immediateLocation = null, keepDesiredOnlineOnFailure = false)
+    }
+
+    fun requestDisconnect() {
+        val currentDriver = driver.value ?: return
+        val attemptId = nextAttemptId()
+
+        cancelPresenceJobs()
+        preserveDesiredOnlineOnFailure = false
+        persistDesiredOnline(false)
+        Log.i(TAG, "event=manual_disconnect driverId=${currentDriver.id} attemptId=$attemptId")
+
+        updatePresenceState { current ->
+            current.copy(
+                desiredOnline = false,
+                actualOnline = false,
+                phase = DriverPresencePhase.DISCONNECTING,
+                lastError = null,
+                attemptId = attemptId,
+                sessionId = null
+            )
+        }
+        _isLoading.postValue(true)
+
+        currentDriver.disconnect()
+            .addOnSuccessListener {
+                _isLoading.postValue(false)
+                updatePresenceState { current ->
+                    current.copy(
+                        desiredOnline = false,
+                        actualOnline = false,
+                        phase = DriverPresencePhase.DISCONNECTED,
+                        lastError = null,
+                        sessionId = null
+                    )
+                }
+            }
+            .addOnFailureListener { exception ->
+                _isLoading.postValue(false)
+                Log.e(TAG, "event=manual_disconnect_failed driverId=${currentDriver.id} message=${exception.message}")
+                updatePresenceState { current ->
+                    current.copy(
+                        desiredOnline = true,
+                        actualOnline = true,
+                        phase = DriverPresencePhase.CONNECTED,
+                        lastError = "manual_disconnect_failed"
+                    )
+                }
+            }
+    }
+
+    fun onLocationServiceBound() {
+        val currentState = _presenceState.value
+        if (currentState.phase != DriverPresencePhase.WAITING_FOR_BIND) {
+            return
+        }
+
+        bindTimeoutJob?.cancel()
+        updatePresenceState { state ->
+            state.copy(phase = DriverPresencePhase.WAITING_FOR_LOCATION)
+        }
+        scheduleLocationTimeout(currentState.attemptId)
+    }
+
+    fun onLocationServiceBindFailed() {
+        val currentState = _presenceState.value
+        if (
+            currentState.phase != DriverPresencePhase.WAITING_FOR_BIND &&
+            currentState.phase != DriverPresencePhase.WAITING_FOR_LOCATION
+        ) {
+            return
+        }
+        failPresenceAttempt(
+            attemptId = currentState.attemptId,
+            lastError = "bind_failed",
+            messageRes = R.string.error_timeout
+        )
+    }
+
+    fun onInitialConnectionLocation(location: Location) {
+        latestLocation = location
+        val currentState = _presenceState.value
+        if (currentState.phase != DriverPresencePhase.WAITING_FOR_LOCATION) {
+            return
+        }
+
+        locationTimeoutJob?.cancel()
+        writePresence(location, currentState.attemptId)
+    }
+
+    fun reconnectFirebaseIfNeeded(lastKnownLocation: Location?) {
+        viewModelScope.launch {
+            try {
+                FirebaseDatabase.getInstance().goOnline()
+                Log.i(TAG, "event=network_recovered_reconnect desiredOnline=${_presenceState.value.desiredOnline}")
+                delay(500)
+            } catch (exception: Exception) {
+                Log.e(TAG, "Error reconnecting Firebase: ${exception.message}")
+            }
+
+            val state = _presenceState.value
+            if (!state.desiredOnline || !state.hasNetwork) {
+                return@launch
+            }
+
+            beginPresenceAttempt(lastKnownLocation ?: latestLocation, keepDesiredOnlineOnFailure = true)
+        }
+    }
+
+    fun flushPendingLocationUpdates() {
+        val latestPendingLocation = pendingLocationUpdates.lastOrNull()
+        if (latestPendingLocation != null) {
+            maybeSendPresenceHeartbeat(latestPendingLocation, force = true)
+        }
+        pendingLocationUpdates.clear()
     }
 
     fun updateDriverDevice(driverID: String, device: DeviceInterface?): Task<Void> {
         return DriverRepository.updateDevice(driverID, device)
     }
 
-    fun disconnect(driver: Driver) {
-        viewModelScope.launch {
-            _driverState.emit(DriverUpdates.connecting(true))
+    fun updateFeeData(
+        totalFee: Double,
+        timeFee: Double,
+        distanceFee: Double,
+        totalDistance: Double,
+        elapsedSeconds: Long
+    ) {
+        val feeData = FeeData(totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds)
+        _currentFeeData.postValue(feeData)
+    }
+
+    private fun beginPresenceAttempt(
+        immediateLocation: Location?,
+        keepDesiredOnlineOnFailure: Boolean
+    ) {
+        val currentDriver = driver.value ?: return
+        val state = _presenceState.value
+        val localAttemptActive = state.phase in setOf(
+            DriverPresencePhase.PRECHECKING,
+            DriverPresencePhase.WAITING_FOR_BIND,
+            DriverPresencePhase.WAITING_FOR_LOCATION,
+            DriverPresencePhase.WRITING_PRESENCE,
+            DriverPresencePhase.DISCONNECTING
+        )
+
+        if (localAttemptActive) {
+            return
         }
+
+        val attemptId = nextAttemptId()
+        val nextSessionId = UUID.randomUUID().toString()
+
+        preserveDesiredOnlineOnFailure = keepDesiredOnlineOnFailure
+        persistDesiredOnline(true)
+        cancelPresenceJobs()
         _isLoading.postValue(true)
-        driver.disconnect().addOnSuccessListener {
-            viewModelScope.launch {
-                _driverState.emit(DriverUpdates.connecting(false))
-                _driverState.emit(DriverUpdates.setConnected(false))
+
+        updatePresenceState { current ->
+            current.copy(
+                desiredOnline = true,
+                phase = DriverPresencePhase.PRECHECKING,
+                lastError = null,
+                attemptId = attemptId,
+                sessionId = nextSessionId
+            )
+        }
+
+        DriverRepository.validateDriverVersion { result ->
+            if (_presenceState.value.attemptId != attemptId) {
+                return@validateDriverVersion
             }
-            _isLoading.postValue(false)
-        }.addOnFailureListener { e ->
-            viewModelScope.launch {
-                _driverState.emit(DriverUpdates.setConnected(true))
-                _driverState.emit(DriverUpdates.connecting(false))
+
+            result.onSuccess {
+                if (immediateLocation != null) {
+                    writePresence(immediateLocation, attemptId)
+                } else {
+                    updatePresenceState { current ->
+                        current.copy(phase = DriverPresencePhase.WAITING_FOR_BIND)
+                    }
+                    scheduleBindTimeout(attemptId)
+                }
+            }.onFailure { exception ->
+                if (exception is gorda.driver.exceptions.UnsupportedAppVersionException) {
+                    Log.w(TAG, "event=version_unsupported attemptId=$attemptId")
+                    _unsupportedVersion.postValue(true)
+                    persistDesiredOnline(false)
+                    _isLoading.postValue(false)
+                    updatePresenceState { current ->
+                        current.copy(
+                            desiredOnline = false,
+                            actualOnline = false,
+                            phase = DriverPresencePhase.DISCONNECTED,
+                            lastError = "version_unsupported",
+                            sessionId = null
+                        )
+                    }
+                } else {
+                    failPresenceAttempt(
+                        attemptId = attemptId,
+                        lastError = "version_precheck_failed",
+                        messageRes = if (keepDesiredOnlineOnFailure) {
+                            R.string.error_reconnection_failed
+                        } else {
+                            R.string.error_timeout
+                        }
+                    )
+                }
             }
-            _isLoading.postValue(false)
-            e.message?.let { message -> Log.e(TAG, message) }
-        }.withTimeout {
-            viewModelScope.launch {
-                _driverState.emit(DriverUpdates.setConnected(true))
-                _driverState.emit(DriverUpdates.connecting(false))
-            }
-            this.setErrorTimeout(true)
+        }
+
+        if (immediateLocation != null) {
+            Log.i(TAG, "event=network_recovered_reconnect driverId=${currentDriver.id} attemptId=$attemptId")
         }
     }
 
-    fun setConnectedLocal(connected: Boolean) {
+    private fun writePresence(location: Location, attemptId: Long) {
+        val currentDriver = driver.value ?: return
+        val sessionId = _presenceState.value.sessionId ?: UUID.randomUUID().toString()
+        val lastSeenAt = currentUnixSeconds()
+
+        latestLocation = location
+        _isLoading.postValue(true)
+        updatePresenceState { current ->
+            current.copy(
+                phase = DriverPresencePhase.WRITING_PRESENCE,
+                sessionId = sessionId,
+                lastError = null
+            )
+        }
+        schedulePresenceWriteTimeout(attemptId)
+
+        currentDriver.connect(
+            object : LocInterface {
+                override var lat: Double = location.latitude
+                override var lng: Double = location.longitude
+            },
+            sessionId,
+            lastSeenAt
+        ).addOnSuccessListener {
+            if (_presenceState.value.attemptId != attemptId) {
+                return@addOnSuccessListener
+            }
+
+            presenceWriteTimeoutJob?.cancel()
+            lastPresenceUpdateAt = lastSeenAt
+            _isLoading.postValue(false)
+            updatePresenceState { current ->
+                current.copy(
+                    actualOnline = true,
+                    phase = DriverPresencePhase.CONNECTED,
+                    lastError = null
+                )
+            }
+            flushPendingLocationUpdates()
+        }.addOnFailureListener { exception ->
+            if (_presenceState.value.attemptId != attemptId) {
+                return@addOnFailureListener
+            }
+
+            Log.e(
+                TAG,
+                "event=connect_write_failed driverId=${currentDriver.id} attemptId=$attemptId message=${exception.message}"
+            )
+            if (exception is gorda.driver.exceptions.UnsupportedAppVersionException) {
+                Log.w(TAG, "event=version_unsupported attemptId=$attemptId")
+                _unsupportedVersion.postValue(true)
+            }
+
+            failPresenceAttempt(
+                attemptId = attemptId,
+                lastError = if (exception is gorda.driver.exceptions.UnsupportedAppVersionException) {
+                    "version_unsupported"
+                } else {
+                    "connect_write_failed"
+                },
+                messageRes = if (preserveDesiredOnlineOnFailure) {
+                    R.string.error_reconnection_failed
+                } else {
+                    R.string.error_timeout
+                },
+                unsupportedVersion = exception is gorda.driver.exceptions.UnsupportedAppVersionException
+            )
+        }
+    }
+
+    private fun maybeSendPresenceHeartbeat(location: Location, force: Boolean) {
+        val currentDriver = driver.value ?: return
+        val state = _presenceState.value
+        if (!state.desiredOnline || !state.actualOnline || !state.hasNetwork) {
+            return
+        }
+
+        val now = currentUnixSeconds()
+        if (!force && now - lastPresenceUpdateAt < PRESENCE_HEARTBEAT_SECONDS) {
+            return
+        }
+
+        lastPresenceUpdateAt = now
+        DriverRepository.updateLocation(
+            currentDriver.id,
+            object : LocInterface {
+                override var lat: Double = location.latitude
+                override var lng: Double = location.longitude
+            },
+            now
+        ).addOnFailureListener { exception ->
+            Log.e(TAG, "Failed to update heartbeat: ${exception.message}")
+        }
+    }
+
+    private fun scheduleBindTimeout(attemptId: Long) {
+        bindTimeoutJob?.cancel()
+        bindTimeoutJob = viewModelScope.launch {
+            delay(5000)
+            failPresenceAttempt(
+                attemptId = attemptId,
+                lastError = "bind_timeout",
+                messageRes = R.string.error_timeout
+            )
+        }
+    }
+
+    private fun scheduleLocationTimeout(attemptId: Long) {
+        locationTimeoutJob?.cancel()
+        locationTimeoutJob = viewModelScope.launch {
+            delay(15000)
+            failPresenceAttempt(
+                attemptId = attemptId,
+                lastError = "location_timeout",
+                messageRes = if (preserveDesiredOnlineOnFailure) {
+                    R.string.error_reconnection_failed
+                } else {
+                    R.string.error_timeout
+                }
+            )
+        }
+    }
+
+    private fun schedulePresenceWriteTimeout(attemptId: Long) {
+        presenceWriteTimeoutJob?.cancel()
+        presenceWriteTimeoutJob = viewModelScope.launch {
+            delay(8000)
+            failPresenceAttempt(
+                attemptId = attemptId,
+                lastError = "presence_write_timeout",
+                messageRes = if (preserveDesiredOnlineOnFailure) {
+                    R.string.error_reconnection_failed
+                } else {
+                    R.string.error_timeout
+                }
+            )
+        }
+    }
+
+    private fun failPresenceAttempt(
+        attemptId: Long,
+        lastError: String,
+        messageRes: Int?,
+        unsupportedVersion: Boolean = false
+    ) {
+        if (_presenceState.value.attemptId != attemptId) {
+            return
+        }
+
+        cancelPresenceJobs()
+        _isLoading.postValue(false)
+        if (messageRes != null) {
+            emitErrorMessage(messageRes)
+        }
+        if (unsupportedVersion) {
+            persistDesiredOnline(false)
+        } else if (!preserveDesiredOnlineOnFailure) {
+            persistDesiredOnline(false)
+        }
+
+        updatePresenceState { current ->
+            current.copy(
+                desiredOnline = if (unsupportedVersion) {
+                    false
+                } else {
+                    current.desiredOnline && preserveDesiredOnlineOnFailure
+                },
+                actualOnline = false,
+                phase = DriverPresencePhase.DISCONNECTED,
+                lastError = lastError,
+                sessionId = null
+            )
+        }
+    }
+
+    private fun emitErrorMessage(messageRes: Int) {
+        _errorMessageRes.postValue(messageRes)
+    }
+
+    private fun persistDesiredOnline(desiredOnline: Boolean) {
+        preferences?.edit()?.putBoolean(Constants.DRIVER_DESIRED_ONLINE, desiredOnline)?.apply()
+    }
+
+    private fun cancelPresenceJobs() {
+        bindTimeoutJob?.cancel()
+        locationTimeoutJob?.cancel()
+        presenceWriteTimeoutJob?.cancel()
+        bindTimeoutJob = null
+        locationTimeoutJob = null
+        presenceWriteTimeoutJob = null
+    }
+
+    private fun updatePresenceState(
+        transform: (DriverPresenceState) -> DriverPresenceState
+    ) {
+        val nextState = transform(_presenceState.value)
+        _presenceState.value = nextState
+        publishDriverStatus(nextState)
+    }
+
+    private fun publishDriverStatus(state: DriverPresenceState) {
         viewModelScope.launch {
+            val connecting = state.phase in setOf(
+                DriverPresencePhase.PRECHECKING,
+                DriverPresencePhase.WAITING_FOR_BIND,
+                DriverPresencePhase.WAITING_FOR_LOCATION,
+                DriverPresencePhase.WRITING_PRESENCE,
+                DriverPresencePhase.DISCONNECTING
+            )
+            val connected = state.actualOnline || (state.desiredOnline && !state.hasNetwork)
+
+            _driverState.emit(DriverUpdates.connecting(connecting))
             _driverState.emit(DriverUpdates.setConnected(connected))
         }
     }
 
-    fun setConnecting(connecting: Boolean) {
-        viewModelScope.launch {
-            _driverState.emit(DriverUpdates.connecting(connecting))
-        }
+    private fun nextAttemptId(): Long {
+        nextAttemptId += 1
+        return nextAttemptId
     }
 
-    fun reconnectFirebaseIfNeeded() {
-        // Force Firebase to go back online when network is restored
-        viewModelScope.launch {
-            try {
-                // Enable Firebase Database connection
-                com.google.firebase.database.FirebaseDatabase.getInstance().goOnline()
-                Log.d(TAG, "Firebase reconnection triggered after network restoration")
-
-                // Check if driver was previously connected and sync data
-                driver.value?.let { currentDriver ->
-                    // Small delay to allow Firebase to establish connection
-                    kotlinx.coroutines.delay(500)
-
-                    // Sync data without changing UI state
-                    syncDriverStateWithFirebase(currentDriver.id)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error reconnecting Firebase: ${e.message}")
-            }
-        }
+    private fun currentUnixSeconds(): Long {
+        return System.currentTimeMillis() / 1000
     }
 
-    private suspend fun syncDriverStateWithFirebase(driverId: String) {
-        try {
-            Log.d(TAG, "Syncing driver state with Firebase (driverId: $driverId)")
-            // This method only syncs data in background without changing UI state
-            // The actual connection state remains unchanged
-        } catch (e: Exception) {
-            Log.e(TAG, "Error syncing driver state: ${e.message}")
-        }
-    }
-
-    fun flushPendingLocationUpdates() {
-        viewModelScope.launch {
-            if (pendingLocationUpdates.isNotEmpty()) {
-                Log.d(TAG, "Flushing ${pendingLocationUpdates.size} pending location updates")
-                // Process pending locations
-                // In a production scenario, you would send these to Firebase
-                pendingLocationUpdates.clear()
-            }
-        }
-    }
-
-    // Add method to update fee data from the service
-    fun updateFeeData(totalFee: Double, timeFee: Double, distanceFee: Double, totalDistance: Double, elapsedSeconds: Long) {
-        val feeData = FeeData(totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds)
-        _currentFeeData.postValue(feeData)
+    override fun onCleared() {
+        stopPresenceObservation()
+        cancelPresenceJobs()
+        super.onCleared()
     }
 }

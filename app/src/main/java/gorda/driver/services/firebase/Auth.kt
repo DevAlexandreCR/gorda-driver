@@ -2,6 +2,7 @@ package gorda.driver.services.firebase
 
 import android.content.Context
 import android.content.Intent
+import com.google.android.gms.tasks.Tasks
 import com.firebase.ui.auth.AuthUI
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
@@ -16,12 +17,24 @@ object Auth {
         return auth.currentUser?.uid
     }
 
+    fun isUserSignedIn(): Boolean {
+        return auth.currentUser != null
+    }
+
     fun reloadUser(): Task<Void> {
         return if (auth.currentUser != null) {
             auth.currentUser!!.reload()
         } else {
             throw IllegalStateException("User is not logged in")
         }
+    }
+
+    fun requireIdToken(forceRefresh: Boolean = false): String {
+        val currentUser = auth.currentUser
+            ?: throw IllegalStateException("Firebase auth user is not available")
+        val tokenResult = Tasks.await(currentUser.getIdToken(forceRefresh))
+        return tokenResult.token?.takeIf { it.isNotBlank() }
+            ?: throw IllegalStateException("Firebase ID token is empty")
     }
 
     fun onAuthChanges(listener: (uuid: String?) -> Unit): AuthStateListener {

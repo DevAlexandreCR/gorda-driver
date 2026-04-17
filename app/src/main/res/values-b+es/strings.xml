@@ -25,6 +25,7 @@
     <string name="fields_phone">Teléfono</string>
     <string name="fields_plate">Placa</string>
     <string name="logout">Cerrar Sesión</string>
+    <string name="retry">Reintentar</string>
     <string name="no_routes_available">No hay rutas disponibles</string>
     <string name="ago">Hace</string>
     <string name="service_address">Dirección: </string>
@@ -72,6 +73,9 @@
     <string name="navigation">Navegar: </string>
     <string name="error_timeout">No fue posible conectar con el servicio. Verifique su conexión a internet o inténtelo más tarde.</string>
     <string name="error_reconnection_failed">No se pudo reconectar automáticamente. Por favor, inténtalo manualmente.</string>
+    <string name="driver_profile_error_title">No pudimos cargar tu perfil de conductor</string>
+    <string name="driver_profile_error_message">No fue posible cargar tus datos en este momento. Puedes reintentar sin iniciar sesión de nuevo o cerrar sesión.</string>
+    <string name="driver_profile_error_subtitle">Detectamos un problema de conexión</string>
 
     <!-- Preference Titles -->
     <string name="notifications">Notificaciones</string>
@@ -187,5 +191,6 @@
     <string name="cannot_disconnect_no_network">No se puede desconectar sin red. Espere a recuperar la conexión.</string>
     <string name="unsupported_version_title">Actualización requerida</string>
     <string name="unsupported_version_message">Esta versión de la app ya no puede conectarse en línea. Actualiza la aplicación para seguir recibiendo servicios.</string>
+    <string name="unsupported_version_subtitle">Hay una versión más reciente disponible</string>
     <string name="update_app">Actualizar app</string>
 </resources>

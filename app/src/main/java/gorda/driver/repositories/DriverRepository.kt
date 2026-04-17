@@ -4,6 +4,9 @@ import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.TaskCompletionSource
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.ValueEventListener
 import gorda.driver.BuildConfig
 import gorda.driver.exceptions.UnsupportedAppVersionException
 import gorda.driver.helpers.withTimeout
@@ -26,17 +29,41 @@ object DriverRepository {
 
     val TAG = DriverRepository::class.java.toString()
 
-    fun connect(driver: DriverInterface, location: LocInterface): Task<Void> {
-        val taskSource = TaskCompletionSource<Void>()
+    data class DriverPresenceSnapshot(
+        val exists: Boolean,
+        val sessionId: String?,
+        val lastSeenAt: Long?
+    )
 
-        Database.dbOnlineDrivers().child(driver.id).setValue(object : DriverConnected {
+    fun connect(
+        driver: DriverInterface,
+        location: LocInterface,
+        sessionId: String,
+        lastSeenAt: Long
+    ): Task<Void> {
+        val taskSource = TaskCompletionSource<Void>()
+        val driverReference = Database.dbOnlineDrivers().child(driver.id)
+
+        driverReference.setValue(object : DriverConnected {
             override var id: String = driver.id
             override var location: LocInterface = location
             override var version: String = BuildConfig.VERSION_NAME
             override var versionCode: Int = BuildConfig.VERSION_CODE
+            override var last_seen_at: Long = lastSeenAt
+            override var session_id: String = sessionId
         }) { error, _ ->
             when {
-                error == null -> taskSource.setResult(null)
+                error == null -> {
+                    driverReference.onDisconnect().removeValue { disconnectError, _ ->
+                        when {
+                            disconnectError == null -> taskSource.setResult(null)
+                            disconnectError.code == DatabaseError.PERMISSION_DENIED -> {
+                                taskSource.setException(UnsupportedAppVersionException())
+                            }
+                            else -> taskSource.setException(disconnectError.toException())
+                        }
+                    }
+                }
                 error.code == DatabaseError.PERMISSION_DENIED -> {
                     taskSource.setException(UnsupportedAppVersionException())
                 }
@@ -48,21 +75,101 @@ object DriverRepository {
     }
 
     fun disconnect(driverId: String): Task<Void> {
-        return Database.dbOnlineDrivers().child(driverId).removeValue()
+        val taskSource = TaskCompletionSource<Void>()
+        val driverReference = Database.dbOnlineDrivers().child(driverId)
+
+        driverReference.onDisconnect().cancel { cancelError, _ ->
+            when {
+                cancelError == null -> {
+                    driverReference.removeValue()
+                        .addOnSuccessListener { taskSource.setResult(null) }
+                        .addOnFailureListener { taskSource.setException(it) }
+                }
+                cancelError.code == DatabaseError.PERMISSION_DENIED -> {
+                    taskSource.setException(UnsupportedAppVersionException())
+                }
+                else -> taskSource.setException(cancelError.toException())
+            }
+        }
+
+        return taskSource.task
     }
 
-    fun updateLocation(driverId: String, location: LocInterface) {
-        Database.dbOnlineDrivers().child(driverId).child("location").setValue(location)
+    fun updateLocation(driverId: String, location: LocInterface, lastSeenAt: Long): Task<Void> {
+        return Database.dbOnlineDrivers().child(driverId).updateChildren(
+            mapOf(
+                "location" to location,
+                "last_seen_at" to lastSeenAt
+            )
+        )
     }
 
-    fun isConnected(driverId: String, listener: (connected: Boolean) -> Unit) {
-        Database.dbOnlineDrivers().child(driverId).get().addOnSuccessListener { snapshot ->
-            listener(snapshot.hasChildren())
-        }.addOnFailureListener {
-            Log.e(TAG, it.message!!)
-        }.withTimeout {
-            listener(false)
-            Log.e(TAG, "Timeout checking driver connection")
+    fun observePresence(
+        driverId: String,
+        listener: (presence: DriverPresenceSnapshot?) -> Unit
+    ): ValueEventListener {
+        val valueEventListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (!snapshot.exists()) {
+                    listener(null)
+                    return
+                }
+
+                val sessionId = snapshot.child("session_id").getValue(String::class.java)
+                val lastSeenAt = snapshot.child("last_seen_at").getValue(Long::class.java)
+                listener(
+                    DriverPresenceSnapshot(
+                        exists = true,
+                        sessionId = sessionId,
+                        lastSeenAt = lastSeenAt
+                    )
+                )
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, error.message)
+                listener(null)
+            }
+        }
+
+        Database.dbOnlineDrivers().child(driverId).addValueEventListener(valueEventListener)
+        return valueEventListener
+    }
+
+    fun removePresenceObserver(driverId: String, listener: ValueEventListener) {
+        Database.dbOnlineDrivers().child(driverId).removeEventListener(listener)
+    }
+
+    fun validateDriverVersion(listener: (result: Result<Int>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = MasterDataRetrofit.getRetrofit()
+                    .create(MasterDataApiService::class.java)
+                    .getVersionPolicy()
+
+                withContext(Dispatchers.Main) {
+                    if (!response.isSuccessful) {
+                        listener(Result.failure(IllegalStateException(response.message())))
+                        return@withContext
+                    }
+
+                    val minVersionCode = response.body()?.data?.versionPolicy?.driver?.minVersionCode
+                    if (minVersionCode == null) {
+                        listener(Result.failure(IllegalStateException("Missing driver version policy")))
+                        return@withContext
+                    }
+
+                    if (BuildConfig.VERSION_CODE < minVersionCode) {
+                        listener(Result.failure(UnsupportedAppVersionException()))
+                    } else {
+                        listener(Result.success(minVersionCode))
+                    }
+                }
+            } catch (exception: Exception) {
+                withContext(Dispatchers.Main) {
+                    listener(Result.failure(exception))
+                }
+            }
         }
     }
 

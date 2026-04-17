@@ -17,8 +17,7 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
-import gorda.driver.repositories.TokenRepository
-import gorda.driver.services.firebase.Auth
+import gorda.driver.services.firebase.Messaging
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Utils
 import org.json.JSONArray
@@ -116,13 +115,6 @@ class NotificationService: FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Auth.getCurrentUserUUID().let { uid ->
-            if (uid is String) TokenRepository.setCurrentToken(uid, token).addOnCompleteListener {
-                if (it.isSuccessful) {
-                    Log.d(TAG, "token updated user id $uid")
-                }
-            }
-        }
+        Messaging.registerToken(token, source = "fcm_on_new_token")
     }
 }
-

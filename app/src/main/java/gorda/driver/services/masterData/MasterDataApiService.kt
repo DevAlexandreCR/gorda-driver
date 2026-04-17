@@ -8,6 +8,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.Path
 import retrofit2.http.PUT
@@ -37,9 +38,24 @@ data class DriverTokenPayload(
     val token: String
 )
 
+data class DriverVersionPolicy(
+    val minVersionCode: Int
+)
+
+data class VersionPolicyPayload(
+    val versionPolicy: VersionPolicyBody
+)
+
+data class VersionPolicyBody(
+    val driver: DriverVersionPolicy
+)
+
 interface MasterDataApiService {
     @GET("public/master-data/ride-fees/snapshot")
     suspend fun getRideFeesSnapshot(): Response<ApiEnvelope<RideFeesPayload>>
+
+    @GET("public/master-data/version-policy")
+    suspend fun getVersionPolicy(): Response<ApiEnvelope<VersionPolicyPayload>>
 
     @GET("public/drivers/{id}")
     suspend fun getDriver(@Path("id") driverId: String): Response<ApiEnvelope<DriverPayload>>
@@ -51,13 +67,18 @@ interface MasterDataApiService {
     ): Response<ApiEnvelope<DriverPayload>>
 
     @GET("driver-app/me/history")
-    suspend fun getDriverHistory(): Response<ApiEnvelope<ServicesPayload>>
+    suspend fun getDriverHistory(
+        @Header("Authorization") authorization: String
+    ): Response<ApiEnvelope<ServicesPayload>>
 
     @PUT("driver-app/me/token")
     suspend fun upsertDriverToken(
+        @Header("Authorization") authorization: String,
         @Body payload: DriverTokenPayload
     ): Response<ApiEnvelope<Map<String, Any?>>>
 
     @DELETE("driver-app/me/token")
-    suspend fun deleteDriverToken(): Response<ApiEnvelope<Map<String, Any?>>>
+    suspend fun deleteDriverToken(
+        @Header("Authorization") authorization: String
+    ): Response<ApiEnvelope<Map<String, Any?>>>
 }

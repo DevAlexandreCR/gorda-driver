@@ -26,6 +26,8 @@ import android.widget.ProgressBar
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -50,13 +52,12 @@ import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import gorda.driver.R
 import gorda.driver.background.LocationService
 import gorda.driver.databinding.ActivityMainBinding
-import gorda.driver.exceptions.UnsupportedAppVersionException
-import gorda.driver.helpers.withTimeout
 import gorda.driver.interfaces.DeviceInterface
-import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocationUpdateInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
@@ -65,12 +66,12 @@ import gorda.driver.services.firebase.Auth
 import gorda.driver.services.firebase.Messaging
 import gorda.driver.services.network.NetworkMonitor
 import gorda.driver.ui.MainViewModel
-import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.ConnectionBroadcastReceiver
 import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
+import gorda.driver.utils.ServiceHelper
 import gorda.driver.utils.Utils
 import kotlinx.coroutines.launch
 
@@ -90,6 +91,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var preferences: SharedPreferences
     private lateinit var connectionBar: ProgressBar
     private var unsupportedVersionDialog: AlertDialog? = null
+    private var driverLoadFailureDialog: AlertDialog? = null
     private var authStateListener: FirebaseAuth.AuthStateListener? = null
     private lateinit var deviceID: String
     private lateinit var deviceName: String
@@ -99,15 +101,18 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
     private var locationService: Messenger? = null
     private var mBound: Boolean = false
+    private var lastStartedServiceAttemptId: Long = -1L
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             locationService = Messenger(service)
             mBound = true
+            viewModel.onLocationServiceBound()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             locationService = null
             mBound = false
+            viewModel.onLocationServiceBindFailed()
         }
     }
     private val locationBroadcastReceiver =
@@ -125,35 +130,7 @@ class MainActivity : AppCompatActivity() {
             override fun onUpdate(intent: Intent) {
                 val extra: Location? = intent.getParcelableExtra(LOCATION_EXTRA)
                 extra?.let { location ->
-                    viewModel.driver.value?.let { driver ->
-                        driver.connect(object: LocInterface {
-                            override var lat = location.latitude
-                            override var lng = location.longitude
-                        }).addOnSuccessListener {
-                            viewModel.setLoading(false)
-                            viewModel.setConnectedLocal(true)
-                            viewModel.setConnecting(false)
-                            viewModel.connected()
-                        }.addOnFailureListener { e ->
-                            stopLocationService()
-                            viewModel.setLoading(false)
-                            viewModel.setConnectedLocal(false)
-                            viewModel.setConnecting(false)
-                            switchConnect.isChecked = false
-                            switchConnect.setText(R.string.status_disconnected)
-                            if (e is UnsupportedAppVersionException) {
-                                showUnsupportedVersionDialog()
-                            }
-                            e.message?.let { message -> Log.e(TAG, message) }
-                        }.withTimeout {
-                            stopLocationService()
-                            viewModel.setConnecting(false)
-                            viewModel.setLoading(false)
-                            viewModel.setConnectedLocal(false)
-                            viewModel.setErrorTimeout(true)
-                            switchConnect.setText(R.string.status_disconnected)
-                        }
-                    }
+                    viewModel.onInitialConnectionLocation(location)
                 }
             }
         })
@@ -163,14 +140,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this)
+        viewModel.initializePreferences(preferences)
 
         this.deviceID = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
         this.deviceName = Build.MANUFACTURER + " " + Build.BRAND
-
-        intent.getStringExtra(Constants.DRIVER_ID_EXTRA)?.let {
-            viewModel.getDriver(it)
-            Messaging.init(it)
-        }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -210,36 +183,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
+        switchConnect.isEnabled = false
 
         switchConnect.setOnClickListener {
-            driver?.let { driver ->
-                if (switchConnect.isChecked) {
-                    // User wants to connect
-                    LocalBroadcastManager.getInstance(this)
-                        .registerReceiver(
-                            connectionBroadcastReceiver,
-                            IntentFilter(ConnectionBroadcastReceiver.ACTION_CONNECTION)
-                        )
-                    viewModel.connecting()
-                    this.startLocationService()
-                } else {
-                    // User wants to disconnect
-                    // Prevent disconnection if there's no network
-                    if (!viewModel.isNetWorkConnected.value) {
-                        Toast.makeText(
-                            this,
-                            R.string.cannot_disconnect_no_network,
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        // Revert the switch back to checked
-                        switchConnect.isChecked = true
-                        return@setOnClickListener
-                    }
-                    // Network is available, allow disconnection
-                    LocalBroadcastManager.getInstance(this).unregisterReceiver(connectionBroadcastReceiver)
-                    this.stopLocationService()
-                    viewModel.disconnect(driver)
+            if (switchConnect.isChecked) {
+                viewModel.requestConnect()
+            } else {
+                if (!viewModel.isNetWorkConnected.value) {
+                    Toast.makeText(
+                        this,
+                        R.string.cannot_disconnect_no_network,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    switchConnect.isChecked = true
+                    return@setOnClickListener
                 }
+                viewModel.requestDisconnect()
             }
         }
 
@@ -264,72 +223,29 @@ class MainActivity : AppCompatActivity() {
             setIconNotificationButton(isNotifyMute)
         }
 
-        this.observeDriver(navView)
+        this.observeDriverLoadState(navView)
+        bootstrapDriverSession(intent)
 
         // Observe StateFlow for network connectivity - show non-blocking alert
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.isNetWorkConnected.collect { isConnected ->
                     if (!isConnected) {
-                        // Show network lost indicator but DO NOT disconnect
                         showNetworkLostIndicator()
                     } else {
-                        // Hide indicator and sync
                         hideNetworkLostIndicator()
-                        viewModel.reconnectFirebaseIfNeeded()
-                        viewModel.flushPendingLocationUpdates()
+                        viewModel.reconnectFirebaseIfNeeded(
+                            if (::lastLocation.isInitialized) lastLocation else null
+                        )
                     }
                 }
             }
         }
 
-        // Observe StateFlow for driver status - combine with network status
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Combine network state and driver state
-                kotlinx.coroutines.flow.combine(
-                    viewModel.driverStatus,
-                    viewModel.isNetWorkConnected
-                ) { driverUpdates, hasNetwork ->
-                    Pair(driverUpdates, hasNetwork)
-                }.collect { (driverUpdates, hasNetwork) ->
-                    when (driverUpdates) {
-                        is DriverUpdates.IsConnected -> {
-                            switchConnect.isChecked = driverUpdates.connected
-                            switchConnect.isEnabled = true
-                            if (driverUpdates.connected) {
-                                // Show status based on network
-                                if (hasNetwork) {
-                                    switchConnect.setText(R.string.status_connected)
-                                } else {
-                                    switchConnect.setText(R.string.status_connected_offline)
-                                }
-
-                                if (!LocationHandler.checkPermissions(this@MainActivity)) {
-                                    viewModel.setConnectedLocal(false)
-                                    this@MainActivity.stopLocationService()
-                                } else {
-                                    this@MainActivity.startLocationService()
-                                }
-                            } else {
-                                switchConnect.setText(R.string.status_disconnected)
-                                stopLocationService()
-                            }
-                        }
-
-                        is DriverUpdates.Connecting -> {
-                            if (driverUpdates.connecting) {
-                                switchConnect.setText(R.string.status_connecting)
-                                switchConnect.isEnabled = false
-                            } else {
-                                switchConnect.isEnabled = true
-                            }
-                        }
-
-                        else -> {
-                            switchConnect.isEnabled = true
-                        }
-                    }
+                viewModel.presenceState.collect { presence ->
+                    renderPresenceState(presence)
                 }
             }
         }
@@ -338,6 +254,20 @@ class MainActivity : AppCompatActivity() {
             if (error) {
                 Toast.makeText(this, R.string.error_timeout, Toast.LENGTH_SHORT).show()
                 viewModel.setErrorTimeout(false)
+            }
+        }
+
+        viewModel.errorMessageRes.observe(this) { messageRes ->
+            messageRes?.let {
+                Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+                viewModel.consumeErrorMessage()
+            }
+        }
+
+        viewModel.unsupportedVersion.observe(this) { unsupported ->
+            if (unsupported) {
+                showUnsupportedVersionDialog()
+                viewModel.consumeUnsupportedVersion()
             }
         }
 
@@ -374,6 +304,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        bootstrapDriverSession(intent)
+    }
+
     private fun removeFeeServiceData() {
         preferences.edit(true) { putString(Constants.CURRENT_SERVICE_ID, null) }
         preferences.edit(true) { remove(Constants.START_TIME) }
@@ -388,20 +324,110 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        unsupportedVersionDialog = AlertDialog.Builder(this)
-            .setTitle(R.string.unsupported_version_title)
-            .setMessage(R.string.unsupported_version_message)
-            .setCancelable(false)
-            .setPositiveButton(R.string.update_app) { _, _ ->
+        unsupportedVersionDialog = showBlockingActionDialog(
+            iconRes = R.drawable.ic_file_download_24,
+            titleRes = R.string.unsupported_version_title,
+            subtitleRes = R.string.unsupported_version_subtitle,
+            messageRes = R.string.unsupported_version_message,
+            primaryTextRes = R.string.update_app,
+            secondaryTextRes = R.string.cancel,
+            primaryIconRes = R.drawable.ic_file_download_24,
+            secondaryIconRes = R.drawable.cancel_24,
+            onPrimaryAction = {
                 openPlayStore()
             }
-            .setNegativeButton(R.string.cancel, null)
-            .create()
+        )
 
         unsupportedVersionDialog?.setOnDismissListener {
             unsupportedVersionDialog = null
         }
-        unsupportedVersionDialog?.show()
+    }
+
+    private fun showDriverLoadFailureDialog() {
+        driverLoadFailureDialog?.let { dialog ->
+            if (dialog.isShowing) {
+                return
+            }
+        }
+
+        driverLoadFailureDialog = showBlockingActionDialog(
+            iconRes = R.drawable.ic_refresh_24,
+            titleRes = R.string.driver_profile_error_title,
+            subtitleRes = R.string.driver_profile_error_subtitle,
+            messageRes = R.string.driver_profile_error_message,
+            primaryTextRes = R.string.retry,
+            secondaryTextRes = R.string.logout,
+            primaryIconRes = R.drawable.ic_refresh_24,
+            secondaryIconRes = R.drawable.ic_clear_24,
+            onPrimaryAction = {
+                bootstrapDriverSession()
+            },
+            onSecondaryAction = {
+                Auth.logOut(this)
+            }
+        )
+
+        driverLoadFailureDialog?.setOnDismissListener {
+            driverLoadFailureDialog = null
+        }
+    }
+
+    private fun dismissDriverLoadFailureDialog() {
+        driverLoadFailureDialog?.dismiss()
+        driverLoadFailureDialog = null
+    }
+
+    private fun showBlockingActionDialog(
+        @DrawableRes iconRes: Int,
+        @StringRes titleRes: Int,
+        @StringRes subtitleRes: Int,
+        @StringRes messageRes: Int,
+        @StringRes primaryTextRes: Int,
+        @StringRes secondaryTextRes: Int,
+        @DrawableRes primaryIconRes: Int,
+        @DrawableRes secondaryIconRes: Int,
+        onPrimaryAction: () -> Unit,
+        onSecondaryAction: () -> Unit = {}
+    ): AlertDialog {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_blocking_action, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        dialog.setCancelable(false)
+        dialog.setCanceledOnTouchOutside(false)
+
+        val iconContainer = dialogView.findViewById<MaterialCardView>(R.id.dialogIconContainer)
+        val iconView = dialogView.findViewById<ImageView>(R.id.dialogIcon)
+        val titleView = dialogView.findViewById<TextView>(R.id.dialogTitle)
+        val subtitleView = dialogView.findViewById<TextView>(R.id.dialogSubtitle)
+        val messageView = dialogView.findViewById<TextView>(R.id.dialogMessage)
+        val primaryButton = dialogView.findViewById<MaterialButton>(R.id.btnPrimary)
+        val secondaryButton = dialogView.findViewById<MaterialButton>(R.id.btnSecondary)
+
+        iconContainer.setCardBackgroundColor(getColor(R.color.secondary))
+        iconView.setImageResource(iconRes)
+        titleView.setText(titleRes)
+        subtitleView.setText(subtitleRes)
+        messageView.setText(messageRes)
+        primaryButton.setText(primaryTextRes)
+        primaryButton.setIconResource(primaryIconRes)
+        secondaryButton.setText(secondaryTextRes)
+        secondaryButton.setIconResource(secondaryIconRes)
+
+        primaryButton.setOnClickListener {
+            dialog.dismiss()
+            onPrimaryAction()
+        }
+
+        secondaryButton.setOnClickListener {
+            dialog.dismiss()
+            onSecondaryAction()
+        }
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        return dialog
     }
 
     private fun openPlayStore() {
@@ -459,8 +485,15 @@ class MainActivity : AppCompatActivity() {
                 locationBroadcastReceiver,
                 IntentFilter(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
             )
-        Intent(this, LocationService::class.java).also { intent ->
-            bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(
+                connectionBroadcastReceiver,
+                IntentFilter(ConnectionBroadcastReceiver.ACTION_CONNECTION)
+            )
+        if (ServiceHelper.isServiceRunning(this, LocationService::class.java)) {
+            Intent(this, LocationService::class.java).also { intent ->
+                bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
+            }
         }
 
         authStateListener = Auth.onAuthChanges { uuid ->
@@ -485,8 +518,10 @@ class MainActivity : AppCompatActivity() {
         if (mBound) {
             this.unbindService(connection)
             mBound = false
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
         }
+        locationService = null
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(connectionBroadcastReceiver)
         networkMonitor.stopMonitoring()
         viewModel.stopNextServiceListener()
     }
@@ -547,42 +582,80 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun observeDriver(navView: NavigationView) {
-        viewModel.driver.observe(this) {
-            when (it) {
-                is Driver -> {
-                    this.driver = it
-                    if (it.device != null) {
-                        if (this.deviceID != it.device!!.id) {
-                            Auth.logOut(this).addOnCompleteListener { completed ->
-                                if (completed.isSuccessful) {
-                                    Toast.makeText(
-                                        this,
-                                        R.string.logout_first,
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                        }
-                    } else {
-                        this.driver!!.id.let { it1 ->
-                            viewModel.updateDriverDevice(it1, object : DeviceInterface {
-                                override var id = deviceID
-                                override var name = deviceName
-                            }).addOnFailureListener { exception ->
-                                Toast.makeText(this, exception.message, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }
-                    switchConnect.isEnabled = true
-                    setDrawerHeader(navView)
-                    viewModel.isConnected(it.id)
+    private fun observeDriverLoadState(navView: NavigationView) {
+        viewModel.driverLoadState.observe(this) { state ->
+            when (state) {
+                MainViewModel.DriverLoadState.Idle -> {
+                    switchConnect.isEnabled = false
                 }
-                else -> {
-                    Auth.logOut(this)
+                is MainViewModel.DriverLoadState.Loading -> {
+                    dismissDriverLoadFailureDialog()
+                    driver = null
+                    switchConnect.isEnabled = false
+                    viewModel.stopPresenceObservation()
+                }
+                is MainViewModel.DriverLoadState.Loaded -> {
+                    dismissDriverLoadFailureDialog()
+                    handleDriverLoaded(navView, state.driver)
+                }
+                is MainViewModel.DriverLoadState.Failed -> {
+                    handleDriverLoadFailed()
                 }
             }
         }
+    }
+
+    private fun handleDriverLoaded(navView: NavigationView, loadedDriver: Driver) {
+        this.driver = loadedDriver
+        if (loadedDriver.device != null) {
+            if (this.deviceID != loadedDriver.device!!.id) {
+                Auth.logOut(this).addOnCompleteListener { completed ->
+                    if (completed.isSuccessful) {
+                        Toast.makeText(
+                            this,
+                            R.string.logout_first,
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+                return
+            }
+        } else {
+            loadedDriver.id.let { driverId ->
+                viewModel.updateDriverDevice(driverId, object : DeviceInterface {
+                    override var id = deviceID
+                    override var name = deviceName
+                }).addOnFailureListener { exception ->
+                    Toast.makeText(this, exception.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        switchConnect.isEnabled = true
+        setDrawerHeader(navView)
+        viewModel.startPresenceObservation(loadedDriver.id)
+    }
+
+    private fun handleDriverLoadFailed() {
+        driver = null
+        switchConnect.isChecked = false
+        switchConnect.isEnabled = false
+        switchConnect.setText(R.string.status_disconnected)
+        viewModel.stopPresenceObservation()
+        if (ServiceHelper.isServiceRunning(this, LocationService::class.java)) {
+            stopLocationService()
+        }
+        showDriverLoadFailureDialog()
+    }
+
+    private fun bootstrapDriverSession(sourceIntent: Intent = intent) {
+        val driverId = resolveDriverId(sourceIntent) ?: return
+        dismissDriverLoadFailureDialog()
+        viewModel.getDriver(driverId)
+        Messaging.init(driverId)
+    }
+
+    private fun resolveDriverId(sourceIntent: Intent = intent): String? {
+        return sourceIntent.getStringExtra(Constants.DRIVER_ID_EXTRA) ?: Auth.getCurrentUserUUID()
     }
 
     override fun onRequestPermissionsResult(
@@ -608,9 +681,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startLocationService() {
+    private fun startLocationService(): Boolean {
         if (Utils.isNewerVersion(Build.VERSION_CODES.S) && !Utils.isAppInForeground(this)) {
-            return
+            return false
         }
         Intent(this, LocationService::class.java).also { intent ->
             intent.putExtra(Driver.DRIVER_KEY, this.driver?.id)
@@ -619,18 +692,32 @@ class MainActivity : AppCompatActivity() {
             } else {
                 applicationContext.startService(intent)
             }
-            this.bindService(intent, connection, BIND_NOT_FOREGROUND)
-            mBound = true
+            val didBind = this.bindService(intent, connection, BIND_NOT_FOREGROUND)
+            if (!didBind) {
+                stopService(intent)
+            }
+            return didBind
         }
     }
 
     private fun stopLocationService() {
+        val stopIntent = Intent(this, LocationService::class.java)
         if (mBound) {
-            this.unbindService(connection)
-            val msg: Message = Message.obtain(null, LocationService.STOP_SERVICE_MSG, 0, 0)
-            locationService?.send(msg)
-            mBound = false
+            try {
+                this.unbindService(connection)
+            } catch (_: IllegalArgumentException) {
+            }
+            if (locationService != null) {
+                val msg: Message = Message.obtain(null, LocationService.STOP_SERVICE_MSG, 0, 0)
+                locationService?.send(msg)
+            } else {
+                stopService(stopIntent)
+            }
+        } else {
+            stopService(stopIntent)
         }
+        locationService = null
+        mBound = false
     }
 
     private fun requestPermissions() {
@@ -677,7 +764,71 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        dismissDriverLoadFailureDialog()
+        viewModel.stopPresenceObservation()
         super.onDestroy()
         networkMonitor.cleanup()
+    }
+
+    private fun renderPresenceState(presence: MainViewModel.DriverPresenceState) {
+        if (viewModel.driverLoadState.value !is MainViewModel.DriverLoadState.Loaded) {
+            lastStartedServiceAttemptId = -1L
+            switchConnect.isEnabled = false
+            switchConnect.isChecked = false
+            switchConnect.setText(R.string.status_disconnected)
+            return
+        }
+
+        val isConnecting = presence.phase in setOf(
+            MainViewModel.DriverPresencePhase.PRECHECKING,
+            MainViewModel.DriverPresencePhase.WAITING_FOR_BIND,
+            MainViewModel.DriverPresencePhase.WAITING_FOR_LOCATION,
+            MainViewModel.DriverPresencePhase.WRITING_PRESENCE,
+            MainViewModel.DriverPresencePhase.DISCONNECTING
+        )
+
+        switchConnect.isEnabled = !isConnecting
+        switchConnect.isChecked = presence.actualOnline
+
+        when {
+            presence.actualOnline && presence.hasNetwork -> {
+                switchConnect.setText(R.string.status_connected)
+            }
+            presence.actualOnline && !presence.hasNetwork -> {
+                switchConnect.setText(R.string.status_connected_offline)
+            }
+            isConnecting -> {
+                switchConnect.setText(R.string.status_connecting)
+            }
+            else -> {
+                switchConnect.setText(R.string.status_disconnected)
+            }
+        }
+
+        if (
+            presence.phase == MainViewModel.DriverPresencePhase.WAITING_FOR_BIND &&
+            lastStartedServiceAttemptId != presence.attemptId
+        ) {
+            lastStartedServiceAttemptId = presence.attemptId
+            if (!startLocationService()) {
+                viewModel.onLocationServiceBindFailed()
+            }
+        }
+
+        if (
+            presence.actualOnline &&
+            !ServiceHelper.isServiceRunning(this, LocationService::class.java) &&
+            LocationHandler.checkPermissions(this)
+        ) {
+            startLocationService()
+        }
+
+        if (
+            presence.phase == MainViewModel.DriverPresencePhase.DISCONNECTED &&
+            !presence.actualOnline &&
+            ServiceHelper.isServiceRunning(this, LocationService::class.java)
+        ) {
+            stopLocationService()
+        }
     }
 }

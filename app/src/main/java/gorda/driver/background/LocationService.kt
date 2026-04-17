@@ -34,10 +34,8 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ktx.getValue
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
-import gorda.driver.interfaces.LocInterface
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
-import gorda.driver.repositories.DriverRepository
 import gorda.driver.repositories.ServiceRepository
 import gorda.driver.ui.service.ConnectionBroadcastReceiver
 import gorda.driver.ui.service.LocationBroadcastReceiver
@@ -69,7 +67,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     private lateinit var playSound: PlaySound
     private lateinit var locationManager: LocationHandler
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var haveToUpdate = 0
     private lateinit var listServices: MutableList<DBService>
     private val timer = Timer()
     private val listener: ServicesEventListener = ServicesEventListener { services ->
@@ -81,15 +78,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
             super.onLocationResult(locationResult)
             for (location in locationResult.locations) {
                 if (!stopped) {
-                    haveToUpdate++
                     lastLocation = location
-                    if (haveToUpdate == 10) {
-                        haveToUpdate = 0
-                        DriverRepository.updateLocation(driverID, object : LocInterface {
-                            override var lat: Double = location.latitude
-                            override var lng: Double = location.longitude
-                        })
-                    }
 
                     val broadcast =
                         Intent(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
@@ -329,4 +318,3 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         ServiceRepository.isThereConnectionService(nextServiceListener)
     }
 }
-

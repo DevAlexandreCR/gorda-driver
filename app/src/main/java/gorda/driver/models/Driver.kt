@@ -28,8 +28,8 @@ data class Driver(
         const val DRIVER_KEY = "driver_id"
     }
 
-    fun connect(location: LocInterface): Task<Void> {
-        return DriverRepository.connect(this, location)
+    fun connect(location: LocInterface, sessionId: String, lastSeenAt: Long): Task<Void> {
+        return DriverRepository.connect(this, location, sessionId, lastSeenAt)
     }
 
     fun disconnect(): Task<Void> {

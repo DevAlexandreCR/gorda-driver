@@ -32,6 +32,7 @@
     <string name="fields_phone">Phone</string>
     <string name="fields_plate">Plate</string>
     <string name="logout">Logout</string>
+    <string name="retry">Retry</string>
     <string name="no_routes_available">No routes available</string>
     <string name="ago">After</string>
     <string name="service_address">Address: </string>
@@ -79,6 +80,9 @@
     <string name="navigation">Navigation: </string>
     <string name="error_timeout">It was not possible to connect to the service. Please check your internet connection or try again later.</string>
     <string name="error_reconnection_failed">Failed to reconnect automatically. Please try connecting manually.</string>
+    <string name="driver_profile_error_title">Unable to load your driver profile</string>
+    <string name="driver_profile_error_message">We could not load your driver data right now. You can retry without signing in again, or log out.</string>
+    <string name="driver_profile_error_subtitle">Connection issue detected</string>
     <!-- Preference Titles -->
     <string name="notifications">Notifications</string>
 
@@ -193,5 +197,6 @@
     <string name="cannot_disconnect_no_network">Cannot disconnect without network. Wait for connection recovery.</string>
     <string name="unsupported_version_title">Update required</string>
     <string name="unsupported_version_message">This app version can no longer connect online. Update the app to continue receiving services.</string>
+    <string name="unsupported_version_subtitle">A newer version is available</string>
     <string name="update_app">Update app</string>
 </resources>
