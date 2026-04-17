@@ -5,13 +5,12 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import com.google.android.gms.tasks.Task
 import gorda.driver.R
@@ -30,10 +29,11 @@ class ApplyFragment : Fragment() {
     }
 
     private val mainViewModel: MainViewModel by activityViewModels()
-    private lateinit var binding: FragmentApplyBinding
-    private lateinit var btnCancel: Button
-    private lateinit var progressBar: ProgressBar
-    private lateinit var textView: TextView
+    private var _binding: FragmentApplyBinding? = null
+    private val binding get() = _binding!!
+    private var navController: NavController? = null
+    private var cancelOnExitEnabled = true
+    private var destinationChangedListener: NavController.OnDestinationChangedListener? = null
     private var distance: Int = 0
     private lateinit var driver: Driver
     private lateinit var service: Service
@@ -43,33 +43,31 @@ class ApplyFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentApplyBinding.inflate(inflater, container, false)
+        _binding = FragmentApplyBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        btnCancel = binding.btnCancel
-        progressBar = binding.progressBar
-        textView = binding.textView
+        navController = findNavController()
+        cancelOnExitEnabled = true
         mainViewModel.setLoading(true)
 
         requireActivity().onBackPressedDispatcher.addCallback(this) {}
 
-        btnCancel.setOnClickListener { button ->
+        binding.btnCancel.setOnClickListener { button ->
             button.isEnabled = false
             cancelApply().addOnSuccessListener {
-                button.isEnabled = true
-                if (isAdded && findNavController().currentDestination?.id == R.id.nav_apply) {
-                    findNavController().navigate(R.id.action_cancel_apply)
-                }
-                Toast.makeText(requireContext(), R.string.cancelApply, Toast.LENGTH_SHORT).show()
-            }. addOnFailureListener { e ->
-                button.isEnabled = true
+                updateCancelButton(enabled = true)
+                cancelOnExitEnabled = false
+                showToastIfAvailable(R.string.cancelApply, Toast.LENGTH_SHORT)
+                navigateHomeIfCurrent()
+            }.addOnFailureListener { e ->
+                updateCancelButton(enabled = true)
                 e.message?.let { message -> Log.e(TAG, message) }
-                Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
-            } .withTimeout {
-                button.isEnabled = true
+                showToastIfAvailable(R.string.common_error, Toast.LENGTH_LONG)
+            }.withTimeout {
+                updateCancelButton(enabled = true)
                 mainViewModel.setErrorTimeout(true)
             }
         }
@@ -79,13 +77,25 @@ class ApplyFragment : Fragment() {
             arguments?.let { bundle ->
                 service = bundle.getSerializable("service") as Service
                 apply()
-                if (isAdded) {
-                    findNavController().addOnDestinationChangedListener { _, _, _ ->
+                destinationChangedListener = NavController.OnDestinationChangedListener { _, destination, _ ->
+                    if (cancelOnExitEnabled && destination.id != R.id.nav_apply) {
                         cancelApply()
                     }
                 }
+                navController?.addOnDestinationChangedListener(destinationChangedListener!!)
             }
         }
+    }
+
+    override fun onDestroyView() {
+        cancelOnExitEnabled = false
+        destinationChangedListener?.let { listener ->
+            navController?.removeOnDestinationChangedListener(listener)
+        }
+        destinationChangedListener = null
+        navController = null
+        _binding = null
+        super.onDestroyView()
     }
 
     private fun cancelApply(): Task<Void> {
@@ -107,33 +117,26 @@ class ApplyFragment : Fragment() {
 
                         // Validate service before applying
                         service.validateForApply().addOnSuccessListener { validatedService ->
-                            if (!isAdded) return@addOnSuccessListener
+                            if (!canUpdateUi()) return@addOnSuccessListener
 
-                            // Update service with validated data
                             service = validatedService
 
-                            // Proceed with application
                             service.addApplicant(driver, distance, time, connection).addOnSuccessListener {
-                                if (isAdded) {
-                                    val applyText = requireActivity().resources.getString(R.string.wait_for_assign, service.start_loc.name)
-                                    textView.text = StringHelper.getString(applyText)
-                                    btnCancel.isEnabled = true
-                                    mainViewModel.setLoading(false)
-                                }
+                                val currentBinding = _binding ?: return@addOnSuccessListener
+                                val applyText = getString(R.string.wait_for_assign, service.start_loc.name)
+                                currentBinding.textView.text = StringHelper.getString(applyText)
+                                currentBinding.btnCancel.isEnabled = true
+                                mainViewModel.setLoading(false)
                             }.addOnFailureListener { e ->
-                                if (isAdded) {
-                                    e.message?.let { message -> Log.e(TAG, message) }
-                                    Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_LONG).show()
-                                    if (findNavController().currentDestination?.id == R.id.nav_apply)
-                                        findNavController().navigate(R.id.action_cancel_apply)
-                                }
+                                e.message?.let { message -> Log.e(TAG, message) }
+                                showToastIfAvailable(R.string.common_error, Toast.LENGTH_LONG)
+                                navigateHomeIfCurrent()
                             }.withTimeout {
-                                if (isAdded) {
+                                if (canUpdateUi()) {
                                     mainViewModel.setLoading(false)
                                     mainViewModel.setErrorTimeout(true)
-                                    btnCancel.isEnabled = true
-                                    if (findNavController().currentDestination?.id == R.id.nav_apply)
-                                        findNavController().navigate(R.id.action_cancel_apply)
+                                    binding.btnCancel.isEnabled = true
+                                    navigateHomeIfCurrent()
                                 }
                             }
                         }.addOnFailureListener { e ->
@@ -141,7 +144,6 @@ class ApplyFragment : Fragment() {
 
                             e.message?.let { message -> Log.e(TAG, "Service validation failed: $message") }
 
-                            // Show specific error message based on validation failure
                             val errorMessage = when {
                                 e.message?.contains("does not exist", ignoreCase = true) == true ->
                                     R.string.service_not_exists
@@ -152,29 +154,47 @@ class ApplyFragment : Fragment() {
                                 else -> R.string.common_error
                             }
 
-                            Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show()
+                            showToastIfAvailable(errorMessage, Toast.LENGTH_LONG)
                             mainViewModel.setLoading(false)
-
-                            if (findNavController().currentDestination?.id == R.id.nav_apply)
-                                findNavController().navigate(R.id.action_cancel_apply)
+                            navigateHomeIfCurrent()
                         }
                     }
                 }
                 is ServiceUpdates.Status -> {
                     when (it.status) {
                         Service.STATUS_CANCELED -> {
-                            Toast.makeText(requireContext(), R.string.service_canceled, Toast.LENGTH_SHORT).show()
-                            if (findNavController().currentDestination?.id == R.id.nav_apply)
-                            findNavController().navigate(R.id.action_cancel_apply)
+                            showToastIfAvailable(R.string.service_canceled, Toast.LENGTH_SHORT)
+                            navigateHomeIfCurrent()
                         }
                         Service.STATUS_IN_PROGRESS -> {
-                            if (findNavController().currentDestination?.id == R.id.nav_apply)
-                            findNavController().navigate(R.id.action_cancel_apply)
+                            navigateHomeIfCurrent()
                         }
                     }
                 }
                 else -> {}
             }
+        }
+    }
+
+    private fun canUpdateUi(): Boolean {
+        return isAdded && _binding != null
+    }
+
+    private fun updateCancelButton(enabled: Boolean) {
+        _binding?.btnCancel?.isEnabled = enabled
+    }
+
+    private fun navigateHomeIfCurrent() {
+        navController?.let { controller ->
+            if (controller.currentDestination?.id == R.id.nav_apply) {
+                controller.navigate(R.id.action_cancel_apply)
+            }
+        }
+    }
+
+    private fun showToastIfAvailable(@StringRes messageRes: Int, duration: Int) {
+        context?.applicationContext?.let { appContext ->
+            Toast.makeText(appContext, messageRes, duration).show()
         }
     }
 }
