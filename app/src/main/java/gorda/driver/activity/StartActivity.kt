@@ -12,8 +12,10 @@ import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
+import com.google.firebase.auth.FirebaseAuth
 import gorda.driver.R
 import gorda.driver.databinding.ActivityStartBinding
 import gorda.driver.services.firebase.Auth
@@ -30,6 +32,7 @@ class StartActivity : AppCompatActivity() {
     private var loginLaunched = false
     private lateinit var binding: ActivityStartBinding
     private lateinit var signInLauncher: ActivityResultLauncher<Intent>
+    private var authStateListener: FirebaseAuth.AuthStateListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,18 +83,27 @@ class StartActivity : AppCompatActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        Auth.onAuthChanges { uuid ->
-            if (uuid === null) {
+    override fun onStart() {
+        super.onStart()
+        authStateListener = Auth.onAuthChanges { uuid ->
+            if (uuid == null) {
                 launchLogin()
             } else {
-                launchMain(uuid.toString())
+                launchMain(uuid)
             }
         }
     }
 
-    private fun launchLogin(): Unit {
+    override fun onStop() {
+        authStateListener?.let(Auth::removeAuthChanges)
+        authStateListener = null
+        super.onStop()
+    }
+
+    private fun launchLogin() {
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) || isFinishing || isDestroyed) {
+            return
+        }
         if (!loginLaunched) {
             loginLaunched = true
             val intent = Auth.launchLogin()
@@ -99,7 +111,10 @@ class StartActivity : AppCompatActivity() {
         }
     }
 
-    private fun launchMain(uuid: String): Unit {
+    private fun launchMain(uuid: String) {
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) || isFinishing || isDestroyed) {
+            return
+        }
         val intent = Intent(this, MainActivity::class.java).apply {
             putExtra(Constants.DRIVER_ID_EXTRA, uuid)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)

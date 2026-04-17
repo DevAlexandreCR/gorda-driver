@@ -47,6 +47,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
+import com.google.firebase.auth.FirebaseAuth
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import gorda.driver.R
@@ -89,6 +90,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var preferences: SharedPreferences
     private lateinit var connectionBar: ProgressBar
     private var unsupportedVersionDialog: AlertDialog? = null
+    private var authStateListener: FirebaseAuth.AuthStateListener? = null
     private lateinit var deviceID: String
     private lateinit var deviceName: String
     private var driver: Driver? = null
@@ -461,8 +463,8 @@ class MainActivity : AppCompatActivity() {
             bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
         }
 
-        Auth.onAuthChanges { uuid ->
-            if (uuid === null) {
+        authStateListener = Auth.onAuthChanges { uuid ->
+            if (uuid == null) {
                 val intent = Intent(this, StartActivity::class.java)
                 startActivity(intent)
                 finish()
@@ -474,6 +476,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        authStateListener?.let(Auth::removeAuthChanges)
+        authStateListener = null
         super.onStop()
         preferences.edit(true) {
             putString(Constants.CURRENT_SERVICE_ID, viewModel.currentService.value?.id)

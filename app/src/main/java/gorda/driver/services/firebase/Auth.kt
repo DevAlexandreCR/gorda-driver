@@ -5,6 +5,7 @@ import android.content.Intent
 import com.firebase.ui.auth.AuthUI
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuth.AuthStateListener
 import gorda.driver.R
 import gorda.driver.repositories.TokenRepository
 
@@ -23,8 +24,16 @@ object Auth {
         }
     }
 
-    fun onAuthChanges(listener: (uuid: String?) -> Unit) {
-        auth.addAuthStateListener { p0 -> listener(p0.uid) }
+    fun onAuthChanges(listener: (uuid: String?) -> Unit): AuthStateListener {
+        val authStateListener = AuthStateListener { firebaseAuth ->
+            listener(firebaseAuth.currentUser?.uid)
+        }
+        auth.addAuthStateListener(authStateListener)
+        return authStateListener
+    }
+
+    fun removeAuthChanges(listener: AuthStateListener) {
+        auth.removeAuthStateListener(listener)
     }
 
     fun launchLogin(): Intent {
