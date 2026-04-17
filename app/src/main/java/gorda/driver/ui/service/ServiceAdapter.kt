@@ -48,16 +48,22 @@ class ServiceAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.textAddress.text = getItem(position).start_loc.name
+        val service = getItem(position)
+        holder.textAddress.text = service.start_loc.name
         holder.btnShowMap.setOnClickListener {
-            showMap(getItem(position).start_loc)
-        }
-        holder.btnApply.setOnClickListener {
-            if (position < itemCount) {
-                apply(getItem(position), getItem(position).start_loc)
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                val currentService = getItem(adapterPosition)
+                showMap(currentService.start_loc)
             }
         }
-        val service = getItem(position)
+        holder.btnApply.setOnClickListener {
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                val currentService = getItem(adapterPosition)
+                apply(currentService, currentService.start_loc)
+            }
+        }
         val time = Date().time - (service.created_at * 1000)
         holder.serviceTimer.base = SystemClock.elapsedRealtime() - time
         holder.serviceTimer.start()
@@ -87,11 +93,11 @@ class ServiceAdapter(
 
     object ServiceDiffCallback : DiffUtil.ItemCallback<Service>() {
         override fun areItemsTheSame(oldItem: Service, newItem: Service): Boolean {
-            return oldItem == newItem
+            return oldItem.id == newItem.id
         }
 
         override fun areContentsTheSame(oldItem: Service, newItem: Service): Boolean {
-            return oldItem.id == newItem.id
+            return oldItem == newItem
         }
     }
 }
