@@ -457,18 +457,11 @@ class CurrentServiceFragment : Fragment() {
                 }
 
                 startTrip -> {
-                    SettingsRepository.getRideFees(
-                        onSuccess = { rideFees ->
-                            mainViewModel.setLoading(false)
-                            mainViewModel.setRideFees(rideFees)
-                            setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
-                            showStartTripDialog(service, now)
-                        },
-                        onError = {
-                            mainViewModel.setLoading(false)
-                            Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                    syncRideFeesBeforeStart {
+                        mainViewModel.setLoading(false)
+                        setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
+                        showStartTripDialog(service, now)
+                    }
                 }
 
                 else -> {
@@ -517,11 +510,7 @@ class CurrentServiceFragment : Fragment() {
         intentFee.putExtra(ORIGIN, origin)
         intentFee.putExtra(FEE_MULTIPLIER, feeMultiplier)
 
-        val gson = com.google.gson.Gson()
-        val feesJson = gson.toJson(fees)
-        sharedPreferences.edit(commit = true) {
-            putString(CURRENT_FEES, feesJson)
-        }
+        persistRideFeesSnapshot(fees)
 
         if (resumeRide && sharedPreferences.contains(Constants.MULTIPLIER)) {
             intentFee.putExtra(RESUME_RIDE, true)
@@ -558,10 +547,65 @@ class CurrentServiceFragment : Fragment() {
         }
     }
 
+    private fun syncRideFeesBeforeStart(onReady: () -> Unit) {
+        SettingsRepository.getRideFees(
+            onSuccess = { rideFees ->
+                applyRideFees(rideFees)
+                mainViewModel.setRideFees(rideFees)
+                persistRideFeesSnapshot(rideFees)
+                onReady()
+            },
+            onError = { message ->
+                Log.w(TAG, "Unable to refresh ride fees before trip start: $message")
+                resolveRideFeesFallback()?.let { fallbackFees ->
+                    applyRideFees(fallbackFees)
+                    mainViewModel.setRideFees(fallbackFees)
+                }
+                onReady()
+            }
+        )
+    }
+
+    private fun resolveRideFeesFallback(): RideFees? {
+        if (hasUsableRideFees(fees)) {
+            return fees.copy(feeMultiplier = feeMultiplier)
+        }
+
+        val storedRideFees = getStoredRideFeesSnapshot() ?: return null
+        val storedMultiplier = sharedPreferences.getString(Constants.MULTIPLIER, null)?.toDoubleOrNull()
+
+        return if (storedMultiplier != null) {
+            storedRideFees.copy(feeMultiplier = storedMultiplier)
+        } else {
+            storedRideFees
+        }
+    }
+
+    private fun hasUsableRideFees(rideFees: RideFees): Boolean {
+        return rideFees != RideFees()
+    }
+
+    private fun persistRideFeesSnapshot(rideFees: RideFees) {
+        val feesJson = com.google.gson.Gson().toJson(rideFees)
+        sharedPreferences.edit(commit = true) {
+            putString(CURRENT_FEES, feesJson)
+        }
+    }
+
+    private fun getStoredRideFeesSnapshot(): RideFees? {
+        val feesJson = sharedPreferences.getString(CURRENT_FEES, null) ?: return null
+
+        return try {
+            com.google.gson.Gson().fromJson(feesJson, RideFees::class.java)
+        } catch (exception: Exception) {
+            Log.e(TAG, exception.message ?: "Unable to restore pricing snapshot")
+            null
+        }
+    }
+
     private fun loadFrozenFeesFromStorage() {
-        val feesJson = sharedPreferences.getString(CURRENT_FEES, null) ?: return
         try {
-            val loadedFees = com.google.gson.Gson().fromJson(feesJson, RideFees::class.java) ?: return
+            val loadedFees = getStoredRideFeesSnapshot() ?: return
             applyRideFees(loadedFees)
             mainViewModel.setRideFees(loadedFees)
         } catch (exception: Exception) {
