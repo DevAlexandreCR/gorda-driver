@@ -99,6 +99,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var switchConnect: Switch
     private lateinit var lastLocation: Location
     private val viewModel: MainViewModel by viewModels()
+    private val serviceObserverCoordinator = ServiceObserverCoordinator(
+        startObservers = { viewModel.startServiceObservers() },
+        stopObservers = { viewModel.stopServiceObservers() }
+    )
     private var locationService: Messenger? = null
     private var mBound: Boolean = false
     private var lastStartedServiceAttemptId: Long = -1L
@@ -503,14 +507,14 @@ class MainActivity : AppCompatActivity() {
                 finish()
             }
         }
-        viewModel.isThereCurrentService()
-        viewModel.isThereConnectionService()
+        serviceObserverCoordinator.onActivityStarted()
         networkMonitor.startMonitoring()
     }
 
     override fun onStop() {
         authStateListener?.let(Auth::removeAuthChanges)
         authStateListener = null
+        serviceObserverCoordinator.onActivityStopped()
         super.onStop()
         preferences.edit(true) {
             putString(Constants.CURRENT_SERVICE_ID, viewModel.currentService.value?.id)
@@ -523,7 +527,6 @@ class MainActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(connectionBroadcastReceiver)
         networkMonitor.stopMonitoring()
-        viewModel.stopNextServiceListener()
     }
 
     override fun onResume() {
@@ -587,16 +590,19 @@ class MainActivity : AppCompatActivity() {
             when (state) {
                 MainViewModel.DriverLoadState.Idle -> {
                     switchConnect.isEnabled = false
+                    serviceObserverCoordinator.onDriverNotLoaded()
                 }
                 is MainViewModel.DriverLoadState.Loading -> {
                     dismissDriverLoadFailureDialog()
                     driver = null
                     switchConnect.isEnabled = false
+                    serviceObserverCoordinator.onDriverNotLoaded()
                     viewModel.stopPresenceObservation()
                 }
                 is MainViewModel.DriverLoadState.Loaded -> {
                     dismissDriverLoadFailureDialog()
                     handleDriverLoaded(navView, state.driver)
+                    serviceObserverCoordinator.onDriverLoaded()
                 }
                 is MainViewModel.DriverLoadState.Failed -> {
                     handleDriverLoadFailed()
@@ -640,6 +646,7 @@ class MainActivity : AppCompatActivity() {
         switchConnect.isChecked = false
         switchConnect.isEnabled = false
         switchConnect.setText(R.string.status_disconnected)
+        serviceObserverCoordinator.onDriverNotLoaded()
         viewModel.stopPresenceObservation()
         if (ServiceHelper.isServiceRunning(this, LocationService::class.java)) {
             stopLocationService()

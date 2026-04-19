@@ -28,14 +28,11 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
-import com.google.firebase.database.ChildEventListener
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ktx.getValue
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
+import gorda.driver.repositories.ServiceObserverHandle
 import gorda.driver.repositories.ServiceRepository
 import gorda.driver.ui.service.ConnectionBroadcastReceiver
 import gorda.driver.ui.service.LocationBroadcastReceiver
@@ -68,9 +65,15 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     private lateinit var locationManager: LocationHandler
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var listServices: MutableList<DBService>
+    private var pendingServicesObserverHandle: ServiceObserverHandle? = null
+    private var currentServiceObserverHandle: ServiceObserverHandle? = null
+    private var nextServiceObserverHandle: ServiceObserverHandle? = null
+    private val seenPendingServiceIds = linkedSetOf<String>()
+    private var hasSeededPendingServices = false
     private val timer = Timer()
     private val listener: ServicesEventListener = ServicesEventListener { services ->
         listServices = services
+        syncPendingServiceAlerts(services)
     }
     private var nextService: gorda.driver.models.Service? = null
     private val locationCallback = object : LocationCallback() {
@@ -139,38 +142,14 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
             }
         }
     }
-    private val listenerNewServices: ChildEventListener = object : ChildEventListener {
-        override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-            if (snapshot.exists()) {
-                val chanel =
-                    sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
-                snapshot.getValue<DBService>()?.let { service ->
-                    if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_to) + service.start_loc.name)
-                    else playSound.playNewService()
-                }
-            }
-        }
-
-        override fun onChildChanged(
-            snapshot: DataSnapshot,
-            previousChildName: String?
-        ) {
-        }
-
-        override fun onChildRemoved(snapshot: DataSnapshot) {}
-
-        override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
-
-        override fun onCancelled(error: DatabaseError) {}
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
-            playSound = PlaySound(this, sharedPreferences)
             stopped = false
             intent.getStringExtra(Driver.DRIVER_KEY)?.let { id ->
                 driverID = id
-                ServiceRepository.isThereCurrentService(currentServiceListener)
+                currentServiceObserverHandle?.dispose()
+                currentServiceObserverHandle =
+                    ServiceRepository.observeCurrentService(currentServiceListener)
             }
         }
         return START_STICKY
@@ -211,6 +190,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         }
         toSpeech = TextToSpeech(this, this)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this@LocationService)
+        playSound = PlaySound(this, sharedPreferences)
         mediaPlayer = MediaPlayer.create(this, R.raw.new_service)
         listServices = mutableListOf()
         this.starting = true
@@ -230,16 +210,21 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         }
         locationManager = LocationHandler.getInstance(this)
         locationManager.addListener(locationCallback)
-        startListenNewServices()
-        startSyncServices()
+        startPendingServicesObservation()
         startTimer()
         startListenNextService()
     }
 
     fun stop() {
         locationManager.removeListener(locationCallback)
-        ServiceRepository.stopListenNewServices(listenerNewServices)
-        ServiceRepository.stopListenServices(listener)
+        pendingServicesObserverHandle?.dispose()
+        pendingServicesObserverHandle = null
+        currentServiceObserverHandle?.dispose()
+        currentServiceObserverHandle = null
+        nextServiceObserverHandle?.dispose()
+        nextServiceObserverHandle = null
+        seenPendingServiceIds.clear()
+        hasSeededPendingServices = false
         stopped = true
         timer.cancel()
         if (toSpeech != null) {
@@ -306,15 +291,39 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         }, 0, 120000)
     }
 
-    private fun startSyncServices() {
-        ServiceRepository.getPending(listener)
-    }
-
-    private fun startListenNewServices() {
-        ServiceRepository.listenNewServices(listenerNewServices)
+    private fun startPendingServicesObservation() {
+        pendingServicesObserverHandle?.dispose()
+        pendingServicesObserverHandle = ServiceRepository.observePendingServices(listener)
     }
 
     private fun startListenNextService() {
-        ServiceRepository.isThereConnectionService(nextServiceListener)
+        nextServiceObserverHandle?.dispose()
+        nextServiceObserverHandle = ServiceRepository.observeConnectionService(nextServiceListener)
+    }
+
+    private fun syncPendingServiceAlerts(services: List<DBService>) {
+        if (!hasSeededPendingServices) {
+            services.forEach(::announcePendingService)
+            seenPendingServiceIds.clear()
+            services.mapTo(seenPendingServiceIds) { it.id }
+            hasSeededPendingServices = true
+            return
+        }
+
+        services.forEach { service ->
+            if (seenPendingServiceIds.add(service.id)) {
+                announcePendingService(service)
+            }
+        }
+    }
+
+    private fun announcePendingService(service: DBService) {
+        val chanel =
+            sharedPreferences.getString(Constants.NOTIFICATIONS, Constants.NOTIFICATION_VOICE)
+        if (chanel == Constants.NOTIFICATION_VOICE) {
+            speech(resources.getString(R.string.service_to) + service.start_loc.name)
+        } else {
+            playSound.playNewService()
+        }
     }
 }

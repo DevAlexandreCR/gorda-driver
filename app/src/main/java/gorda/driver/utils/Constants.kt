@@ -26,5 +26,6 @@ class Constants {
         const val POINTS = "gorda.driver.POINTS"
         const val ALERT_ACTION = "gorda.driver.SHOW_ALERT"
         const val DRIVER_DESIRED_ONLINE = "gorda.driver.DRIVER_DESIRED_ONLINE"
+        const val PENDING_SERVICES_LIMIT = 100
     }
 }

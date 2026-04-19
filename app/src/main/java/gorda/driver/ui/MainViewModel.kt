@@ -23,7 +23,9 @@ import gorda.driver.interfaces.RideFees
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
+import gorda.driver.repositories.ServiceObserverHandle
 import gorda.driver.repositories.ServiceRepository
+import gorda.driver.ui.driver.DriverStatusPublisher
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.dataclasses.LocationUpdates
@@ -111,8 +113,11 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private var bindTimeoutJob: Job? = null
     private var locationTimeoutJob: Job? = null
     private var presenceWriteTimeoutJob: Job? = null
+    private var currentServiceObserverHandle: ServiceObserverHandle? = null
+    private var nextServiceObserverHandle: ServiceObserverHandle? = null
 
     private val pendingLocationUpdates = mutableListOf<Location>()
+    private val driverStatusPublisher = DriverStatusPublisher()
 
     private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
         if (service == null) {
@@ -195,18 +200,17 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         _serviceUpdates.postValue(ServiceUpdates.setStarLoc(starLoc))
     }
 
-    fun isThereCurrentService() {
-        ServiceRepository.isThereCurrentService(currentServiceListener)
+    fun startServiceObservers() {
+        stopServiceObservers()
+        currentServiceObserverHandle = ServiceRepository.observeCurrentService(currentServiceListener)
+        nextServiceObserverHandle = ServiceRepository.observeConnectionService(nextServiceListener)
     }
 
-    fun isThereConnectionService() {
-        ServiceRepository.isThereConnectionService(nextServiceListener)
-    }
-
-    fun stopNextServiceListener() {
-        _nextService.value?.let { _ ->
-            ServiceRepository.stopListenNextService(nextServiceListener)
-        }
+    fun stopServiceObservers() {
+        currentServiceObserverHandle?.dispose()
+        currentServiceObserverHandle = null
+        nextServiceObserverHandle?.dispose()
+        nextServiceObserverHandle = null
     }
 
     fun completeCurrentService() {
@@ -786,17 +790,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     private fun publishDriverStatus(state: DriverPresenceState) {
         viewModelScope.launch {
-            val connecting = state.phase in setOf(
-                DriverPresencePhase.PRECHECKING,
-                DriverPresencePhase.WAITING_FOR_BIND,
-                DriverPresencePhase.WAITING_FOR_LOCATION,
-                DriverPresencePhase.WRITING_PRESENCE,
-                DriverPresencePhase.DISCONNECTING
-            )
-            val connected = state.actualOnline || (state.desiredOnline && !state.hasNetwork)
-
-            _driverState.emit(DriverUpdates.connecting(connecting))
-            _driverState.emit(DriverUpdates.setConnected(connected))
+            driverStatusPublisher.updatesFor(state).forEach { update ->
+                _driverState.emit(update)
+            }
         }
     }
 
@@ -810,6 +806,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     override fun onCleared() {
+        stopServiceObservers()
         stopPresenceObservation()
         cancelPresenceJobs()
         super.onCleared()

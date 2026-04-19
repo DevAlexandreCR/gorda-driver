@@ -16,6 +16,9 @@ class HomeViewModel : ViewModel() {
     private val listener: ServicesEventListener = ServicesEventListener { services ->
         this._serviceList.postValue(ServiceUpdates.setList(services))
     }
+    private val pendingFeedSubscriptionController = PendingFeedSubscriptionController {
+        ServiceRepository.observePendingServices(listener)
+    }
 
     private var _serviceList = MutableLiveData<ServiceUpdates>()
 
@@ -23,11 +26,16 @@ class HomeViewModel : ViewModel() {
     val text: LiveData<Int> = _text
 
     fun startListenServices() {
-        ServiceRepository.getPending(listener)
+        pendingFeedSubscriptionController.start()
     }
 
     fun stopListenServices() {
         this._serviceList.postValue(ServiceUpdates.stopListen())
-        ServiceRepository.stopListenServices(listener)
+        pendingFeedSubscriptionController.stop()
+    }
+
+    override fun onCleared() {
+        pendingFeedSubscriptionController.stop()
+        super.onCleared()
     }
 }
