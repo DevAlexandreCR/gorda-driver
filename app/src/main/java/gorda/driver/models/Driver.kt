@@ -22,6 +22,7 @@ data class Driver(
     @SerializedName("device") override var device: Device? = null,
     @SerializedName("vehicle") override var vehicle: Vehicle = Vehicle(),
     @SerializedName("balance") override var balance: Double = 0.0,
+    @SerializedName("availability") var availability: DriverAvailability? = null,
 ): DriverInterface, Serializable {
     companion object {
         const val TAG = "gorda.driver.models.Driver"
@@ -34,5 +35,13 @@ data class Driver(
 
     fun disconnect(): Task<Void> {
         return DriverRepository.disconnect(this.id)
+    }
+
+    fun canGoOnline(): Boolean {
+        return availability?.canGoOnline ?: (enabled_at > 0)
+    }
+
+    fun canApply(): Boolean {
+        return availability?.canApply ?: canGoOnline()
     }
 }

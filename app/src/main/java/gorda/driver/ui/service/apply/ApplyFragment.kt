@@ -18,6 +18,7 @@ import gorda.driver.databinding.FragmentApplyBinding
 import gorda.driver.helpers.withTimeout
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
+import gorda.driver.repositories.DriverRepository
 import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 import gorda.driver.utils.StringHelper
@@ -115,48 +116,68 @@ class ApplyFragment : Fragment() {
                             connection = service.id
                         }
 
-                        // Validate service before applying
-                        service.validateForApply().addOnSuccessListener { validatedService ->
-                            if (!canUpdateUi()) return@addOnSuccessListener
+                        DriverRepository.getDriver(driver.id) { refreshedDriver ->
+                            if (!canUpdateUi()) return@getDriver
 
-                            service = validatedService
-
-                            service.addApplicant(driver, distance, time, connection).addOnSuccessListener {
-                                val currentBinding = _binding ?: return@addOnSuccessListener
-                                val applyText = getString(R.string.wait_for_assign, service.start_loc.name)
-                                currentBinding.textView.text = StringHelper.getString(applyText)
-                                currentBinding.btnCancel.isEnabled = true
+                            if (refreshedDriver == null) {
                                 mainViewModel.setLoading(false)
-                            }.addOnFailureListener { e ->
-                                e.message?.let { message -> Log.e(TAG, message) }
                                 showToastIfAvailable(R.string.common_error, Toast.LENGTH_LONG)
                                 navigateHomeIfCurrent()
-                            }.withTimeout {
-                                if (canUpdateUi()) {
+                                return@getDriver
+                            }
+
+                            driver = refreshedDriver
+                            val restrictionMessage = mainViewModel.getApplyRestrictionMessageRes(refreshedDriver)
+                            if (restrictionMessage != null) {
+                                mainViewModel.setLoading(false)
+                                showToastIfAvailable(restrictionMessage, Toast.LENGTH_LONG)
+                                navigateHomeIfCurrent()
+                                return@getDriver
+                            }
+
+                            // Validate service before applying
+                            service.validateForApply().addOnSuccessListener { validatedService ->
+                                if (!canUpdateUi()) return@addOnSuccessListener
+
+                                service = validatedService
+
+                                service.addApplicant(driver, distance, time, connection).addOnSuccessListener {
+                                    val currentBinding = _binding ?: return@addOnSuccessListener
+                                    val applyText = getString(R.string.wait_for_assign, service.start_loc.name)
+                                    currentBinding.textView.text = StringHelper.getString(applyText)
+                                    currentBinding.btnCancel.isEnabled = true
                                     mainViewModel.setLoading(false)
-                                    mainViewModel.setErrorTimeout(true)
-                                    binding.btnCancel.isEnabled = true
+                                }.addOnFailureListener { e ->
+                                    e.message?.let { message -> Log.e(TAG, message) }
+                                    showToastIfAvailable(R.string.common_error, Toast.LENGTH_LONG)
                                     navigateHomeIfCurrent()
+                                }.withTimeout {
+                                    if (canUpdateUi()) {
+                                        mainViewModel.setLoading(false)
+                                        mainViewModel.setErrorTimeout(true)
+                                        binding.btnCancel.isEnabled = true
+                                        navigateHomeIfCurrent()
+                                    }
                                 }
+                            }.addOnFailureListener { e ->
+                                if (!isAdded) return@addOnFailureListener
+
+                                e.message?.let { message -> Log.e(TAG, "Service validation failed: $message") }
+
+                                val errorMessage = when {
+                                    e.message?.contains("does not exist", ignoreCase = true) == true ->
+                                        R.string.service_not_exists
+                                    e.message?.contains("already has a driver", ignoreCase = true) == true ->
+                                        R.string.service_already_assigned
+                                    e.message?.contains("no longer available", ignoreCase = true) == true ->
+                                        R.string.service_not_available
+                                    else -> R.string.common_error
+                                }
+
+                                showToastIfAvailable(errorMessage, Toast.LENGTH_LONG)
+                                mainViewModel.setLoading(false)
+                                navigateHomeIfCurrent()
                             }
-                        }.addOnFailureListener { e ->
-                            if (!isAdded) return@addOnFailureListener
-
-                            e.message?.let { message -> Log.e(TAG, "Service validation failed: $message") }
-
-                            val errorMessage = when {
-                                e.message?.contains("does not exist", ignoreCase = true) == true ->
-                                    R.string.service_not_exists
-                                e.message?.contains("already has a driver", ignoreCase = true) == true ->
-                                    R.string.service_already_assigned
-                                e.message?.contains("no longer available", ignoreCase = true) == true ->
-                                    R.string.service_not_available
-                                else -> R.string.common_error
-                            }
-
-                            showToastIfAvailable(errorMessage, Toast.LENGTH_LONG)
-                            mainViewModel.setLoading(false)
-                            navigateHomeIfCurrent()
                         }
                     }
                 }

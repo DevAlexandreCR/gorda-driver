@@ -73,6 +73,10 @@
     <string name="navigation">Navegar: </string>
     <string name="error_timeout">No fue posible conectar con el servicio. Verifique su conexión a internet o inténtelo más tarde.</string>
     <string name="error_reconnection_failed">No se pudo reconectar automáticamente. Por favor, inténtalo manualmente.</string>
+    <string name="driver_disabled_account_message">Tu cuenta está deshabilitada. Contacta soporte para habilitarla nuevamente.</string>
+    <string name="driver_balance_blocked_message">Tu saldo no permite ponerte en línea. Recarga saldo para seguir recibiendo servicios.</string>
+    <string name="driver_apply_disabled_message">Tu cuenta está deshabilitada y no puede postularse a servicios.</string>
+    <string name="driver_apply_balance_blocked_message">Tu saldo no permite postularte a servicios. Recarga saldo para continuar.</string>
     <string name="driver_profile_error_title">No pudimos cargar tu perfil de conductor</string>
     <string name="driver_profile_error_message">No fue posible cargar tus datos en este momento. Puedes reintentar sin iniciar sesión de nuevo o cerrar sesión.</string>
     <string name="driver_profile_error_subtitle">Detectamos un problema de conexión</string>

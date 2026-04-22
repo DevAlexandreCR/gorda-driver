@@ -372,7 +372,12 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             return
         }
 
-        beginPresenceAttempt(immediateLocation = null, keepDesiredOnlineOnFailure = false)
+        precheckDriverConnectEligibility(
+            emitFeedback = true,
+            onAllowed = {
+                beginPresenceAttempt(immediateLocation = null, keepDesiredOnlineOnFailure = false)
+            }
+        )
     }
 
     fun requestDisconnect() {
@@ -477,7 +482,12 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 return@launch
             }
 
-            beginPresenceAttempt(lastKnownLocation ?: latestLocation, keepDesiredOnlineOnFailure = true)
+            precheckDriverConnectEligibility(
+                emitFeedback = false,
+                onAllowed = {
+                    beginPresenceAttempt(lastKnownLocation ?: latestLocation, keepDesiredOnlineOnFailure = true)
+                }
+            )
         }
     }
 
@@ -585,6 +595,76 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
         if (immediateLocation != null) {
             Log.i(TAG, "event=network_recovered_reconnect driverId=${currentDriver.id} attemptId=$attemptId")
+        }
+    }
+
+    fun getApplyRestrictionMessageRes(driver: Driver): Int? {
+        return when (driver.availability?.reason) {
+            "negative_balance_percentage" -> R.string.driver_apply_balance_blocked_message
+            "enabled_disabled" -> R.string.driver_apply_disabled_message
+            else -> if (!driver.canApply()) {
+                R.string.driver_apply_disabled_message
+            } else {
+                null
+            }
+        }
+    }
+
+    private fun precheckDriverConnectEligibility(
+        emitFeedback: Boolean,
+        onAllowed: (Driver) -> Unit
+    ) {
+        val currentDriver = driver.value ?: return
+        _isLoading.postValue(true)
+
+        DriverRepository.getDriver(currentDriver.id) { refreshedDriver ->
+            if (refreshedDriver == null) {
+                _isLoading.postValue(false)
+                if (emitFeedback) {
+                    emitErrorMessage(R.string.error_timeout)
+                }
+                return@getDriver
+            }
+
+            _driver.postValue(refreshedDriver)
+            savedStateHandle[Driver.TAG] = refreshedDriver
+
+            val restrictionMessageRes = getConnectRestrictionMessageRes(refreshedDriver)
+            if (restrictionMessageRes != null) {
+                _isLoading.postValue(false)
+                persistDesiredOnline(false)
+                updatePresenceState { current ->
+                    current.copy(
+                        desiredOnline = false,
+                        actualOnline = false,
+                        phase = DriverPresencePhase.DISCONNECTED,
+                        lastError = refreshedDriver.availability?.reason,
+                        sessionId = null
+                    )
+                }
+                if (emitFeedback) {
+                    emitErrorMessage(restrictionMessageRes)
+                }
+                Log.w(
+                    TAG,
+                    "event=connect_precheck_blocked driverId=${refreshedDriver.id} reason=${refreshedDriver.availability?.reason}"
+                )
+                return@getDriver
+            }
+
+            onAllowed(refreshedDriver)
+        }
+    }
+
+    private fun getConnectRestrictionMessageRes(driver: Driver): Int? {
+        return when (driver.availability?.reason) {
+            "negative_balance_percentage" -> R.string.driver_balance_blocked_message
+            "enabled_disabled" -> R.string.driver_disabled_account_message
+            else -> if (!driver.canGoOnline()) {
+                R.string.driver_disabled_account_message
+            } else {
+                null
+            }
         }
     }
 

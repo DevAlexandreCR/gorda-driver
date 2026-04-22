@@ -80,6 +80,10 @@
     <string name="navigation">Navigation: </string>
     <string name="error_timeout">It was not possible to connect to the service. Please check your internet connection or try again later.</string>
     <string name="error_reconnection_failed">Failed to reconnect automatically. Please try connecting manually.</string>
+    <string name="driver_disabled_account_message">Your account is disabled. Contact support to enable it again.</string>
+    <string name="driver_balance_blocked_message">Your balance does not allow going online. Recharge your balance to continue receiving services.</string>
+    <string name="driver_apply_disabled_message">Your account is disabled and cannot apply to services.</string>
+    <string name="driver_apply_balance_blocked_message">Your balance does not allow applying to services. Recharge your balance to continue.</string>
     <string name="driver_profile_error_title">Unable to load your driver profile</string>
     <string name="driver_profile_error_message">We could not load your driver data right now. You can retry without signing in again, or log out.</string>
     <string name="driver_profile_error_subtitle">Connection issue detected</string>
