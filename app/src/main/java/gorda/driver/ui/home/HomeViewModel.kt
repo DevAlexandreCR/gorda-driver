@@ -34,6 +34,10 @@ class HomeViewModel : ViewModel() {
         pendingFeedSubscriptionController.stop()
     }
 
+    fun restartListenServices() {
+        pendingFeedSubscriptionController.restart()
+    }
+
     override fun onCleared() {
         pendingFeedSubscriptionController.stop()
         super.onCleared()

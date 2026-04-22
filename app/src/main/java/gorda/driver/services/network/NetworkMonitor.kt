@@ -6,7 +6,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
-import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -17,8 +16,7 @@ import kotlinx.coroutines.launch
 
 class NetworkMonitor(
     private val context: Context,
-    private val onNetworkChange: (isConnected: Boolean) -> Unit,
-    private val enableOfflineMode: Boolean = true  // New option for offline behavior
+    private val onNetworkChange: (isConnected: Boolean) -> Unit
 ) {
 
     companion object {
@@ -95,23 +93,6 @@ class NetworkMonitor(
         if (currentNetworkState != isConnected) {
             currentNetworkState = isConnected
             Log.d(TAG, "Network state CHANGED to: ${if (isConnected) "CONNECTED" else "DISCONNECTED"}")
-
-            // Manage Firebase connection state
-            try {
-                if (isConnected) {
-                    // When network is restored, tell Firebase to go back online
-                    FirebaseDatabase.getInstance().goOnline()
-                    Log.d(TAG, "Firebase set to ONLINE")
-                } else {
-                    if (enableOfflineMode) {
-                        // Don't disconnect Firebase, just notify network loss
-                        Log.d(TAG, "Network lost - Firebase will handle offline mode")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error managing Firebase state: ${e.message}")
-            }
-
             onNetworkChange(isConnected)
         } else {
             Log.d(TAG, "Network state UNCHANGED: ${if (isConnected) "CONNECTED" else "DISCONNECTED"}")

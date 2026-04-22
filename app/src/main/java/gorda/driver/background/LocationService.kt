@@ -28,12 +28,16 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.repositories.ServiceObserverHandle
 import gorda.driver.repositories.ServiceRepository
+import gorda.driver.services.firebase.Database
 import gorda.driver.ui.service.ConnectionBroadcastReceiver
 import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.ServiceEventListener
@@ -68,6 +72,8 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     private var pendingServicesObserverHandle: ServiceObserverHandle? = null
     private var currentServiceObserverHandle: ServiceObserverHandle? = null
     private var nextServiceObserverHandle: ServiceObserverHandle? = null
+    private var firebaseConnectionListener: ValueEventListener? = null
+    private var lastFirebaseConnected = false
     private val seenPendingServiceIds = linkedSetOf<String>()
     private var hasSeededPendingServices = false
     private val timer = Timer()
@@ -147,9 +153,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
             stopped = false
             intent.getStringExtra(Driver.DRIVER_KEY)?.let { id ->
                 driverID = id
-                currentServiceObserverHandle?.dispose()
-                currentServiceObserverHandle =
-                    ServiceRepository.observeCurrentService(currentServiceListener)
+                restartRealtimeObservers()
             }
         }
         return START_STICKY
@@ -213,10 +217,12 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         startPendingServicesObservation()
         startTimer()
         startListenNextService()
+        startFirebaseConnectionObservation()
     }
 
     fun stop() {
         locationManager.removeListener(locationCallback)
+        stopFirebaseConnectionObservation()
         pendingServicesObserverHandle?.dispose()
         pendingServicesObserverHandle = null
         currentServiceObserverHandle?.dispose()
@@ -296,9 +302,53 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         pendingServicesObserverHandle = ServiceRepository.observePendingServices(listener)
     }
 
+    private fun startCurrentServiceObservation() {
+        if (driverID.isBlank()) {
+            return
+        }
+        currentServiceObserverHandle?.dispose()
+        currentServiceObserverHandle = ServiceRepository.observeCurrentService(currentServiceListener)
+    }
+
     private fun startListenNextService() {
         nextServiceObserverHandle?.dispose()
         nextServiceObserverHandle = ServiceRepository.observeConnectionService(nextServiceListener)
+    }
+
+    private fun restartRealtimeObservers() {
+        startPendingServicesObservation()
+        startCurrentServiceObservation()
+        startListenNextService()
+    }
+
+    private fun startFirebaseConnectionObservation() {
+        if (firebaseConnectionListener != null) {
+            return
+        }
+
+        firebaseConnectionListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val isConnected = snapshot.getValue(Boolean::class.java) == true
+                if (isConnected && !lastFirebaseConnected) {
+                    restartRealtimeObservers()
+                }
+                lastFirebaseConnected = isConnected
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(this@LocationService.javaClass.toString(), error.message)
+            }
+        }
+
+        Database.dbInfoConnected().addValueEventListener(firebaseConnectionListener!!)
+    }
+
+    private fun stopFirebaseConnectionObservation() {
+        firebaseConnectionListener?.let {
+            Database.dbInfoConnected().removeEventListener(it)
+        }
+        firebaseConnectionListener = null
+        lastFirebaseConnected = false
     }
 
     private fun syncPendingServiceAlerts(services: List<DBService>) {

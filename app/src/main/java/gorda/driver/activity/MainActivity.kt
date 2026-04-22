@@ -238,9 +238,6 @@ class MainActivity : AppCompatActivity() {
                         showNetworkLostIndicator()
                     } else {
                         hideNetworkLostIndicator()
-                        viewModel.reconnectFirebaseIfNeeded(
-                            if (::lastLocation.isInitialized) lastLocation else null
-                        )
                     }
                 }
             }
@@ -502,6 +499,7 @@ class MainActivity : AppCompatActivity() {
 
         authStateListener = Auth.onAuthChanges { uuid ->
             if (uuid == null) {
+                viewModel.handleAuthLost()
                 val intent = Intent(this, StartActivity::class.java)
                 startActivity(intent)
                 finish()
@@ -646,6 +644,7 @@ class MainActivity : AppCompatActivity() {
         switchConnect.isChecked = false
         switchConnect.isEnabled = false
         switchConnect.setText(R.string.status_disconnected)
+        viewModel.handleDriverLoadFailed()
         serviceObserverCoordinator.onDriverNotLoaded()
         viewModel.stopPresenceObservation()
         if (ServiceHelper.isServiceRunning(this, LocationService::class.java)) {
@@ -791,18 +790,23 @@ class MainActivity : AppCompatActivity() {
             MainViewModel.DriverPresencePhase.WAITING_FOR_BIND,
             MainViewModel.DriverPresencePhase.WAITING_FOR_LOCATION,
             MainViewModel.DriverPresencePhase.WRITING_PRESENCE,
+            MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK,
             MainViewModel.DriverPresencePhase.DISCONNECTING
+        )
+        val isBootstrappingLocation = presence.phase in setOf(
+            MainViewModel.DriverPresencePhase.WAITING_FOR_BIND,
+            MainViewModel.DriverPresencePhase.WAITING_FOR_LOCATION
         )
 
         switchConnect.isEnabled = !isConnecting
-        switchConnect.isChecked = presence.actualOnline
+        switchConnect.isChecked = presence.desiredOnline
 
         when {
-            presence.actualOnline && presence.hasNetwork -> {
+            presence.actualOnline -> {
                 switchConnect.setText(R.string.status_connected)
             }
-            presence.actualOnline && !presence.hasNetwork -> {
-                switchConnect.setText(R.string.status_connected_offline)
+            presence.desiredOnline && presence.phase == MainViewModel.DriverPresencePhase.RECONNECTING -> {
+                switchConnect.setText(R.string.status_reconnecting)
             }
             isConnecting -> {
                 switchConnect.setText(R.string.status_connecting)
@@ -823,7 +827,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (
-            presence.actualOnline &&
+            presence.desiredOnline &&
+            !isBootstrappingLocation &&
+            !mBound &&
             !ServiceHelper.isServiceRunning(this, LocationService::class.java) &&
             LocationHandler.checkPermissions(this)
         ) {
@@ -831,8 +837,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (
-            presence.phase == MainViewModel.DriverPresencePhase.DISCONNECTED &&
-            !presence.actualOnline &&
+            !presence.desiredOnline &&
             ServiceHelper.isServiceRunning(this, LocationService::class.java)
         ) {
             stopLocationService()

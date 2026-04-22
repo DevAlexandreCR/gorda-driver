@@ -19,4 +19,13 @@ internal class PendingFeedSubscriptionController(
         activeHandle?.dispose()
         activeHandle = null
     }
+
+    fun restart() {
+        if (activeHandle == null) {
+            return
+        }
+
+        activeHandle?.dispose()
+        activeHandle = startObservation()
+    }
 }

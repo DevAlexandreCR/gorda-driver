@@ -44,30 +44,30 @@ object DriverRepository {
         val taskSource = TaskCompletionSource<Void>()
         val driverReference = Database.dbOnlineDrivers().child(driver.id)
 
-        driverReference.setValue(object : DriverConnected {
-            override var id: String = driver.id
-            override var location: LocInterface = location
-            override var version: String = BuildConfig.VERSION_NAME
-            override var versionCode: Int = BuildConfig.VERSION_CODE
-            override var last_seen_at: Long = lastSeenAt
-            override var session_id: String = sessionId
-        }) { error, _ ->
+        driverReference.onDisconnect().removeValue { disconnectError, _ ->
             when {
-                error == null -> {
-                    driverReference.onDisconnect().removeValue { disconnectError, _ ->
+                disconnectError == null -> {
+                    driverReference.setValue(object : DriverConnected {
+                        override var id: String = driver.id
+                        override var location: LocInterface = location
+                        override var version: String = BuildConfig.VERSION_NAME
+                        override var versionCode: Int = BuildConfig.VERSION_CODE
+                        override var last_seen_at: Long = lastSeenAt
+                        override var session_id: String = sessionId
+                    }) { error, _ ->
                         when {
-                            disconnectError == null -> taskSource.setResult(null)
-                            disconnectError.code == DatabaseError.PERMISSION_DENIED -> {
+                            error == null -> taskSource.setResult(null)
+                            error.code == DatabaseError.PERMISSION_DENIED -> {
                                 taskSource.setException(UnsupportedAppVersionException())
                             }
-                            else -> taskSource.setException(disconnectError.toException())
+                            else -> taskSource.setException(error.toException())
                         }
                     }
                 }
-                error.code == DatabaseError.PERMISSION_DENIED -> {
+                disconnectError.code == DatabaseError.PERMISSION_DENIED -> {
                     taskSource.setException(UnsupportedAppVersionException())
                 }
-                else -> taskSource.setException(error.toException())
+                else -> taskSource.setException(disconnectError.toException())
             }
         }
 

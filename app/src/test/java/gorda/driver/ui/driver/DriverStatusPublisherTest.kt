@@ -14,7 +14,8 @@ class DriverStatusPublisherTest {
             desiredOnline = true,
             actualOnline = true,
             phase = MainViewModel.DriverPresencePhase.CONNECTED,
-            hasNetwork = true
+            hasNetwork = true,
+            firebaseConnected = true
         )
         val heartbeatRefreshedState = initialState.copy(lastError = "heartbeat_refresh")
 
@@ -29,5 +30,74 @@ class DriverStatusPublisherTest {
             firstUpdates
         )
         assertTrue(secondUpdates.isEmpty())
+    }
+
+    @Test
+    fun reconnectingWithoutFirebaseSocketDoesNotPublishConnected() {
+        val publisher = DriverStatusPublisher()
+
+        val updates = publisher.updatesFor(
+            MainViewModel.DriverPresenceState(
+                desiredOnline = true,
+                actualOnline = false,
+                phase = MainViewModel.DriverPresencePhase.RECONNECTING,
+                hasNetwork = false,
+                firebaseConnected = false
+            )
+        )
+
+        assertEquals(
+            listOf(
+                DriverUpdates.connecting(true),
+                DriverUpdates.setConnected(false)
+            ),
+            updates
+        )
+    }
+
+    @Test
+    fun waitingForPresenceAckWithFirebaseSocketPublishesRecoverableFeed() {
+        val publisher = DriverStatusPublisher()
+
+        val updates = publisher.updatesFor(
+            MainViewModel.DriverPresenceState(
+                desiredOnline = true,
+                actualOnline = false,
+                phase = MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK,
+                hasNetwork = true,
+                firebaseConnected = true
+            )
+        )
+
+        assertEquals(
+            listOf(
+                DriverUpdates.connecting(true),
+                DriverUpdates.setConnected(true)
+            ),
+            updates
+        )
+    }
+
+    @Test
+    fun precheckingDoesNotPublishConnectedEvenWhenFirebaseSocketIsUp() {
+        val publisher = DriverStatusPublisher()
+
+        val updates = publisher.updatesFor(
+            MainViewModel.DriverPresenceState(
+                desiredOnline = true,
+                actualOnline = false,
+                phase = MainViewModel.DriverPresencePhase.PRECHECKING,
+                hasNetwork = true,
+                firebaseConnected = true
+            )
+        )
+
+        assertEquals(
+            listOf(
+                DriverUpdates.connecting(true),
+                DriverUpdates.setConnected(false)
+            ),
+            updates
+        )
     }
 }

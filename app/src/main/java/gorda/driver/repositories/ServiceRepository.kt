@@ -9,7 +9,6 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.Query
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.getValue
 import gorda.driver.BuildConfig
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
@@ -165,7 +164,7 @@ object ServiceRepository {
 
         val valueEventListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                pointerObserver.onPointerChanged(snapshot.getValue<String>())
+                pointerObserver.onPointerChanged(snapshot.getValue(String::class.java))
             }
 
             override fun onCancelled(error: DatabaseError) {

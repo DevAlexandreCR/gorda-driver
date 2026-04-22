@@ -12,6 +12,7 @@
 
     <string name="status_connected">Connected</string>
     <string name="status_disconnected">Disconnected</string>
+    <string name="status_reconnecting">Reconnecting…</string>
     <string name="title_activity_main" translatable="false">MainActivity</string>
     <string name="navigation_drawer_open" translatable="false">Open navigation drawer</string>
     <string name="navigation_drawer_close" translatable="false">Close navigation drawer</string>

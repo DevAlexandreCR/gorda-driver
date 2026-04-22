@@ -24,4 +24,8 @@ object Database {
     fun dbOnlineDrivers(): DatabaseReference {
         return reference.child("online_drivers").ref
     }
+
+    fun dbInfoConnected(): DatabaseReference {
+        return reference.child(".info").child("connected").ref
+    }
 }

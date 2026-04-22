@@ -52,6 +52,7 @@ class HomeFragment : Fragment() {
     private lateinit var preferences: SharedPreferences
     private var alertsHandler: Handler? = null
     private var alertsRunnable: Runnable? = null
+    private var lastReconnectGeneration: Long = -1L
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -128,6 +129,17 @@ class HomeFragment : Fragment() {
                             }
                         }
                         else -> {}
+                    }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainViewModel.presenceState.collect { presence ->
+                    if (presence.reconnectGeneration != lastReconnectGeneration) {
+                        lastReconnectGeneration = presence.reconnectGeneration
+                        homeViewModel.restartListenServices()
                     }
                 }
             }

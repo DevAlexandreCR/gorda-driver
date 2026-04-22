@@ -5,7 +5,6 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.getValue
 import gorda.driver.models.Service
 
 class ServiceEventListener(private val listener: (service: Service?) -> Unit): ValueEventListener {
@@ -13,7 +12,7 @@ class ServiceEventListener(private val listener: (service: Service?) -> Unit): V
     var reference: DatabaseReference? = null
     override fun onDataChange(snapshot: DataSnapshot) {
         if (snapshot.exists()) {
-            snapshot.getValue<Service>()?.let { service ->
+            snapshot.getValue(Service::class.java)?.let { service ->
                 if (service.status == Service.STATUS_TERMINATED || service.status == Service.STATUS_CANCELED) {
                     this.listener(null)
                     reference?.removeEventListener(this)
