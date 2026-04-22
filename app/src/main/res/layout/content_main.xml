@@ -19,6 +19,25 @@
         app:layout_constraintTop_toBottomOf="@+id/connectionBar"
         app:navGraph="@navigation/mobile_navigation" />
 
+    <TextView
+        android:id="@+id/connectionStatusBanner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/secondary_dark"
+        android:gravity="center_vertical"
+        android:minHeight="40dp"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="10dp"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Reconnecting to dispatch…" />
+
     <ProgressBar
         android:id="@+id/connectionBar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -32,7 +51,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/connectionStatusBanner" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/notification_button"

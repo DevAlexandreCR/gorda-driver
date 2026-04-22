@@ -90,6 +90,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var preferences: SharedPreferences
     private lateinit var connectionBar: ProgressBar
+    private lateinit var connectionStatusBanner: TextView
     private var unsupportedVersionDialog: AlertDialog? = null
     private var driverLoadFailureDialog: AlertDialog? = null
     private var authStateListener: FirebaseAuth.AuthStateListener? = null
@@ -152,6 +153,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         connectionBar = binding.root.findViewById(R.id.connectionBar)
+        connectionStatusBanner = binding.root.findViewById(R.id.connectionStatusBanner)
 
         setSupportActionBar(binding.appBarMain.toolbar)
 
@@ -229,19 +231,6 @@ class MainActivity : AppCompatActivity() {
 
         this.observeDriverLoadState(navView)
         bootstrapDriverSession(intent)
-
-        // Observe StateFlow for network connectivity - show non-blocking alert
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.isNetWorkConnected.collect { isConnected ->
-                    if (!isConnected) {
-                        showNetworkLostIndicator()
-                    } else {
-                        hideNetworkLostIndicator()
-                    }
-                }
-            }
-        }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -461,17 +450,6 @@ class MainActivity : AppCompatActivity() {
                 ColorStateList.valueOf(getColor(R.color.secondary_dark))
             notificationButton.setImageResource(R.drawable.notifications_active)
         }
-    }
-
-    private fun showNetworkLostIndicator() {
-        connectionBar.visibility = View.VISIBLE
-        // Optional: Show a Toast or Snackbar
-        Toast.makeText(this, R.string.network_lost_offline_mode, Toast.LENGTH_SHORT).show()
-    }
-
-    private fun hideNetworkLostIndicator() {
-        connectionBar.visibility = View.GONE
-        Toast.makeText(this, R.string.network_restored, Toast.LENGTH_SHORT).show()
     }
 
     private fun onNetWorkChange(isConnected: Boolean) {
@@ -782,6 +760,7 @@ class MainActivity : AppCompatActivity() {
             switchConnect.isEnabled = false
             switchConnect.isChecked = false
             switchConnect.setText(R.string.status_disconnected)
+            connectionStatusBanner.visibility = View.GONE
             return
         }
 
@@ -800,13 +779,19 @@ class MainActivity : AppCompatActivity() {
 
         switchConnect.isEnabled = !isConnecting
         switchConnect.isChecked = presence.desiredOnline
+        renderConnectionBanner(presence)
 
         when {
+            presence.desiredOnline && (
+                !presence.hasNetwork || presence.phase in setOf(
+                    MainViewModel.DriverPresencePhase.RECONNECTING,
+                    MainViewModel.DriverPresencePhase.WAITING_FOR_FIREBASE_SOCKET
+                )
+            ) -> {
+                switchConnect.setText(R.string.status_reconnecting)
+            }
             presence.actualOnline -> {
                 switchConnect.setText(R.string.status_connected)
-            }
-            presence.desiredOnline && presence.phase == MainViewModel.DriverPresencePhase.RECONNECTING -> {
-                switchConnect.setText(R.string.status_reconnecting)
             }
             isConnecting -> {
                 switchConnect.setText(R.string.status_connecting)
@@ -842,5 +827,28 @@ class MainActivity : AppCompatActivity() {
         ) {
             stopLocationService()
         }
+    }
+
+    private fun renderConnectionBanner(presence: MainViewModel.DriverPresenceState) {
+        val messageRes = when {
+            presence.desiredOnline && !presence.hasNetwork -> R.string.recovery_banner_no_network
+            presence.desiredOnline && presence.phase == MainViewModel.DriverPresencePhase.WAITING_FOR_FIREBASE_SOCKET ->
+                R.string.recovery_banner_waiting_socket
+            presence.desiredOnline && presence.phase in setOf(
+                MainViewModel.DriverPresencePhase.RECONNECTING,
+                MainViewModel.DriverPresencePhase.WRITING_PRESENCE,
+                MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK
+            ) -> R.string.recovery_banner_reconnecting
+            else -> null
+        }
+
+        if (messageRes == null) {
+            connectionStatusBanner.visibility = View.GONE
+            connectionStatusBanner.text = ""
+            return
+        }
+
+        connectionStatusBanner.visibility = View.VISIBLE
+        connectionStatusBanner.setText(messageRes)
     }
 }

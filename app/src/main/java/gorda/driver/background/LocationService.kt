@@ -330,7 +330,10 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val isConnected = snapshot.getValue(Boolean::class.java) == true
                 if (isConnected && !lastFirebaseConnected) {
-                    restartRealtimeObservers()
+                    Log.i(
+                        this@LocationService.javaClass.toString(),
+                        "event=firebase_socket_restored observersRetained=true"
+                    )
                 }
                 lastFirebaseConnected = isConnected
             }

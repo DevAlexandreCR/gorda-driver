@@ -11,11 +11,6 @@ internal class DriverStatusPublisher {
     private var lastPublishedStatus: DriverStatusSnapshot? = null
 
     fun updatesFor(state: MainViewModel.DriverPresenceState): List<DriverUpdates> {
-        val feedRecoverable = state.firebaseConnected && state.phase in setOf(
-            MainViewModel.DriverPresencePhase.RECONNECTING,
-            MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK,
-            MainViewModel.DriverPresencePhase.CONNECTED
-        )
         val nextStatus = DriverStatusSnapshot(
             connecting = state.phase in setOf(
                 MainViewModel.DriverPresencePhase.PRECHECKING,
@@ -26,7 +21,7 @@ internal class DriverStatusPublisher {
                 MainViewModel.DriverPresencePhase.RECONNECTING,
                 MainViewModel.DriverPresencePhase.DISCONNECTING
             ),
-            connected = state.actualOnline || (state.desiredOnline && feedRecoverable)
+            connected = MainViewModel.shouldKeepDriverFeedConnected(state)
         )
 
         if (lastPublishedStatus == nextStatus) {

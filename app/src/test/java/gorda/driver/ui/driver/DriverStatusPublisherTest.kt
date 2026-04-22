@@ -33,7 +33,7 @@ class DriverStatusPublisherTest {
     }
 
     @Test
-    fun reconnectingWithoutFirebaseSocketDoesNotPublishConnected() {
+    fun reconnectingWithoutFirebaseSocketKeepsFeedConnected() {
         val publisher = DriverStatusPublisher()
 
         val updates = publisher.updatesFor(
@@ -49,7 +49,30 @@ class DriverStatusPublisherTest {
         assertEquals(
             listOf(
                 DriverUpdates.connecting(true),
-                DriverUpdates.setConnected(false)
+                DriverUpdates.setConnected(true)
+            ),
+            updates
+        )
+    }
+
+    @Test
+    fun waitingForFirebaseSocketKeepsFeedConnectedWithoutConnectingSpinner() {
+        val publisher = DriverStatusPublisher()
+
+        val updates = publisher.updatesFor(
+            MainViewModel.DriverPresenceState(
+                desiredOnline = true,
+                actualOnline = false,
+                phase = MainViewModel.DriverPresencePhase.WAITING_FOR_FIREBASE_SOCKET,
+                hasNetwork = true,
+                firebaseConnected = false
+            )
+        )
+
+        assertEquals(
+            listOf(
+                DriverUpdates.connecting(false),
+                DriverUpdates.setConnected(true)
             ),
             updates
         )

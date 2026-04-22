@@ -199,6 +199,9 @@
     <string name="status_connected_offline">Connected (No network)</string>
     <string name="network_lost_offline_mode">Network lost - Offline mode active</string>
     <string name="network_restored">Connection restored - Syncing…</string>
+    <string name="recovery_banner_no_network">No internet connection. Reconnection will resume automatically.</string>
+    <string name="recovery_banner_waiting_socket">Connection restored. Re-establishing real-time sync…</string>
+    <string name="recovery_banner_reconnecting">Reconnecting to dispatch…</string>
     <string name="cannot_disconnect_no_network">Cannot disconnect without network. Wait for connection recovery.</string>
     <string name="unsupported_version_title">Update required</string>
     <string name="unsupported_version_message">This app version can no longer connect online. Update the app to continue receiving services.</string>

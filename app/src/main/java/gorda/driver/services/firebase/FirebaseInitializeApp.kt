@@ -26,4 +26,12 @@ object FirebaseInitializeApp {
     }
 
     val messaging: FirebaseMessaging = FirebaseMessaging.getInstance()
+
+    fun usesEmulators(): Boolean {
+        return BuildConfig.FIREBASE_USE_EMULATORS == "true"
+    }
+
+    fun databaseHostPort(): String {
+        return "${BuildConfig.FIREBASE_DATABASE_HOST}:${BuildConfig.FIREBASE_DATABASE_PORT}"
+    }
 }
