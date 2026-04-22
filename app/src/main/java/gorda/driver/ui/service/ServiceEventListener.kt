@@ -13,6 +13,7 @@ class ServiceEventListener(private val listener: (service: Service?) -> Unit): V
     override fun onDataChange(snapshot: DataSnapshot) {
         if (snapshot.exists()) {
             snapshot.getValue(Service::class.java)?.let { service ->
+                service.id = snapshot.key.orEmpty()
                 if (service.status == Service.STATUS_TERMINATED || service.status == Service.STATUS_CANCELED) {
                     this.listener(null)
                     reference?.removeEventListener(this)

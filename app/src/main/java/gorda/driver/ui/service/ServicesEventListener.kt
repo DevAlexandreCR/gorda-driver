@@ -15,6 +15,7 @@ class ServicesEventListener(private val listener: (serviceList: MutableList<Serv
         if (snapshot.hasChildren()) {
             snapshot.children.forEach { dataSnapshot ->
                 dataSnapshot.getValue(Service::class.java)?.let { service ->
+                    service.id = dataSnapshot.key.orEmpty()
                     list.add(service)
                 }
             }

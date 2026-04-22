@@ -74,7 +74,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     private var nextServiceObserverHandle: ServiceObserverHandle? = null
     private var firebaseConnectionListener: ValueEventListener? = null
     private var lastFirebaseConnected = false
-    private val seenPendingServiceIds = linkedSetOf<String>()
+    private val announcedPendingServiceKeys = linkedSetOf<String>()
     private var hasSeededPendingServices = false
     private val timer = Timer()
     private val listener: ServicesEventListener = ServicesEventListener { services ->
@@ -153,7 +153,8 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
             stopped = false
             intent.getStringExtra(Driver.DRIVER_KEY)?.let { id ->
                 driverID = id
-                restartRealtimeObservers()
+                startCurrentServiceObservation()
+                startListenNextService()
             }
         }
         return START_STICKY
@@ -229,7 +230,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         currentServiceObserverHandle = null
         nextServiceObserverHandle?.dispose()
         nextServiceObserverHandle = null
-        seenPendingServiceIds.clear()
+        announcedPendingServiceKeys.clear()
         hasSeededPendingServices = false
         stopped = true
         timer.cancel()
@@ -315,12 +316,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         nextServiceObserverHandle = ServiceRepository.observeConnectionService(nextServiceListener)
     }
 
-    private fun restartRealtimeObservers() {
-        startPendingServicesObservation()
-        startCurrentServiceObservation()
-        startListenNextService()
-    }
-
     private fun startFirebaseConnectionObservation() {
         if (firebaseConnectionListener != null) {
             return
@@ -357,14 +352,14 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     private fun syncPendingServiceAlerts(services: List<DBService>) {
         if (!hasSeededPendingServices) {
             services.forEach(::announcePendingService)
-            seenPendingServiceIds.clear()
-            services.mapTo(seenPendingServiceIds) { it.id }
+            announcedPendingServiceKeys.clear()
+            services.mapTo(announcedPendingServiceKeys) { it.id }
             hasSeededPendingServices = true
             return
         }
 
         services.forEach { service ->
-            if (seenPendingServiceIds.add(service.id)) {
+            if (announcedPendingServiceKeys.add(service.id)) {
                 announcePendingService(service)
             }
         }
