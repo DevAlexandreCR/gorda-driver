@@ -1020,9 +1020,12 @@ class CurrentServiceFragment : Fragment() {
         if (retryTextRes != null) {
             btnRetryAction.isVisible = true
             btnRetryAction.isEnabled = retryEnabled
+            btnRetryAction.isClickable = retryEnabled
+            btnRetryAction.alpha = if (retryEnabled) 1f else 0.6f
             btnRetryAction.setText(retryTextRes)
         } else {
             btnRetryAction.isGone = true
+            btnRetryAction.alpha = 1f
         }
     }
 
@@ -1030,7 +1033,8 @@ class CurrentServiceFragment : Fragment() {
         return if (CurrentServiceViewModel.isReadyForServiceAction(currentPresenceState)) {
             getString(R.string.connection_restored_retry_start)
         } else {
-            getString(R.string.reconnecting_dispatch_trip_not_started)
+            getString(R.string.reconnecting_dispatch_trip_not_started) + "\n" +
+                getString(R.string.retry_available_when_connection_restored)
         }
     }
 
@@ -1038,7 +1042,8 @@ class CurrentServiceFragment : Fragment() {
         return if (CurrentServiceViewModel.isReadyForServiceAction(currentPresenceState)) {
             getString(R.string.connection_restored_retry_end)
         } else {
-            getString(R.string.reconnecting_dispatch_trip_not_ended)
+            getString(R.string.reconnecting_dispatch_trip_not_ended) + "\n" +
+                getString(R.string.retry_available_when_connection_restored)
         }
     }
 

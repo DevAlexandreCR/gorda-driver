@@ -69,6 +69,7 @@
     <string name="reconnecting_dispatch_trip_not_ended">Reconnecting to dispatch. Trip is still active and has not been ended yet.</string>
     <string name="connection_restored_retry_start">Connection restored, retry to start trip</string>
     <string name="connection_restored_retry_end">Connection restored, retry to end trip</string>
+    <string name="retry_available_when_connection_restored">Retry will be available once the connection is restored.</string>
     <string name="start_trip_not_started_yet">Trip has not started yet.</string>
     <string name="end_trip_not_ended_yet">Trip is still active and has not been ended yet.</string>
     <string name="using_saved_pricing_snapshot">Using saved pricing to continue starting the trip.</string>
