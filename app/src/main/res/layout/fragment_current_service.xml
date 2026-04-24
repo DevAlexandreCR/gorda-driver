@@ -671,20 +671,27 @@
             android:id="@+id/serviceActionFeedback"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/service_feedback_background"
             android:gravity="center"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingTop="12dp"
+            android:paddingHorizontal="18dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
             android:visibility="gone">
 
             <com.google.android.material.progressindicator.CircularProgressIndicator
                 android:id="@+id/serviceActionProgress"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="12dp"
                 android:indeterminate="true"
                 android:visibility="gone"
+                app:indicatorColor="@color/secondary"
                 app:indicatorSize="32dp"
+                app:trackColor="@color/outline_variant"
                 app:trackThickness="3dp" />
 
             <TextView
@@ -692,19 +699,26 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:textColor="@android:color/white"
-                android:textSize="15sp"
+                android:lineSpacingExtra="4dp"
+                android:maxWidth="320dp"
+                android:paddingHorizontal="8dp"
+                android:textColor="@color/on_surface"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:visibility="gone"
                 tools:text="Reconnecting to dispatch. Trip has not started yet." />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRetryServiceAction"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Widget.GordaDriver.Button.RetryInline"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_height="48dp"
+                android:layout_marginTop="14dp"
+                android:minWidth="190dp"
+                android:paddingHorizontal="20dp"
                 android:text="@string/retry"
+                android:textAllCaps="false"
+                android:textSize="16sp"
                 android:visibility="gone"
                 app:cornerRadius="20dp" />
         </LinearLayout>
