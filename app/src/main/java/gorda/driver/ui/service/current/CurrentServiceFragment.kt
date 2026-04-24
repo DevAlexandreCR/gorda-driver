@@ -1216,7 +1216,6 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private fun showEditMultiplierDialog() {
-        val builder = AlertDialog.Builder(requireContext())
         val dialogLayout: View = LayoutInflater.from(activity).inflate(R.layout.multiplier_feed, null)
         val editFeeMultiplier = dialogLayout.findViewById<EditText>(R.id.dialog_fee_multiplier)
 
@@ -1227,11 +1226,21 @@ class CurrentServiceFragment : Fragment() {
         }
 
         editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(currentMultiplier.toString())
-        builder.setTitle(R.string.edit_multiplier).setView(dialogLayout)
-        builder.setNegativeButton(R.string.cancel) { dialog, _ ->
-            dialog.dismiss()
-        }
-        builder.setPositiveButton(R.string.save) { _, _ ->
+
+        showTripActionDialog(
+            titleRes = R.string.edit_multiplier,
+            message = getText(R.string.start_ride_message),
+            primaryTextRes = R.string.save,
+            secondaryTextRes = R.string.cancel,
+            iconRes = R.drawable.add_24,
+            primaryIconRes = R.drawable.assign_24,
+            secondaryIconRes = R.drawable.cancel_24,
+            customBody = dialogLayout
+        ) { confirmed ->
+            if (!confirmed) {
+                return@showTripActionDialog
+            }
+
             val inputValue = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
             val newMultiplier = if (inputValue < 1.0) {
                 Toast.makeText(requireContext(), R.string.multiplier_minimum_value, Toast.LENGTH_SHORT).show()
@@ -1255,7 +1264,6 @@ class CurrentServiceFragment : Fragment() {
                 Toast.LENGTH_SHORT
             ).show()
         }
-        builder.create().show()
     }
 
     private fun showTripActionDialog(
