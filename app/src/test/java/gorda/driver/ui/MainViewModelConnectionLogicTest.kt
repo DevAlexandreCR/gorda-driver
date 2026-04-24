@@ -91,6 +91,34 @@ class MainViewModelConnectionLogicTest {
     }
 
     @Test
+    fun recoveredLocationReschedulesReconnectWhenPresenceIsRecoverable() {
+        val shouldReconnect = MainViewModel.shouldScheduleReconnectFromRecoveredLocation(
+            MainViewModel.DriverPresenceState(
+                desiredOnline = true,
+                actualOnline = false,
+                firebaseConnected = true,
+                phase = MainViewModel.DriverPresencePhase.RECONNECTING
+            )
+        )
+
+        assertTrue(shouldReconnect)
+    }
+
+    @Test
+    fun recoveredLocationDoesNotRescheduleWhenPresenceHasFatalStop() {
+        val shouldReconnect = MainViewModel.shouldScheduleReconnectFromRecoveredLocation(
+            MainViewModel.DriverPresenceState(
+                desiredOnline = true,
+                actualOnline = false,
+                firebaseConnected = true,
+                fatalStopReason = "auth_lost"
+            )
+        )
+
+        assertFalse(shouldReconnect)
+    }
+
+    @Test
     fun automaticReconnectPolicyUsesAggressiveEarlyBackoff() {
         val policy = MainViewModel.automaticReconnectBackoffPolicy()
 

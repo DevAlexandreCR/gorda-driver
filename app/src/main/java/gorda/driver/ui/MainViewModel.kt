@@ -99,6 +99,13 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             return desiredOnline && phase == DriverPresencePhase.WAITING_FOR_FIREBASE_SOCKET
         }
 
+        internal fun shouldScheduleReconnectFromRecoveredLocation(state: DriverPresenceState): Boolean {
+            return state.desiredOnline &&
+                !state.actualOnline &&
+                state.firebaseConnected &&
+                state.fatalStopReason == null
+        }
+
         internal fun shouldKeepDriverFeedConnected(state: DriverPresenceState): Boolean {
             return state.actualOnline || (
                 state.desiredOnline && state.phase in setOf(
@@ -381,7 +388,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         val state = _presenceState.value
         if (!state.desiredOnline || !state.actualOnline || !state.firebaseConnected || !state.hasNetwork) {
             queuePendingLocation(location)
-            if (shouldAutoRecover() && state.firebaseConnected) {
+            if (shouldAutoRecover() && shouldScheduleReconnectFromRecoveredLocation(state)) {
                 scheduleReconnectAttempt(
                     reason = "location_available",
                     resetBackoff = true,

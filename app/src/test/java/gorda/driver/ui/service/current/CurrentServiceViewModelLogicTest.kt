@@ -40,7 +40,22 @@ class CurrentServiceViewModelLogicTest {
             MainViewModel.DriverPresenceState(
                 hasNetwork = true,
                 firebaseConnected = true,
-                actualOnline = false
+                actualOnline = false,
+                phase = MainViewModel.DriverPresencePhase.RECONNECTING
+            )
+        )
+
+        assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.RECONNECTING, status)
+    }
+
+    @Test
+    fun waitingForPresenceAckStillBlocksServiceActions() {
+        val status = CurrentServiceViewModel.connectionStatusForServiceAction(
+            MainViewModel.DriverPresenceState(
+                hasNetwork = true,
+                firebaseConnected = true,
+                actualOnline = false,
+                phase = MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK
             )
         )
 
@@ -52,7 +67,8 @@ class CurrentServiceViewModelLogicTest {
         val state = MainViewModel.DriverPresenceState(
             hasNetwork = true,
             firebaseConnected = true,
-            actualOnline = true
+            actualOnline = true,
+            phase = MainViewModel.DriverPresencePhase.CONNECTED
         )
 
         assertEquals(

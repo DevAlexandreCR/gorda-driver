@@ -87,22 +87,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
             super.onLocationResult(locationResult)
             for (location in locationResult.locations) {
                 if (!stopped) {
-                    lastLocation = location
-
-                    val broadcast =
-                        Intent(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
-                    broadcast.putExtra(LOCATION_EXTRA, lastLocation)
-                    LocalBroadcastManager.getInstance(applicationContext)
-                        .sendBroadcast(broadcast)
-
-                    if (starting) {
-                        starting = false
-                        val starting =
-                            Intent(ConnectionBroadcastReceiver.ACTION_CONNECTION)
-                        starting.putExtra(LOCATION_EXTRA, lastLocation)
-                        LocalBroadcastManager.getInstance(applicationContext)
-                            .sendBroadcast(starting)
-                    }
+                    publishObservedLocation(location)
                 }
             }
         }
@@ -162,6 +147,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
 
     override fun onBind(intent: Intent?): IBinder {
         messenger = Messenger(IncomingHandler())
+        replayCachedLocationForBind()
         return messenger.binder
     }
 
@@ -202,15 +188,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
             if (location != null) {
-                lastLocation = location
-                if (starting) {
-                    starting = false
-                    val starting =
-                        Intent(ConnectionBroadcastReceiver.ACTION_CONNECTION)
-                    starting.putExtra(LOCATION_EXTRA, lastLocation)
-                    LocalBroadcastManager.getInstance(applicationContext)
-                        .sendBroadcast(starting)
-                }
+                publishObservedLocation(location)
             }
         }
         locationManager = LocationHandler.getInstance(this)
@@ -373,5 +351,44 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         } else {
             playSound.playNewService()
         }
+    }
+
+    private fun replayCachedLocationForBind() {
+        if (stopped || !::lastLocation.isInitialized) {
+            return
+        }
+
+        Log.i(
+            this.javaClass.toString(),
+            "event=replay_cached_location_on_bind includeBootstrap=$starting"
+        )
+        publishLocationUpdate(lastLocation)
+        if (starting) {
+            starting = false
+            publishInitialConnectionLocation(lastLocation)
+        }
+    }
+
+    private fun publishObservedLocation(location: Location) {
+        lastLocation = location
+        publishLocationUpdate(location)
+        if (starting) {
+            starting = false
+            publishInitialConnectionLocation(location)
+        }
+    }
+
+    private fun publishLocationUpdate(location: Location) {
+        val broadcast = Intent(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
+        broadcast.putExtra(LOCATION_EXTRA, location)
+        LocalBroadcastManager.getInstance(applicationContext)
+            .sendBroadcast(broadcast)
+    }
+
+    private fun publishInitialConnectionLocation(location: Location) {
+        val startingIntent = Intent(ConnectionBroadcastReceiver.ACTION_CONNECTION)
+        startingIntent.putExtra(LOCATION_EXTRA, location)
+        LocalBroadcastManager.getInstance(applicationContext)
+            .sendBroadcast(startingIntent)
     }
 }
