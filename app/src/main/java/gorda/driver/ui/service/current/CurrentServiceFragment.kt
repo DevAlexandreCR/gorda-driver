@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.SystemClock
 import android.text.Editable
+import android.text.Spanned
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -19,6 +20,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Chronometer
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -36,6 +38,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.button.MaterialButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
 import gorda.driver.background.FeesService.Companion.CURRENT_FEES
@@ -466,12 +469,17 @@ class CurrentServiceFragment : Fragment() {
 
                 else -> {
                     if (service.metadata.start_trip_at != null && now - service.metadata.start_trip_at!! > this.fees.timeoutToComplete) {
-                        val builderFinalize = AlertDialog.Builder(requireContext())
                         val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee(), true))
-                        builderFinalize.setTitle(R.string.finalize_service)
-                            .setCancelable(false)
-                            .setMessage(StringHelper.getString(message))
-                            .setPositiveButton(R.string.yes) { _, _ ->
+                        showTripActionDialog(
+                            titleRes = R.string.finalize_service,
+                            message = StringHelper.getString(message),
+                            primaryTextRes = R.string.yes,
+                            secondaryTextRes = R.string.no,
+                            iconRes = R.drawable.ic_monetization_on_24,
+                            primaryIconRes = R.drawable.assign_24,
+                            secondaryIconRes = R.drawable.cancel_24
+                        ) { confirmed ->
+                            if (confirmed) {
                                 val tripDistance = NumberHelper.roundDouble(totalDistance).toInt()
                                 val tripFee = NumberHelper.roundDouble(getTotalFee()).toInt()
                                 val route = ServiceMetadata.serializeRoute(feesService.getPoints())
@@ -489,13 +497,10 @@ class CurrentServiceFragment : Fragment() {
                                         it.message?.let { message -> Log.e(TAG, message) }
                                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                                     }
-                            }
-                            .setNegativeButton(R.string.no) { dialog, _ ->
-                                dialog.dismiss()
+                            } else {
                                 mainViewModel.setLoading(false)
                             }
-                        val dialogFinalize: AlertDialog = builderFinalize.create()
-                        dialogFinalize.show()
+                        }
                     } else {
                         Toast.makeText(requireContext(), getString(R.string.cannot_complete_service_yet, this.fees.timeoutToComplete / 60), Toast.LENGTH_SHORT).show()
                         mainViewModel.setLoading(false)
@@ -614,16 +619,21 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private fun showStartTripDialog(service: Service, now: Long) {
-        val builder = AlertDialog.Builder(requireContext())
         val dialogLayout: View = LayoutInflater.from(activity).inflate(R.layout.multiplier_feed, null)
         val editFeeMultiplier = dialogLayout.findViewById<EditText>(R.id.dialog_fee_multiplier)
         editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(feeMultiplier.toString())
 
-        builder.setTitle(R.string.start_ride)
-            .setCancelable(false)
-            .setView(dialogLayout)
-            .setMessage(R.string.start_ride_message)
-            .setPositiveButton(R.string.start_ride) { _, _ ->
+        showTripActionDialog(
+            titleRes = R.string.start_ride,
+            message = getText(R.string.start_ride_message),
+            primaryTextRes = R.string.start_ride_action,
+            secondaryTextRes = R.string.cancel,
+            iconRes = R.drawable.add_24,
+            primaryIconRes = R.drawable.assign_24,
+            secondaryIconRes = R.drawable.cancel_24,
+            customBody = dialogLayout
+        ) { confirmed ->
+            if (confirmed) {
                 val inputMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
                 feeMultiplier = if (inputMultiplier < 1.0) 1.0 else inputMultiplier
                 textFareMultiplier.text = feeMultiplier.toString()
@@ -644,13 +654,66 @@ class CurrentServiceFragment : Fragment() {
                         Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
                         service.metadata.start_trip_at = null
                     }
-            }
-            .setNegativeButton(R.string.cancel) { dialog, _ ->
-                dialog.dismiss()
+            } else {
                 mainViewModel.setLoading(false)
             }
+        }
+    }
 
-        builder.create().show()
+    private fun showTripActionDialog(
+        titleRes: Int,
+        message: CharSequence,
+        primaryTextRes: Int,
+        secondaryTextRes: Int,
+        iconRes: Int,
+        primaryIconRes: Int,
+        secondaryIconRes: Int,
+        customBody: View? = null,
+        onActionSelected: (Boolean) -> Unit
+    ) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_trip_action, null)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        dialog.setCancelable(false)
+        dialog.setCanceledOnTouchOutside(false)
+
+        val iconView = dialogView.findViewById<ImageView>(R.id.dialogIcon)
+        val titleView = dialogView.findViewById<TextView>(R.id.dialogTitle)
+        val messageView = dialogView.findViewById<TextView>(R.id.dialogMessage)
+        val bodyContainer = dialogView.findViewById<FrameLayout>(R.id.dialogBodyContainer)
+        val primaryButton = dialogView.findViewById<MaterialButton>(R.id.btnPrimary)
+        val secondaryButton = dialogView.findViewById<MaterialButton>(R.id.btnSecondary)
+
+        iconView.setImageResource(iconRes)
+        titleView.setText(titleRes)
+        messageView.text = message
+        primaryButton.setText(primaryTextRes)
+        primaryButton.setIconResource(primaryIconRes)
+        secondaryButton.setText(secondaryTextRes)
+        secondaryButton.setIconResource(secondaryIconRes)
+
+        if (customBody != null) {
+            (customBody.parent as? ViewGroup)?.removeView(customBody)
+            bodyContainer.visibility = View.VISIBLE
+            bodyContainer.addView(customBody)
+        } else {
+            bodyContainer.visibility = View.GONE
+        }
+
+        primaryButton.setOnClickListener {
+            dialog.dismiss()
+            onActionSelected(true)
+        }
+
+        secondaryButton.setOnClickListener {
+            dialog.dismiss()
+            onActionSelected(false)
+        }
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
 
     private fun stopFeeService() {
