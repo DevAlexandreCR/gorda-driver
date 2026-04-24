@@ -667,6 +667,48 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
+        <LinearLayout
+            android:id="@+id/serviceActionFeedback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:visibility="gone">
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/serviceActionProgress"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="8dp"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:indicatorSize="32dp"
+                app:trackThickness="3dp" />
+
+            <TextView
+                android:id="@+id/textServiceActionStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="@android:color/white"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="Reconnecting to dispatch. Trip has not started yet." />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRetryServiceAction"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/retry"
+                android:visibility="gone"
+                app:cornerRadius="20dp" />
+        </LinearLayout>
+
         <!-- Status button fixed at bottom -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_service_status"

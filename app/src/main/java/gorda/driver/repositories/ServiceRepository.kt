@@ -28,6 +28,24 @@ import java.io.Serializable
 
 object ServiceRepository {
 
+    internal enum class StartTransitionValidation {
+        VALID,
+        SERVICE_MISSING,
+        WRONG_DRIVER,
+        NOT_IN_PROGRESS,
+        ALREADY_STARTED,
+        ALREADY_TERMINATED
+    }
+
+    internal enum class EndTransitionValidation {
+        VALID,
+        SERVICE_MISSING,
+        WRONG_DRIVER,
+        NOT_IN_PROGRESS,
+        NOT_STARTED,
+        ALREADY_TERMINATED
+    }
+
     fun observePendingServices(listener: ServicesEventListener): ServiceObserverHandle {
         val query = pendingServicesQuery()
         query.addValueEventListener(listener)
@@ -137,12 +155,144 @@ object ServiceRepository {
         return taskCompletionSource.task
     }
 
+    fun validateServiceForStart(serviceId: String, driverId: String): Task<Service> {
+        val taskCompletionSource = TaskCompletionSource<Service>()
+
+        Database.dbServices().child(serviceId).get()
+            .addOnSuccessListener { snapshot ->
+                val service = if (snapshot.exists()) {
+                    snapshot.getValue(Service::class.java)?.apply {
+                        id = snapshot.key.orEmpty()
+                    }
+                } else {
+                    null
+                }
+
+                when (validateStartTransition(service, driverId)) {
+                    StartTransitionValidation.VALID -> {
+                        taskCompletionSource.setResult(service!!)
+                    }
+                    StartTransitionValidation.SERVICE_MISSING -> {
+                        taskCompletionSource.setException(IllegalStateException("Service does not exist"))
+                    }
+                    StartTransitionValidation.WRONG_DRIVER -> {
+                        taskCompletionSource.setException(IllegalStateException("Service belongs to another driver"))
+                    }
+                    StartTransitionValidation.NOT_IN_PROGRESS -> {
+                        taskCompletionSource.setException(IllegalStateException("Service is no longer in progress"))
+                    }
+                    StartTransitionValidation.ALREADY_STARTED -> {
+                        taskCompletionSource.setException(IllegalStateException("Trip already started"))
+                    }
+                    StartTransitionValidation.ALREADY_TERMINATED -> {
+                        taskCompletionSource.setException(IllegalStateException("Service already terminated"))
+                    }
+                }
+            }
+            .addOnFailureListener { exception ->
+                taskCompletionSource.setException(exception)
+            }
+
+        return taskCompletionSource.task
+    }
+
+    fun validateServiceForEnd(serviceId: String, driverId: String): Task<Service> {
+        val taskCompletionSource = TaskCompletionSource<Service>()
+
+        Database.dbServices().child(serviceId).get()
+            .addOnSuccessListener { snapshot ->
+                val service = if (snapshot.exists()) {
+                    snapshot.getValue(Service::class.java)?.apply {
+                        id = snapshot.key.orEmpty()
+                    }
+                } else {
+                    null
+                }
+
+                when (validateEndTransition(service, driverId)) {
+                    EndTransitionValidation.VALID -> {
+                        taskCompletionSource.setResult(service!!)
+                    }
+                    EndTransitionValidation.SERVICE_MISSING -> {
+                        taskCompletionSource.setException(IllegalStateException("Service does not exist"))
+                    }
+                    EndTransitionValidation.WRONG_DRIVER -> {
+                        taskCompletionSource.setException(IllegalStateException("Service belongs to another driver"))
+                    }
+                    EndTransitionValidation.NOT_IN_PROGRESS -> {
+                        taskCompletionSource.setException(IllegalStateException("Service is no longer in progress"))
+                    }
+                    EndTransitionValidation.NOT_STARTED -> {
+                        taskCompletionSource.setException(IllegalStateException("Trip has not started yet"))
+                    }
+                    EndTransitionValidation.ALREADY_TERMINATED -> {
+                        taskCompletionSource.setException(IllegalStateException("Service already terminated"))
+                    }
+                }
+            }
+            .addOnFailureListener { exception ->
+                taskCompletionSource.setException(exception)
+            }
+
+        return taskCompletionSource.task
+    }
+
     fun onStatusChange(serviceId: String, listener: ValueEventListener) {
         getStatusReference(serviceId).addValueEventListener(listener)
     }
 
     fun getStatusReference(serviceId: String): DatabaseReference {
         return Database.dbServices().child(serviceId).child(Service.STATUS)
+    }
+
+    internal fun validateStartTransition(
+        service: Service?,
+        driverId: String
+    ): StartTransitionValidation {
+        service ?: return StartTransitionValidation.SERVICE_MISSING
+
+        if (service.status == Service.STATUS_TERMINATED) {
+            return StartTransitionValidation.ALREADY_TERMINATED
+        }
+
+        if (service.driver_id != driverId) {
+            return StartTransitionValidation.WRONG_DRIVER
+        }
+
+        if (!service.isInProgress()) {
+            return StartTransitionValidation.NOT_IN_PROGRESS
+        }
+
+        if (service.metadata.start_trip_at != null) {
+            return StartTransitionValidation.ALREADY_STARTED
+        }
+
+        return StartTransitionValidation.VALID
+    }
+
+    internal fun validateEndTransition(
+        service: Service?,
+        driverId: String
+    ): EndTransitionValidation {
+        service ?: return EndTransitionValidation.SERVICE_MISSING
+
+        if (service.status == Service.STATUS_TERMINATED) {
+            return EndTransitionValidation.ALREADY_TERMINATED
+        }
+
+        if (service.driver_id != driverId) {
+            return EndTransitionValidation.WRONG_DRIVER
+        }
+
+        if (!service.isInProgress()) {
+            return EndTransitionValidation.NOT_IN_PROGRESS
+        }
+
+        if (service.metadata.start_trip_at == null) {
+            return EndTransitionValidation.NOT_STARTED
+        }
+
+        return EndTransitionValidation.VALID
     }
 
     private fun pendingServicesQuery(): Query {
