@@ -110,6 +110,23 @@ class CurrentServiceViewModelLogicTest {
     }
 
     @Test
+    fun startFallsBackToStoredRideFeesSnapshotWhenMemoryIsEmpty() {
+        val storedFees = RideFees(priceKm = 3100.0, feeMultiplier = 1.2)
+
+        val resolution = CurrentServiceViewModel.resolveStartRideFees(
+            liveFees = null,
+            inMemoryFees = RideFees(),
+            storedFees = storedFees,
+            currentMultiplier = null,
+            storedMultiplier = 1.7
+        )
+
+        assertEquals(CurrentServiceViewModel.StartRideFeesSource.FALLBACK, resolution.source)
+        assertNotNull(resolution.fees)
+        assertEquals(1.7, resolution.fees?.feeMultiplier)
+    }
+
+    @Test
     fun endTripOnlyFinishesLocallyAfterConfirmedSuccess() {
         assertEquals(
             CurrentServiceViewModel.EndTripLocalOutcome.FINISH_LOCALLY,

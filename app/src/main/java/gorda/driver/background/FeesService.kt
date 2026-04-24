@@ -16,7 +16,6 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
@@ -30,6 +29,7 @@ import gorda.driver.location.LocationHandler
 import gorda.driver.maps.Map
 import gorda.driver.utils.Constants
 import gorda.driver.utils.NumberHelper
+import gorda.driver.utils.RideRecoveryStore
 
 class FeesService: Service() {
 
@@ -38,6 +38,7 @@ class FeesService: Service() {
         const val CURRENT_FEES = "CURRENT_FEES"
         const val FEE_MULTIPLIER = "FEE_MULTIPLIER"
         const val RESUME_RIDE = "RESUME_RIDE"
+        const val SERVICE_ID = "SERVICE_ID"
         const val TOTAL_DISTANCE = "TOTAL_DISTANCE"
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "FeesServiceChannel"
@@ -48,6 +49,7 @@ class FeesService: Service() {
     private var points = ArrayList<LatLng>()
     private var startTime: Long = 0
     private var name: String = ""
+    private var serviceId: String = ""
     private var multiplier = 1.0
     private lateinit var sharedPreferences: SharedPreferences
     private var rideFees: RideFees = RideFees()
@@ -78,37 +80,33 @@ class FeesService: Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let {
             name = it.getStringExtra(ORIGIN) ?: ""
+            serviceId = it.getStringExtra(SERVICE_ID).orEmpty()
             multiplier = it.getDoubleExtra(FEE_MULTIPLIER, 1.0)
             val resumeRide = it.getBooleanExtra(RESUME_RIDE, false)
 
+            if (serviceId.isNotBlank()) {
+                RideRecoveryStore.attachToService(sharedPreferences, serviceId)
+            }
+
             // Load fees from SharedPreferences with validation
-            val feesJson = sharedPreferences.getString(CURRENT_FEES, null)
-            if (!feesJson.isNullOrEmpty()) {
-                try {
-                    val gson = Gson()
-                    val loadedFees = gson.fromJson(feesJson, RideFees::class.java)
-                    if (loadedFees != null) {
-                        rideFees = loadedFees
-                        Log.d("FeesService", "Loaded fees: base=${rideFees.feesBase}, km=${rideFees.priceKm}, min=${rideFees.priceMin}")
-                    } else {
-                        Log.w("FeesService", "Failed to parse fees, using defaults")
-                        rideFees = RideFees()
-                    }
-                } catch (e: Exception) {
-                    Log.e("FeesService", "Error loading fees: ${e.message}")
-                    rideFees = RideFees()
-                }
+            val storedFees = RideRecoveryStore.getRideFeesSnapshot(sharedPreferences)
+            if (storedFees != null) {
+                rideFees = storedFees
+                Log.d("FeesService", "Loaded fees: base=${rideFees.feesBase}, km=${rideFees.priceKm}, min=${rideFees.priceMin}")
             } else {
                 Log.w("FeesService", "No fees found in SharedPreferences, using defaults")
             }
 
-            if (resumeRide) {
+            if (resumeRide && serviceId.isNotBlank() &&
+                RideRecoveryStore.hasRecoverableSession(sharedPreferences, serviceId)
+            ) {
                 restoreRideData()
             } else {
                 startTime = SystemClock.elapsedRealtime()
                 points.clear()
                 totalDistance = 0.0
                 saveStartTime()
+                RideRecoveryStore.persistMultiplier(sharedPreferences, multiplier)
                 saveTotalDistance()
             }
             startLocationTracking()
@@ -163,15 +161,15 @@ class FeesService: Service() {
     }
 
     private fun saveStartTime() {
-        sharedPreferences.edit(commit = true) {
-            putLong(Constants.START_TIME, startTime)
+        if (serviceId.isBlank()) {
+            return
         }
+
+        RideRecoveryStore.persistStart(sharedPreferences, serviceId, startTime, multiplier)
     }
 
     private fun saveTotalDistance() {
-        sharedPreferences.edit(commit = true) {
-            putString(TOTAL_DISTANCE, totalDistance.toString())
-        }
+        RideRecoveryStore.persistTotalDistance(sharedPreferences, totalDistance)
     }
 
     private fun restoreRideData() {
@@ -238,18 +236,14 @@ class FeesService: Service() {
     private fun savePoints() {
         val gson = Gson()
         val pointsJson = gson.toJson(points)
-        sharedPreferences.edit(commit = true) {
-            putString(Constants.POINTS, pointsJson)
-        }
+        RideRecoveryStore.persistPoints(sharedPreferences, pointsJson)
     }
 
     fun getBaseTime(): Long = startTime
 
     fun setMultiplier(newMultiplier: Double) {
         this.multiplier = if (newMultiplier < 1.0) 1.0 else newMultiplier
-        sharedPreferences.edit(commit = true) {
-            putString(Constants.MULTIPLIER, multiplier.toString())
-        }
+        RideRecoveryStore.persistMultiplier(sharedPreferences, multiplier)
     }
 
     fun getMultiplier(): Double = multiplier

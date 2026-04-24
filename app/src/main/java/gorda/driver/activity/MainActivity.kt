@@ -71,6 +71,8 @@ import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.utils.Constants
 import gorda.driver.utils.Constants.Companion.LOCATION_EXTRA
+import gorda.driver.utils.RideRecoveryPolicy
+import gorda.driver.utils.RideRecoveryStore
 import gorda.driver.utils.ServiceHelper
 import gorda.driver.utils.Utils
 import kotlinx.coroutines.launch
@@ -273,22 +275,18 @@ class MainActivity : AppCompatActivity() {
             if (currentService == null && viewModel.isLoading.value == false) {
                 if (navController.currentDestination?.id == R.id.nav_current_service)
                     navController.navigate(R.id.nav_home)
-                removeFeeServiceData()
                 this.switchConnect.visibility = View.VISIBLE
             } else if (currentService != null) {
                 this.switchConnect.visibility = View.GONE
-                when (currentService.status) {
-                    Service.STATUS_IN_PROGRESS -> {
-                        if (navController.currentDestination?.id != R.id.nav_current_service) {
-                            navController.navigate(R.id.nav_current_service)
-                        }
+                if (!RideRecoveryPolicy.shouldClearRecoveryForObservedService(currentService.status)) {
+                    if (navController.currentDestination?.id != R.id.nav_current_service) {
+                        navController.navigate(R.id.nav_current_service)
                     }
-                    else -> {
-                        viewModel.completeCurrentService()
-                        if (navController.currentDestination?.id == R.id.nav_current_service)
-                            navController.navigate(R.id.nav_home)
-                        removeFeeServiceData()
-                    }
+                } else {
+                    viewModel.completeCurrentService()
+                    if (navController.currentDestination?.id == R.id.nav_current_service)
+                        navController.navigate(R.id.nav_home)
+                    removeFeeServiceData()
                 }
             }
         }
@@ -301,10 +299,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun removeFeeServiceData() {
-        preferences.edit(true) { putString(Constants.CURRENT_SERVICE_ID, null) }
-        preferences.edit(true) { remove(Constants.START_TIME) }
-        preferences.edit(true) { remove(Constants.MULTIPLIER) }
-        preferences.edit(true) { remove(Constants.POINTS) }
+        RideRecoveryStore.clear(preferences)
     }
 
     private fun showUnsupportedVersionDialog() {

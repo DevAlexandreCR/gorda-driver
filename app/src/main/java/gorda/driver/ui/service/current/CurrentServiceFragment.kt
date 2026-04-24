@@ -29,7 +29,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.annotation.StringRes
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
@@ -46,7 +45,6 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import gorda.driver.R
 import gorda.driver.background.FeesService
-import gorda.driver.background.FeesService.Companion.CURRENT_FEES
 import gorda.driver.background.FeesService.Companion.FEE_MULTIPLIER
 import gorda.driver.background.FeesService.Companion.ORIGIN
 import gorda.driver.background.FeesService.Companion.RESUME_RIDE
@@ -63,6 +61,8 @@ import gorda.driver.ui.home.HomeFragment
 import gorda.driver.ui.service.ConnectionServiceDialog
 import gorda.driver.utils.Constants
 import gorda.driver.utils.NumberHelper
+import gorda.driver.utils.RideRecoveryPolicy
+import gorda.driver.utils.RideRecoveryStore
 import gorda.driver.utils.ServiceHelper
 import gorda.driver.utils.StringHelper
 import kotlinx.coroutines.launch
@@ -138,6 +138,7 @@ class CurrentServiceFragment : Fragment() {
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             isServiceBound = true
+            startingRide = false
             val binder = service as FeesService.ChronometerBinder
             feesService = binder.getService()
             mainViewModel.changeConnectTripService(true)
@@ -168,7 +169,6 @@ class CurrentServiceFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        loadFrozenFeesFromStorage()
 
         haveArrived = getString(R.string.service_have_arrived)
         startTrip = getString(R.string.service_start_trip)
@@ -177,6 +177,7 @@ class CurrentServiceFragment : Fragment() {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {}
 
         bindViews()
+        loadFrozenFeesFromStorage()
         setupStaticListeners()
         observeCurrentService()
         observeRideFees()
@@ -433,7 +434,25 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private fun maybeRestoreOngoingTrip(service: Service) {
-        if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java) || startingRide) {
+        val serviceRunning = ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)
+        if (serviceRunning) {
+            return
+        }
+
+        val storedServiceId = RideRecoveryStore.getTrackedServiceId(sharedPreferences)
+        if (RideRecoveryPolicy.shouldClearStaleRecovery(storedServiceId, service.id)) {
+            RideRecoveryStore.clear(sharedPreferences)
+            return
+        }
+
+        if (!RideRecoveryPolicy.shouldOfferRecovery(
+                hasStartedTrip = service.metadata.start_trip_at != null,
+                isServiceRunning = serviceRunning,
+                isStartingFreshTransition = startingRide,
+                storedServiceId = storedServiceId,
+                currentServiceId = service.id
+            )
+        ) {
             return
         }
 
@@ -444,18 +463,13 @@ class CurrentServiceFragment : Fragment() {
         builder.setNegativeButton(R.string.no) { dialog, _ ->
             dialog.dismiss()
             scrollViewFees.visibility = View.VISIBLE
-            sharedPreferences.edit(commit = true) {
-                remove(Constants.MULTIPLIER)
-                remove(Constants.POINTS)
-                remove(Constants.START_TIME)
-                remove(FeesService.TOTAL_DISTANCE)
-            }
+            RideRecoveryStore.clear(sharedPreferences)
             totalRide = 0.0
-            startServiceFee(service.start_loc.name)
+            startServiceFee(service.id, service.start_loc.name)
             startingRide = true
         }
         builder.setPositiveButton(R.string.yes) { _, _ ->
-            startServiceFee(service.start_loc.name, true)
+            startServiceFee(service.id, service.start_loc.name, true)
             scrollViewFees.visibility = View.VISIBLE
             startingRide = false
         }
@@ -602,9 +616,7 @@ class CurrentServiceFragment : Fragment() {
             val inputMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
             feeMultiplier = if (inputMultiplier < 1.0) 1.0 else inputMultiplier
             textFareMultiplier.text = feeMultiplier.toString()
-            sharedPreferences.edit(commit = true) {
-                putString(Constants.MULTIPLIER, feeMultiplier.toString())
-            }
+            RideRecoveryStore.persistMultiplier(sharedPreferences, feeMultiplier)
 
             val request = CurrentServiceViewModel.StartTripRequest(
                 serviceId = service.id,
@@ -642,7 +654,7 @@ class CurrentServiceFragment : Fragment() {
                         }
 
                         startingRide = true
-                        startServiceFee(request.origin)
+                        startServiceFee(request.serviceId, request.origin)
                         mainViewModel.setLoading(false)
                     }
                     .addOnFailureListener { exception ->
@@ -1120,17 +1132,35 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private fun startServiceFee(origin: String, resumeRide: Boolean = false) {
+        startServiceFee(currentService?.id.orEmpty(), origin, resumeRide)
+    }
+
+    private fun startServiceFee(serviceId: String, origin: String, resumeRide: Boolean = false) {
+        if (serviceId.isBlank()) {
+            return
+        }
+
+        RideRecoveryStore.clearIfStale(sharedPreferences, serviceId)
+        RideRecoveryStore.attachToService(sharedPreferences, serviceId)
+
         val intentFee = Intent(requireContext(), FeesService::class.java)
+        intentFee.putExtra(FeesService.SERVICE_ID, serviceId)
         intentFee.putExtra(ORIGIN, origin)
         intentFee.putExtra(FEE_MULTIPLIER, feeMultiplier)
 
-        persistRideFeesSnapshot(fees)
+        persistRideFeesSnapshot(
+            RideRecoveryPolicy.selectRideFeesSnapshotForPersistence(
+                candidate = fees,
+                stored = getStoredRideFeesSnapshot()
+            )
+        )
 
-        if (resumeRide && sharedPreferences.contains(Constants.MULTIPLIER)) {
+        if (resumeRide && RideRecoveryStore.hasRecoverableSession(sharedPreferences, serviceId)) {
             intentFee.putExtra(RESUME_RIDE, true)
             val savedMultiplier = sharedPreferences.getString(Constants.MULTIPLIER, "1.0")?.toDoubleOrNull() ?: 1.0
             feeMultiplier = savedMultiplier
             textFareMultiplier.text = feeMultiplier.toString()
+            textFareMultiplierDisplay.text = feeMultiplier.toString()
         }
 
         if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
@@ -1156,27 +1186,19 @@ class CurrentServiceFragment : Fragment() {
         textDistancePrice.text = NumberHelper.toCurrency(rideFees.priceKm)
         textTimePrice.text = NumberHelper.toCurrency(rideFees.priceMin)
         textFareMultiplier.text = feeMultiplier.toString()
+        textFareMultiplierDisplay.text = feeMultiplier.toString()
         if (isServiceBound) {
             feesService.setMultiplier(feeMultiplier)
         }
     }
 
-    private fun persistRideFeesSnapshot(rideFees: RideFees) {
-        val feesJson = com.google.gson.Gson().toJson(rideFees)
-        sharedPreferences.edit(commit = true) {
-            putString(CURRENT_FEES, feesJson)
-        }
+    private fun persistRideFeesSnapshot(rideFees: RideFees?) {
+        rideFees ?: return
+        RideRecoveryStore.persistRideFeesSnapshot(sharedPreferences, rideFees)
     }
 
     private fun getStoredRideFeesSnapshot(): RideFees? {
-        val feesJson = sharedPreferences.getString(CURRENT_FEES, null) ?: return null
-
-        return try {
-            com.google.gson.Gson().fromJson(feesJson, RideFees::class.java)
-        } catch (exception: Exception) {
-            Log.e(TAG, exception.message ?: "Unable to restore pricing snapshot")
-            null
-        }
+        return RideRecoveryStore.getRideFeesSnapshot(sharedPreferences)
     }
 
     private fun loadFrozenFeesFromStorage() {
@@ -1221,9 +1243,7 @@ class CurrentServiceFragment : Fragment() {
                 feesService.setMultiplier(newMultiplier)
             }
 
-            sharedPreferences.edit(commit = true) {
-                putString(Constants.MULTIPLIER, newMultiplier.toString())
-            }
+            RideRecoveryStore.persistMultiplier(sharedPreferences, newMultiplier)
 
             Toast.makeText(
                 requireContext(),
@@ -1302,13 +1322,7 @@ class CurrentServiceFragment : Fragment() {
         chronometer.stop()
         chronometer.base = SystemClock.elapsedRealtime()
 
-        sharedPreferences.edit(commit = true) {
-            remove(Constants.MULTIPLIER)
-            remove(Constants.POINTS)
-            remove(Constants.START_TIME)
-            remove(CURRENT_FEES)
-            remove(FeesService.TOTAL_DISTANCE)
-        }
+        RideRecoveryStore.clear(sharedPreferences)
 
         mainViewModel.changeConnectTripService(false)
         toggleFragmentButton.visibility = View.GONE

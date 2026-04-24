@@ -50,7 +50,7 @@
     <string name="retry_application">Reintentar postulación</string>
     <string name="not_applied_yet">Aún no te has postulado</string>
     <string name="connection_restored_retry_apply">Conexión restablecida, vuelve a intentar postularte</string>
-    <string name="reconnecting_dispatch_not_applied">Reconectando con despacho. Aún no te has postulado.</string>
+    <string name="reconnecting_dispatch_not_applied">Reconectando. Aún no te has postulado.</string>
     <string name="map_unavailable">Mapa no disponible</string>
     <string name="canceling_application">Cancelando postulación</string>
     <string name="service_canceled">El servicio ha sido cancelado</string>
@@ -58,8 +58,8 @@
     <string name="retry_end_trip">Reintentar finalización de viaje</string>
     <string name="starting_trip">Iniciando viaje</string>
     <string name="ending_trip">Finalizando viaje</string>
-    <string name="reconnecting_dispatch_trip_not_started">Reconectando con despacho. El viaje aún no ha iniciado.</string>
-    <string name="reconnecting_dispatch_trip_not_ended">Reconectando con despacho. El viaje sigue activo y aún no se ha finalizado.</string>
+    <string name="reconnecting_dispatch_trip_not_started">Reconectando. El viaje aún no ha iniciado.</string>
+    <string name="reconnecting_dispatch_trip_not_ended">Reconectando. El viaje sigue activo y aún no se ha finalizado.</string>
     <string name="connection_restored_retry_start">Conexión restablecida, vuelve a intentar iniciar el viaje</string>
     <string name="connection_restored_retry_end">Conexión restablecida, vuelve a intentar finalizar el viaje</string>
     <string name="retry_available_when_connection_restored">El reintento estará disponible cuando se restablezca la conexión.</string>
@@ -219,10 +219,10 @@
     <string name="network_restored">Conexión restaurada - Sincronizando…</string>
     <string name="recovery_banner_no_network">Sin conexión a internet. La reconexión continuará automáticamente.</string>
     <string name="recovery_banner_waiting_socket">Conexión restaurada. Restableciendo sincronización en tiempo real…</string>
-    <string name="recovery_banner_reconnecting">Reconectando con despacho…</string>
+    <string name="recovery_banner_reconnecting">Reconectando...</string>
     <string name="cannot_disconnect_no_network">No se puede desconectar sin red. Espere a recuperar la conexión.</string>
     <string name="unsupported_version_title">Actualización requerida</string>
-    <string name="unsupported_version_message">Esta versión de la app ya no puede conectarse en línea. Actualiza la aplicación para seguir recibiendo servicios.</string>
+    <string name="unsupported_version_message">Esta versión de la app ya no puede conectarse. Actualiza la aplicación para seguir recibiendo servicios.</string>
     <string name="unsupported_version_subtitle">Hay una versión más reciente disponible</string>
     <string name="update_app">Actualizar app</string>
 </resources>
