@@ -132,7 +132,7 @@
         <!-- Compact Map Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_show_map"
-            style="@style/Widget.Material3.Button.TonalButton"
+            style="@style/Widget.GordaDriver.Button.Secondary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:minWidth="80dp"
@@ -140,12 +140,9 @@
             android:textAllCaps="false"
             android:textSize="14sp"
             android:paddingHorizontal="12dp"
-            app:backgroundTint="@color/primary_dark"
             app:cornerRadius="8dp"
             app:icon="@drawable/ic_location_24"
             app:iconSize="16dp"
-            app:iconTint="@android:color/white"
-            android:textColor="@android:color/white"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -233,6 +230,7 @@
             android:ellipsize="end"
             android:maxLines="3"
             android:textAllCaps="false"
+            android:textColor="@color/on_surface"
             android:textSize="20sp"
             android:textStyle="normal"
             android:textColorHint="@color/white"
@@ -243,22 +241,19 @@
         <!-- Compact Apply Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_apply"
-            style="@style/Widget.Material3.Button.UnelevatedButton"
+            style="@style/Widget.GordaDriver.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:minWidth="100dp"
             android:paddingHorizontal="16dp"
             android:text="@string/apply"
             android:textAllCaps="false"
-            android:textColor="@android:color/white"
             android:textSize="14sp"
             android:textStyle="bold"
-            app:backgroundTint="@color/secondary"
             app:cornerRadius="10dp"
             app:icon="@android:drawable/ic_input_add"
             app:iconGravity="textStart"
             app:iconSize="18dp"
-            app:iconTint="@android:color/white"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/info_row" />

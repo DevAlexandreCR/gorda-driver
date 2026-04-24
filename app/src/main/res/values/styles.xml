@@ -1,5 +1,4 @@
 <resources>
-
     <style name="Widget.Theme.GordaDriver.ActionBar.Fullscreen" parent="Widget.AppCompat.ActionBar">
         <item name="android:background">@color/black_overlay</item>
     </style>
@@ -7,5 +6,43 @@
     <style name="Widget.Theme.GordaDriver.ButtonBar.Fullscreen" parent="">
         <item name="android:background">@color/black_overlay</item>
         <item name="android:buttonBarStyle">?android:attr/buttonBarStyle</item>
+    </style>
+
+    <style name="Widget.GordaDriver.Button.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/on_accent_container</item>
+        <item name="backgroundTint">@color/accent_container</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="iconTint">@color/on_accent_container</item>
+        <item name="rippleColor">@color/secondary_variant</item>
+    </style>
+
+    <style name="Widget.GordaDriver.Button.Secondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:textColor">@color/secondary</item>
+        <item name="backgroundTint">@color/surface_variant</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="strokeColor">@color/secondary</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="iconTint">@color/secondary</item>
+        <item name="rippleColor">@color/secondary_variant</item>
+    </style>
+
+    <style name="Widget.GordaDriver.Button.Danger" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/on_danger_container</item>
+        <item name="backgroundTint">@color/danger_container</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="iconTint">@color/on_danger_container</item>
+        <item name="rippleColor">@color/red</item>
+    </style>
+
+    <style name="Widget.GordaDriver.TextButton.Accent" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/secondary</item>
+        <item name="iconTint">@color/secondary</item>
+    </style>
+
+    <style name="Widget.GordaDriver.TextButton.Danger" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/error</item>
+        <item name="iconTint">@color/error</item>
     </style>
 </resources>

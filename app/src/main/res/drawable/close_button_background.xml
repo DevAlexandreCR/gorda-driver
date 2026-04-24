@@ -4,14 +4,14 @@
     <!-- Pressed state -->
     <item android:state_pressed="true">
         <shape android:shape="oval">
-            <solid android:color="#E0E0E0" />
+            <solid android:color="@color/outline_variant" />
         </shape>
     </item>
 
     <!-- Focused state -->
     <item android:state_focused="true">
         <shape android:shape="oval">
-            <solid android:color="#F0F0F0" />
+            <solid android:color="@color/surface_variant" />
         </shape>
     </item>
 
@@ -23,4 +23,3 @@
     </item>
 
 </selector>
-

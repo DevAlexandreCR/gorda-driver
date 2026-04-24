@@ -57,11 +57,11 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@color/primary_light"
+            android:background="@color/surface_variant"
             android:paddingHorizontal="12dp"
             android:paddingVertical="6dp"
             android:text="1.0x"
-            android:textColor="@color/primary"
+            android:textColor="@color/on_surface"
             android:textSize="12sp"
             android:textStyle="bold"
             tools:ignore="HardcodedText" />
@@ -81,11 +81,11 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@color/secondary"
+            android:background="@color/accent_container"
             android:paddingHorizontal="12dp"
             android:paddingVertical="6dp"
             android:text="X.Xx"
-            android:textColor="@color/primary"
+            android:textColor="@color/on_accent_container"
             android:textSize="12sp"
             android:textStyle="bold"
             tools:ignore="HardcodedText" />

@@ -18,7 +18,7 @@
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/secondary"
+            app:cardBackgroundColor="@color/accent_container"
             app:cardCornerRadius="40dp"
             app:cardElevation="0dp"
             app:layout_constraintEnd_toEndOf="parent"

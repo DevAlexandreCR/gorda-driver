@@ -28,7 +28,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="@color/secondary"
+                app:cardBackgroundColor="@color/accent_container"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="8dp"
                 app:strokeWidth="0dp">
@@ -149,7 +149,7 @@
                             android:id="@+id/textVersion"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@color/secondary"
+                            android:background="@color/accent_container"
                             android:paddingHorizontal="12dp"
                             android:paddingVertical="4dp"
                             android:textColor="@android:color/white"

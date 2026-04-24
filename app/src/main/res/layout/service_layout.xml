@@ -94,7 +94,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:cardBackgroundColor="@color/primary"
+        app:cardBackgroundColor="@color/surface_elevated"
         app:cardCornerRadius="20dp"
         app:cardElevation="8dp"
         app:strokeWidth="2dp"
@@ -165,7 +165,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
-                        app:cardBackgroundColor="@color/primary_dark"
+                        app:cardBackgroundColor="@color/surface_elevated"
                         app:cardCornerRadius="12dp"
                         app:strokeColor="@color/secondary"
                         app:strokeWidth="0.5dp">
@@ -315,7 +315,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="@color/primary_dark"
+                android:background="@color/surface_variant"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="8dp">
 

@@ -39,7 +39,7 @@
                     android:layout_width="56dp"
                     android:layout_height="56dp"
                     android:layout_marginEnd="16dp"
-                    app:cardBackgroundColor="@color/red"
+                    app:cardBackgroundColor="@color/danger_container"
                     app:cardCornerRadius="28dp"
                     app:cardElevation="8dp">
 
@@ -86,7 +86,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="@color/secondary"
+                app:cardBackgroundColor="@color/accent_container"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp">
 
@@ -128,40 +128,34 @@
                 <!-- Cancel Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCancel"
+                    style="@style/Widget.GordaDriver.Button.Secondary"
                     android:layout_width="0dp"
                     android:layout_height="52dp"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
                     android:text="@string/no"
                     android:textAllCaps="false"
-                    android:textColor="@android:color/white"
                     android:textSize="14sp"
-                    app:backgroundTint="@color/primary"
                     app:cornerRadius="16dp"
                     app:icon="@drawable/cancel_24"
                     app:iconGravity="textStart"
-                    app:iconSize="18dp"
-                    app:iconTint="@android:color/white"
-                    app:strokeColor="@color/secondary"
-                    app:strokeWidth="1dp" />
+                    app:iconSize="18dp" />
 
                 <!-- Logout Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnLogoutConfirm"
+                    style="@style/Widget.GordaDriver.Button.Danger"
                     android:layout_width="0dp"
                     android:layout_height="52dp"
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:text="@string/yes"
                     android:textAllCaps="false"
-                    android:textColor="@android:color/white"
                     android:textSize="14sp"
-                    app:backgroundTint="@color/red"
                     app:cornerRadius="16dp"
                     app:icon="@drawable/ic_clear_24"
                     app:iconGravity="textStart"
-                    app:iconSize="18dp"
-                    app:iconTint="@android:color/white" />
+                    app:iconSize="18dp" />
 
             </LinearLayout>
 
@@ -181,6 +175,6 @@
         app:layout_constraintEnd_toEndOf="@+id/dialogCard"
         app:layout_constraintStart_toStartOf="@+id/dialogCard"
         app:layout_constraintTop_toTopOf="@+id/dialogCard"
-        app:trackColor="@color/primary_dark" />
+        app:trackColor="@color/surface_variant" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

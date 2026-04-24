@@ -1,32 +1,46 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+<resources>
     <style name="Theme.GordaDriver" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_variant</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <!-- Secondary brand color. -->
+        <item name="colorOnPrimary">@color/on_surface</item>
         <item name="colorSecondary">@color/secondary</item>
         <item name="colorSecondaryVariant">@color/secondary_variant</item>
         <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorBackgroundFloating">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/on_danger_container</item>
+        <item name="colorAccent">@color/secondary</item>
+        <item name="android:windowBackground">@color/primary_dark</item>
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
-        <item name="android:textColor">@color/secondary_light</item>
+        <item name="android:navigationBarColor">@color/primary_variant</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:textColor">@color/on_surface</item>
         <item name="snackbarStyle">@style/Widget.App.Snackbar</item>
-
         <item name="android:alertDialogTheme">@style/AlertDialogTheme</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.GordaDriver.MaterialAlertDialog</item>
     </style>
 
-    <style name="AlertDialogTheme" parent="Theme.MaterialComponents.Light.Dialog.Alert">
-        <item name="android:textColorPrimary">@color/primary_light</item>
-        <item name="android:textColorSecondary">@color/primary_light</item>
-        <item name="android:windowBackground">@color/primary</item>
+    <style name="AlertDialogTheme" parent="Theme.MaterialComponents.Dialog.Alert">
+        <item name="android:textColorPrimary">@color/on_surface</item>
+        <item name="android:textColorSecondary">@color/on_surface_variant</item>
+        <item name="android:windowBackground">@color/surface</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.GordaDriver.TextButton.Accent</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.GordaDriver.TextButton.Danger</item>
+    </style>
+
+    <style name="ThemeOverlay.GordaDriver.MaterialAlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="backgroundTint">@color/surface</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
     </style>
 
     <style name="Widget.App.Snackbar" parent="Widget.MaterialComponents.Snackbar">
-        <item name="backgroundTint">@color/secondary_dark</item>
-        <item name="android:textColor">@color/white</item>
+        <item name="backgroundTint">@color/surface_container_high</item>
+        <item name="android:textColor">@color/on_surface</item>
     </style>
 
     <style name="Theme.GordaDriver.NoActionBar">
@@ -34,35 +48,45 @@
         <item name="windowNoTitle">true</item>
     </style>
 
-    <style name="AuthUI" parent="FirebaseUI">
-        <item name="windowActionBar">true</item>
+    <style name="AuthUI" parent="FirebaseUI.DefaultMaterialTheme">
         <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryVariant">@color/primary_variant</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <!-- Secondary brand color. -->
+        <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorSecondary">@color/secondary</item>
-        <item name="colorSecondaryVariant">@color/secondary_variant</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
-        <item name="android:textColor">@color/secondary_light</item>
-    </style>
-
-    <style name="Theme.GordaDriver.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <style name="Theme.GordaDriver.PopupOverlay" parent="ThemeOverlay.AppCompat.Light">
-        <item name="android:textColor">@color/primary</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="android:windowBackground">@color/primary_dark</item>
+        <item name="android:textColorPrimary">@color/on_surface</item>
+        <item name="android:textColorSecondary">@color/on_surface_variant</item>
     </style>
 
     <style name="FirebaseUI.Text">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/secondary_light</item>
+        <item name="android:textColor">@color/on_surface</item>
+    </style>
+
+    <style name="FirebaseUI.Button">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:backgroundTint">@color/accent_container</item>
+        <item name="android:textColor">@color/on_accent_container</item>
     </style>
 
     <style name="ThemeOverlay.GordaDriver.FullscreenContainer" parent="">
         <item name="fullscreenBackgroundColor">@color/light_blue_900</item>
         <item name="fullscreenTextColor">@color/light_blue_A400</item>
+    </style>
+
+    <style name="Theme.GordaDriver.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="Theme.GordaDriver.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Dark">
+        <item name="android:textColor">@color/on_surface</item>
+    </style>
+
+    <style name="Theme.GordaDriver.Fullscreen" parent="Theme.GordaDriver">
+        <item name="android:actionBarStyle">@style/Widget.Theme.GordaDriver.ActionBar.Fullscreen
+        </item>
+        <item name="android:windowActionBarOverlay">true</item>
+        <item name="android:windowBackground">@null</item>
     </style>
 </resources>

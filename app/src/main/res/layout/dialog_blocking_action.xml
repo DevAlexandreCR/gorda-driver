@@ -37,7 +37,7 @@
                     android:layout_width="56dp"
                     android:layout_height="56dp"
                     android:layout_marginEnd="16dp"
-                    app:cardBackgroundColor="@color/secondary"
+                    app:cardBackgroundColor="@color/accent_container"
                     app:cardCornerRadius="28dp"
                     app:cardElevation="8dp">
 
@@ -108,35 +108,29 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSecondary"
+                    style="@style/Widget.GordaDriver.Button.Secondary"
                     android:layout_width="0dp"
                     android:layout_height="52dp"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
                     android:textAllCaps="false"
-                    android:textColor="@color/on_surface"
                     android:textSize="14sp"
-                    app:backgroundTint="@color/primary"
                     app:cornerRadius="16dp"
                     app:iconGravity="textStart"
-                    app:iconPadding="8dp"
-                    app:iconTint="@color/on_surface"
-                    app:strokeColor="@color/secondary"
-                    app:strokeWidth="1dp" />
+                    app:iconPadding="8dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnPrimary"
+                    style="@style/Widget.GordaDriver.Button.Primary"
                     android:layout_width="0dp"
                     android:layout_height="52dp"
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:textAllCaps="false"
-                    android:textColor="@android:color/white"
                     android:textSize="14sp"
-                    app:backgroundTint="@color/secondary"
                     app:cornerRadius="16dp"
                     app:iconGravity="textStart"
-                    app:iconPadding="8dp"
-                    app:iconTint="@android:color/white" />
+                    app:iconPadding="8dp" />
 
             </LinearLayout>
 

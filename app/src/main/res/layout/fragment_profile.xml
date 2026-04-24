@@ -28,7 +28,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="@color/secondary"
+                app:cardBackgroundColor="@color/accent_container"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="8dp"
                 app:strokeWidth="0dp">
@@ -319,7 +319,7 @@
                             android:id="@+id/profileVehiclePlate"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@color/secondary"
+                            android:background="@color/accent_container"
                             android:paddingHorizontal="16dp"
                             android:paddingVertical="8dp"
                             android:text="@string/fields_plate"
@@ -342,18 +342,16 @@
                 <!-- Logout Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnLogout"
+                    style="@style/Widget.GordaDriver.Button.Danger"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:text="@string/logout"
                     android:textAllCaps="false"
-                    android:textColor="@android:color/white"
                     android:textSize="16sp"
-                    app:backgroundTint="@color/red"
                     app:cornerRadius="16dp"
                     app:icon="@drawable/ic_clear_24"
                     app:iconGravity="textStart"
-                    app:iconSize="20dp"
-                    app:iconTint="@android:color/white" />
+                    app:iconSize="20dp" />
 
             </LinearLayout>
 

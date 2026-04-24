@@ -395,7 +395,7 @@ class MainActivity : AppCompatActivity() {
         val primaryButton = dialogView.findViewById<MaterialButton>(R.id.btnPrimary)
         val secondaryButton = dialogView.findViewById<MaterialButton>(R.id.btnSecondary)
 
-        iconContainer.setCardBackgroundColor(getColor(R.color.secondary))
+        iconContainer.setCardBackgroundColor(getColor(R.color.accent_container))
         iconView.setImageResource(iconRes)
         titleView.setText(titleRes)
         subtitleView.setText(subtitleRes)
@@ -443,11 +443,15 @@ class MainActivity : AppCompatActivity() {
     private fun setIconNotificationButton(isNotificationMute: Boolean) {
         if (isNotificationMute) {
             notificationButton.backgroundTintList =
-                ColorStateList.valueOf(getColor(R.color.red))
+                ColorStateList.valueOf(getColor(R.color.danger_container))
+            notificationButton.imageTintList =
+                ColorStateList.valueOf(getColor(R.color.on_danger_container))
             notificationButton.setImageResource(R.drawable.notifications_off)
         } else {
             notificationButton.backgroundTintList =
-                ColorStateList.valueOf(getColor(R.color.secondary_dark))
+                ColorStateList.valueOf(getColor(R.color.accent_container))
+            notificationButton.imageTintList =
+                ColorStateList.valueOf(getColor(R.color.on_accent_container))
             notificationButton.setImageResource(R.drawable.notifications_active)
         }
     }
