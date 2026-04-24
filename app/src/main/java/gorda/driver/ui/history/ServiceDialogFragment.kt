@@ -5,7 +5,11 @@ import android.app.Dialog
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.DialogFragment
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -17,6 +21,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.material.card.MaterialCardView
 import gorda.driver.R
 import gorda.driver.models.Service
 import gorda.driver.utils.DateHelper
@@ -38,8 +43,11 @@ class ServiceDialogFragment(private val service: Service): DialogFragment(), OnM
         val place: TextView = view.findViewById(R.id.dialog_place)
         val price: TextView = view.findViewById(R.id.dialog_price)
         val status: TextView = view.findViewById(R.id.dialog_status)
+        val statusChip: MaterialCardView = view.findViewById(R.id.dialogStatusChip)
         val comment: TextView = view.findViewById(R.id.dialog_comment)
         val multiplier: TextView = view.findViewById(R.id.dialog_multipler)
+        val closeButton: Button = view.findViewById(R.id.btnCloseHistoryDialog)
+        val headerCloseButton: ImageButton = view.findViewById(R.id.dialogCloseButton)
 
         val fee = service.metadata.trip_fee ?: 0
         mapView = view.findViewById(R.id.dialog_map)
@@ -51,15 +59,34 @@ class ServiceDialogFragment(private val service: Service): DialogFragment(), OnM
         place.text = service.start_loc.name
         price.text = view.context.getString(R.string.AmountCurrency, fee.toString())
         status.text = StringHelper.formatStatus(service.status, view.context)
-        comment.text = service.comment
-        multiplier.text = service.metadata.trip_multiplier.toString()
+        statusChip.setCardBackgroundColor(
+            ContextCompat.getColor(
+                view.context,
+                when (service.status) {
+                    Service.STATUS_TERMINATED -> R.color.accent_container
+                    Service.STATUS_CANCELED -> R.color.danger_container
+                    else -> R.color.surface_variant
+                }
+            )
+        )
+        comment.text = service.comment.orEmpty()
+        multiplier.text = service.metadata.trip_multiplier?.toString() ?: "1.0"
 
-        builder.setView(view)
-            .setPositiveButton("OK") { dialog, _ ->
-                dialog.dismiss()
+        val dialog = builder.setView(view).create()
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+        headerCloseButton.setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.setOnShowListener {
+            dialog.window?.apply {
+                setBackgroundDrawableResource(android.R.color.transparent)
+                setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             }
+        }
 
-        return builder.create()
+        return dialog
     }
 
     override fun onMapReady(googlemap: GoogleMap) {
