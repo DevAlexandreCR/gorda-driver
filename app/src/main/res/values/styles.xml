@@ -9,11 +9,11 @@
     </style>
 
     <style name="Widget.GordaDriver.Button.Primary" parent="Widget.MaterialComponents.Button">
-        <item name="android:textColor">@color/on_accent_container</item>
-        <item name="backgroundTint">@color/accent_container</item>
+        <item name="android:textColor">@color/button_primary_foreground</item>
+        <item name="backgroundTint">@color/button_primary_background</item>
         <item name="cornerRadius">16dp</item>
         <item name="strokeWidth">0dp</item>
-        <item name="iconTint">@color/on_accent_container</item>
+        <item name="iconTint">@color/button_primary_foreground</item>
         <item name="rippleColor">@color/secondary_variant</item>
     </style>
 
