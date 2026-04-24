@@ -122,6 +122,8 @@ class CurrentServiceFragment : Fragment() {
 
     private var isExpanded = false
     private var connectionDialog: ConnectionServiceDialog? = null
+    private var ongoingTripRecoveryDialog: AlertDialog? = null
+    private var ongoingTripRecoveryServiceId: String? = null
     private var feesService: FeesService = FeesService()
     private var fees: RideFees = RideFees()
     private var totalRide: Double = 0.0
@@ -196,6 +198,7 @@ class CurrentServiceFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        clearOngoingTripRecoveryDialog(dismiss = true)
         _binding = null
         super.onDestroyView()
     }
@@ -274,6 +277,14 @@ class CurrentServiceFragment : Fragment() {
 
     private fun observeCurrentService() {
         mainViewModel.currentService.observe(viewLifecycleOwner) { service ->
+            if (service == null || (
+                    ongoingTripRecoveryServiceId != null &&
+                        ongoingTripRecoveryServiceId != service.id
+                    )
+            ) {
+                clearOngoingTripRecoveryDialog(dismiss = true)
+            }
+
             currentService = service
             toggleFragmentButton.visibility = View.GONE
 
@@ -439,6 +450,13 @@ class CurrentServiceFragment : Fragment() {
             return
         }
 
+        ongoingTripRecoveryDialog?.let { dialog ->
+            if (dialog.isShowing) {
+                return
+            }
+            clearOngoingTripRecoveryDialog(dismiss = false)
+        }
+
         val storedServiceId = RideRecoveryStore.getTrackedServiceId(sharedPreferences)
         if (RideRecoveryPolicy.shouldClearStaleRecovery(storedServiceId, service.id)) {
             RideRecoveryStore.clear(sharedPreferences)
@@ -456,7 +474,8 @@ class CurrentServiceFragment : Fragment() {
             return
         }
 
-        showTripActionDialog(
+        ongoingTripRecoveryServiceId = service.id
+        ongoingTripRecoveryDialog = showTripActionDialog(
             titleRes = R.string.service_start_trip,
             message = getText(R.string.ride_in_progress),
             primaryTextRes = R.string.yes,
@@ -477,6 +496,12 @@ class CurrentServiceFragment : Fragment() {
             startServiceFee(service.id, service.start_loc.name, true)
             scrollViewFees.visibility = View.VISIBLE
             startingRide = false
+        }.apply {
+            setOnDismissListener {
+                if (ongoingTripRecoveryDialog === this) {
+                    clearOngoingTripRecoveryDialog(dismiss = false)
+                }
+            }
         }
     }
 
@@ -1276,7 +1301,7 @@ class CurrentServiceFragment : Fragment() {
         secondaryIconRes: Int,
         customBody: View? = null,
         onActionSelected: (Boolean) -> Unit
-    ) {
+    ): AlertDialog {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_trip_action, null)
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
@@ -1320,6 +1345,17 @@ class CurrentServiceFragment : Fragment() {
 
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        return dialog
+    }
+
+    private fun clearOngoingTripRecoveryDialog(dismiss: Boolean) {
+        val dialog = ongoingTripRecoveryDialog
+        ongoingTripRecoveryDialog = null
+        ongoingTripRecoveryServiceId = null
+
+        if (dismiss && dialog?.isShowing == true) {
+            dialog.dismiss()
+        }
     }
 
     private fun stopFeeService() {
