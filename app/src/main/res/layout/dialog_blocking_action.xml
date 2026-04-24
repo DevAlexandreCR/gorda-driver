@@ -10,36 +10,35 @@
         android:id="@+id/dialogCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/primary_dark"
+        app:cardBackgroundColor="@color/surface_elevated"
         app:cardCornerRadius="24dp"
-        app:cardElevation="12dp"
+        app:cardElevation="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:strokeColor="@color/secondary"
-        app:strokeWidth="1dp">
+        app:strokeWidth="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="28dp">
+            android:padding="24dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="18dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/dialogIconContainer"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:layout_marginEnd="16dp"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:layout_marginEnd="14dp"
                     app:cardBackgroundColor="@color/accent_container"
-                    app:cardCornerRadius="28dp"
-                    app:cardElevation="8dp">
+                    app:cardCornerRadius="26dp"
+                    app:cardElevation="0dp">
 
                     <ImageView
                         android:id="@+id/dialogIcon"
@@ -61,45 +60,32 @@
                         android:id="@+id/dialogTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="4dp"
+                        android:layout_marginBottom="2dp"
                         android:textColor="@color/on_surface"
-                        android:textSize="21sp"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/dialogSubtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:alpha="0.85"
+                        android:alpha="1"
                         android:text="@string/red_blanca_driver"
-                        android:textColor="@color/on_surface_variant"
-                        android:textSize="14sp" />
+                        android:textColor="@color/on_surface_muted"
+                        android:textSize="13sp" />
 
                 </LinearLayout>
 
             </LinearLayout>
 
-            <com.google.android.material.card.MaterialCardView
+            <TextView
+                android:id="@+id/dialogMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="@color/surface_variant"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/outline"
-                app:strokeWidth="1dp">
-
-                <TextView
-                    android:id="@+id/dialogMessage"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingHorizontal="20dp"
-                    android:paddingVertical="18dp"
-                    android:textColor="@color/on_surface"
-                    android:textSize="16sp"
-                    android:lineSpacingExtra="3dp" />
-
-            </com.google.android.material.card.MaterialCardView>
+                android:layout_marginBottom="20dp"
+                android:lineSpacingExtra="2dp"
+                android:textColor="@color/on_surface_variant"
+                android:textSize="15sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -108,10 +94,10 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSecondary"
-                    style="@style/Widget.GordaDriver.Button.Secondary"
+                    style="@style/Widget.GordaDriver.Button.DialogSecondary"
                     android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_height="50dp"
+                    android:layout_marginEnd="6dp"
                     android:layout_weight="1"
                     android:textAllCaps="false"
                     android:textSize="14sp"
@@ -123,8 +109,8 @@
                     android:id="@+id/btnPrimary"
                     style="@style/Widget.GordaDriver.Button.Primary"
                     android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_height="50dp"
+                    android:layout_marginStart="6dp"
                     android:layout_weight="1"
                     android:textAllCaps="false"
                     android:textSize="14sp"

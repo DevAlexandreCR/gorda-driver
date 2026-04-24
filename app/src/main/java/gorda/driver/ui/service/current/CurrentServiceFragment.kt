@@ -456,24 +456,28 @@ class CurrentServiceFragment : Fragment() {
             return
         }
 
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(R.string.service_start_trip)
-        builder.setCancelable(false)
-        builder.setMessage(R.string.ride_in_progress)
-        builder.setNegativeButton(R.string.no) { dialog, _ ->
-            dialog.dismiss()
-            scrollViewFees.visibility = View.VISIBLE
-            RideRecoveryStore.clear(sharedPreferences)
-            totalRide = 0.0
-            startServiceFee(service.id, service.start_loc.name)
-            startingRide = true
-        }
-        builder.setPositiveButton(R.string.yes) { _, _ ->
+        showTripActionDialog(
+            titleRes = R.string.service_start_trip,
+            message = getText(R.string.ride_in_progress),
+            primaryTextRes = R.string.yes,
+            secondaryTextRes = R.string.no,
+            iconRes = R.drawable.connected_service_24,
+            primaryIconRes = R.drawable.assign_24,
+            secondaryIconRes = R.drawable.cancel_24
+        ) { confirmed ->
+            if (!confirmed) {
+                scrollViewFees.visibility = View.VISIBLE
+                RideRecoveryStore.clear(sharedPreferences)
+                totalRide = 0.0
+                startServiceFee(service.id, service.start_loc.name)
+                startingRide = true
+                return@showTripActionDialog
+            }
+
             startServiceFee(service.id, service.start_loc.name, true)
             scrollViewFees.visibility = View.VISIBLE
             startingRide = false
         }
-        builder.create().show()
     }
 
     private fun handleHaveArrived(service: Service) {

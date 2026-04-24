@@ -4,10 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/surface"
+    android:background="@android:color/transparent"
     android:padding="@dimen/activity_horizontal_margin">
 
-    <!-- Enhanced input field with Material Design styling -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/multiplier_input_layout"
         android:layout_width="0dp"
@@ -20,7 +19,7 @@
         app:boxCornerRadiusTopEnd="12dp"
         app:boxCornerRadiusTopStart="12dp"
         app:boxStrokeColor="@color/secondary"
-        app:boxStrokeWidth="2dp"
+        app:boxStrokeWidth="1dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -42,7 +41,6 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Visual indicator for multiplier effect -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -53,7 +51,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/multiplier_input_layout">
 
-        <!-- Base fare indicator -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -66,7 +63,6 @@
             android:textStyle="bold"
             tools:ignore="HardcodedText" />
 
-        <!-- Arrow indicator -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -77,7 +73,6 @@
             android:textStyle="bold"
             tools:ignore="HardcodedText" />
 
-        <!-- Multiplied fare indicator -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
