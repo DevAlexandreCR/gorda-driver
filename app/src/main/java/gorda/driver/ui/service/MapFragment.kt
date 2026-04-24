@@ -11,6 +11,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.scale
 import androidx.fragment.app.Fragment
@@ -45,6 +47,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     companion object {
         const val TAG = "ui.service.mapFragment"
+        private const val MAP_READY_TIMEOUT_MS = 3_000L
     }
 
     private val mainViewModel: MainViewModel by activityViewModels()
@@ -53,6 +56,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private lateinit var textDistance: TextView
     private var location: Location? = null
     private var statLoc: LocType? = null
+    private var mapReady = false
+    private val mapUnavailableRunnable = Runnable {
+        if (!mapReady && isAdded) {
+            binding.textMapUnavailable.isVisible = true
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -69,6 +78,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         mapFragment?.getMapAsync(this)
         textTime = binding.textTime
         textDistance = binding.textDistance
+        mapReady = false
+        binding.textMapUnavailable.isGone = true
+        binding.root.removeCallbacks(mapUnavailableRunnable)
+        binding.root.postDelayed(mapUnavailableRunnable, MAP_READY_TIMEOUT_MS)
         mainViewModel.lastLocation.value.let {
             if (it is LocationUpdates.LastLocation) {
                 location = it.location
@@ -82,6 +95,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
+        mapReady = true
+        binding.root.removeCallbacks(mapUnavailableRunnable)
+        binding.textMapUnavailable.isGone = true
         setMapStyle(googleMap)
         if (null != statLoc && null != location) {
             val infoWindow = WindowAdapter(requireContext())
@@ -123,7 +139,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             val time = Map.calculateTime(distance)
             textTime.text = Map.getTimeString(time)
             textDistance.text = Map.distanceToString(distance)
-            mainViewModel.setServiceUpdateDistTime(distance.toInt(), time)
             if (markerStartAddress != null) {
                 markerStartAddress.tag = makeInfoWindowData(
                     statLoc!!.name,
@@ -135,6 +150,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         } else {
             println(statLoc.toString() + location.toString())
         }
+    }
+
+    override fun onDestroyView() {
+        binding.root.removeCallbacks(mapUnavailableRunnable)
+        super.onDestroyView()
     }
 
     private fun getResizedBitmap(drawableId: Int): Bitmap {

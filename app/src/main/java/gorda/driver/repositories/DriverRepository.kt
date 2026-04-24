@@ -197,6 +197,20 @@ object DriverRepository {
         }
     }
 
+    fun getDriverTask(driverId: String): Task<Driver> {
+        val taskSource = TaskCompletionSource<Driver>()
+
+        getDriver(driverId) { driver ->
+            if (driver != null) {
+                taskSource.setResult(driver)
+            } else {
+                taskSource.setException(IllegalStateException("Unable to refresh driver"))
+            }
+        }
+
+        return taskSource.task
+    }
+
     fun updateDevice(driverID: String, device: DeviceInterface?): Task<Void> {
         val taskSource = TaskCompletionSource<Void>()
         CoroutineScope(Dispatchers.IO).launch {
