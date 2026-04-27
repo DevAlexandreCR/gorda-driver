@@ -70,9 +70,12 @@
     <string name="connection_restored_retry_start">Connection restored, retry to start trip</string>
     <string name="connection_restored_retry_end">Connection restored, retry to end trip</string>
     <string name="retry_available_when_connection_restored">Retry will be available once the connection is restored.</string>
+    <string name="trip_action_recovering_queueable">Weak connection. The action can continue and will sync automatically.</string>
     <string name="start_trip_not_started_yet">Trip has not started yet.</string>
     <string name="end_trip_not_ended_yet">Trip is still active and has not been ended yet.</string>
     <string name="using_saved_pricing_snapshot">Using saved pricing to continue starting the trip.</string>
+    <string name="trip_action_syncing_start">Trip started on this device. Syncing with dispatch…</string>
+    <string name="trip_action_syncing_end">Trip finalized on this device. Syncing with dispatch…</string>
     <string name="start_trip_pricing_unavailable">Unable to refresh pricing. Trip has not started yet.</string>
     <string name="service_trip_already_started">Trip already started.</string>
     <string name="service_trip_not_started">Trip has not started yet.</string>
@@ -224,8 +227,10 @@
     <string name="network_lost_offline_mode">Network lost - Offline mode active</string>
     <string name="network_restored">Connection restored - Syncing…</string>
     <string name="recovery_banner_no_network">No internet connection. Reconnection will resume automatically.</string>
+    <string name="recovery_banner_weak_network">Weak connection detected. Real-time sync may recover with delay.</string>
     <string name="recovery_banner_waiting_socket">Connection restored. Re-establishing real-time sync…</string>
     <string name="recovery_banner_reconnecting">Reconnecting to dispatch…</string>
+    <string name="recovery_banner_syncing_dispatch">Syncing with dispatch…</string>
     <string name="cannot_disconnect_no_network">Cannot disconnect without network. Wait for connection recovery.</string>
     <string name="unsupported_version_title">Update required</string>
     <string name="unsupported_version_message">This app version can no longer connect online. Update the app to continue receiving services.</string>

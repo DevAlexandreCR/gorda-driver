@@ -1,76 +1,81 @@
 package gorda.driver.ui.service.current
 
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
 import gorda.driver.interfaces.RideFees
 import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 
 class CurrentServiceViewModelLogicTest {
 
+    @get:Rule
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
+
     @Test
-    fun offlinePresenceBlocksServiceActions() {
+    fun missingTransportBlocksServiceActions() {
         val status = CurrentServiceViewModel.connectionStatusForServiceAction(
             MainViewModel.DriverPresenceState(
-                hasNetwork = false,
+                hasTransportNetwork = false,
                 firebaseConnected = true,
                 actualOnline = true
             )
         )
 
-        assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.OFFLINE, status)
+        assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.NO_TRANSPORT, status)
     }
 
     @Test
-    fun firebaseDisconnectedBlocksServiceActions() {
+    fun firebaseDisconnectedAllowsQueueableRecoveryForServiceActions() {
         val status = CurrentServiceViewModel.connectionStatusForServiceAction(
             MainViewModel.DriverPresenceState(
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = false,
                 actualOnline = true
             )
         )
 
-        assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.FIREBASE_DISCONNECTED, status)
+        assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE, status)
     }
 
     @Test
-    fun reconnectingPresenceBlocksServiceActions() {
+    fun reconnectingPresenceAllowsQueueableRecoveryForServiceActions() {
         val status = CurrentServiceViewModel.connectionStatusForServiceAction(
             MainViewModel.DriverPresenceState(
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = true,
                 actualOnline = false,
                 phase = MainViewModel.DriverPresencePhase.RECONNECTING
             )
         )
 
-        assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.RECONNECTING, status)
+        assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE, status)
     }
 
     @Test
-    fun waitingForPresenceAckStillBlocksServiceActions() {
+    fun activePendingSyncMarksServiceActionsAsSyncing() {
         val status = CurrentServiceViewModel.connectionStatusForServiceAction(
             MainViewModel.DriverPresenceState(
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = true,
-                actualOnline = false,
-                phase = MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK
-            )
+                actualOnline = true
+            ),
+            hasPendingSync = true
         )
 
-        assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.RECONNECTING, status)
+        assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.SYNCING, status)
     }
 
     @Test
     fun connectedPresenceAllowsServiceActions() {
         val state = MainViewModel.DriverPresenceState(
-            hasNetwork = true,
+            hasTransportNetwork = true,
             firebaseConnected = true,
             actualOnline = true,
             phase = MainViewModel.DriverPresencePhase.CONNECTED
@@ -170,9 +175,13 @@ class CurrentServiceViewModelLogicTest {
         )
         viewModel.restoreFromStoreIfNeeded(
             pendingActionSnapshot = PendingServiceActionSnapshot(
+                actionId = "action-1",
                 serviceId = "service-1",
                 actionType = PendingServiceActionType.START,
                 phase = PendingServiceActionPhase.IN_FLIGHT_RECOVERABLE,
+                queuedAt = 100L,
+                attemptCount = 1,
+                optimisticApplied = false,
                 startRequest = request
             ),
             currentServiceUiSnapshot = null,
@@ -186,7 +195,7 @@ class CurrentServiceViewModelLogicTest {
                 metadata = ServiceMetadata(arrived_at = 50L)
             ),
             presenceState = MainViewModel.DriverPresenceState(
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = true,
                 actualOnline = true,
                 phase = MainViewModel.DriverPresencePhase.CONNECTED
@@ -211,9 +220,13 @@ class CurrentServiceViewModelLogicTest {
         )
         viewModel.restoreFromStoreIfNeeded(
             pendingActionSnapshot = PendingServiceActionSnapshot(
+                actionId = "action-1",
                 serviceId = "service-1",
                 actionType = PendingServiceActionType.END,
                 phase = PendingServiceActionPhase.FAILED,
+                queuedAt = 100L,
+                attemptCount = 1,
+                optimisticApplied = false,
                 failureMessageRes = gorda.driver.R.string.error_timeout,
                 endRequest = request
             ),
@@ -228,7 +241,7 @@ class CurrentServiceViewModelLogicTest {
                 metadata = ServiceMetadata(arrived_at = 50L, start_trip_at = 60L)
             ),
             presenceState = MainViewModel.DriverPresenceState(
-                hasNetwork = false,
+                hasTransportNetwork = false,
                 firebaseConnected = false,
                 actualOnline = false
             )
@@ -242,13 +255,58 @@ class CurrentServiceViewModelLogicTest {
     }
 
     @Test
+    fun optimisticPendingStartRestoresAsSyncingUntilObservedAck() {
+        val viewModel = CurrentServiceViewModel(SavedStateHandle())
+        val request = CurrentServiceViewModel.StartTripRequest(
+            serviceId = "service-1",
+            startedAt = 100L,
+            multiplier = 1.2,
+            origin = "Origin"
+        )
+        viewModel.restoreFromStoreIfNeeded(
+            pendingActionSnapshot = PendingServiceActionSnapshot(
+                actionId = "action-1",
+                serviceId = "service-1",
+                actionType = PendingServiceActionType.START,
+                phase = PendingServiceActionPhase.SYNCING,
+                queuedAt = 100L,
+                attemptCount = 1,
+                optimisticApplied = true,
+                startRequest = request
+            ),
+            currentServiceUiSnapshot = null,
+            bottomSheetSnapshot = null
+        )
+
+        viewModel.reconcileRestoredPendingAction(
+            service = Service(
+                id = "service-1",
+                status = Service.STATUS_IN_PROGRESS,
+                metadata = ServiceMetadata(arrived_at = 50L)
+            ),
+            presenceState = MainViewModel.DriverPresenceState(
+                hasTransportNetwork = true,
+                firebaseConnected = false,
+                actualOnline = false
+            )
+        )
+
+        assertEquals(CurrentServiceViewModel.ServiceActionUiState.StartSyncing, viewModel.uiState.value)
+        assertTrue(viewModel.hasPendingSyncAction())
+    }
+
+    @Test
     fun observedStartedTripClearsRestoredPendingStartSnapshot() {
         val viewModel = CurrentServiceViewModel(SavedStateHandle())
         viewModel.restoreFromStoreIfNeeded(
             pendingActionSnapshot = PendingServiceActionSnapshot(
+                actionId = "action-1",
                 serviceId = "service-1",
                 actionType = PendingServiceActionType.START,
                 phase = PendingServiceActionPhase.BLOCKED_BY_CONNECTION,
+                queuedAt = 100L,
+                attemptCount = 1,
+                optimisticApplied = false,
                 startRequest = CurrentServiceViewModel.StartTripRequest(
                     serviceId = "service-1",
                     startedAt = 100L,
@@ -267,7 +325,7 @@ class CurrentServiceViewModelLogicTest {
                 metadata = ServiceMetadata(arrived_at = 50L, start_trip_at = 70L)
             ),
             presenceState = MainViewModel.DriverPresenceState(
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = true,
                 actualOnline = true
             )

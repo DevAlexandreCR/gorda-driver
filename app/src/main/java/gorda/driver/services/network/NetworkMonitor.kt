@@ -16,18 +16,37 @@ import kotlinx.coroutines.launch
 
 class NetworkMonitor(
     private val context: Context,
-    private val onNetworkChange: (isConnected: Boolean) -> Unit
+    private val onNetworkChange: (status: NetworkStatus) -> Unit
 ) {
+
+    data class NetworkStatus(
+        val hasTransportNetwork: Boolean,
+        val networkValidated: Boolean
+    )
 
     companion object {
         private const val TAG = "NetworkMonitor"
         private const val DEBOUNCE_DELAY = 1000L
+
+        internal fun resolveNetworkStatus(
+            hasInternet: Boolean,
+            isValidated: Boolean,
+            hasSupportedTransport: Boolean
+        ): NetworkStatus {
+            return NetworkStatus(
+                hasTransportNetwork = hasInternet && hasSupportedTransport,
+                networkValidated = isValidated
+            )
+        }
     }
 
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private var isMonitoring = false
-    private var currentNetworkState = false
+    private var currentNetworkState = NetworkStatus(
+        hasTransportNetwork = false,
+        networkValidated = false
+    )
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var debounceJob: Job? = null
 
@@ -38,7 +57,12 @@ class NetworkMonitor(
 
         override fun onLost(network: Network) {
             Log.d(TAG, "Network lost: $network")
-            scheduleNetworkCheck(false)
+            scheduleNetworkCheck(
+                NetworkStatus(
+                    hasTransportNetwork = false,
+                    networkValidated = false
+                )
+            )
         }
 
         override fun onCapabilitiesChanged(
@@ -46,56 +70,98 @@ class NetworkMonitor(
             networkCapabilities: NetworkCapabilities
         ) {
             Log.d(TAG, "Network capabilities changed: $network")
-            val hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-
-            Log.d(TAG, "Network has internet: $hasInternet")
-            scheduleNetworkCheck(hasInternet)
+            val status = networkStatusFromCapabilities(networkCapabilities)
+            Log.d(
+                TAG,
+                "Network status - transport=${status.hasTransportNetwork} validated=${status.networkValidated}"
+            )
+            scheduleNetworkCheck(status)
         }
 
         override fun onUnavailable() {
             Log.d(TAG, "Network unavailable")
-            scheduleNetworkCheck(false)
+            scheduleNetworkCheck(
+                NetworkStatus(
+                    hasTransportNetwork = false,
+                    networkValidated = false
+                )
+            )
         }
     }
 
-    private fun scheduleNetworkCheck(hasInternet: Boolean) {
+    private fun scheduleNetworkCheck(status: NetworkStatus) {
         debounceJob?.cancel()
         debounceJob = scope.launch {
             delay(DEBOUNCE_DELAY)
-            val actualState = if (hasInternet) {
-                hasInternet
+            val actualState = if (status.hasTransportNetwork) {
+                status
             } else {
-                // Double-check if there are any active networks
-                hasAnyActiveNetwork()
+                currentActiveNetworkStatus()
             }
             updateNetworkState(actualState)
         }
     }
 
-    private fun hasAnyActiveNetwork(): Boolean {
+    internal fun networkStatusFromCapabilities(
+        capabilities: NetworkCapabilities?
+    ): NetworkStatus {
+        if (capabilities == null) {
+            return NetworkStatus(
+                hasTransportNetwork = false,
+                networkValidated = false
+            )
+        }
+
+        val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        val isValidated = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        val hasSupportedTransport = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+
+        return resolveNetworkStatus(
+            hasInternet = hasInternet,
+            isValidated = isValidated,
+            hasSupportedTransport = hasSupportedTransport
+        )
+    }
+
+    private fun currentActiveNetworkStatus(): NetworkStatus {
         return try {
-            val activeNetwork = connectivityManager.activeNetwork ?: return false
-            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+            val activeNetwork = connectivityManager.activeNetwork
+                ?: return NetworkStatus(
+                    hasTransportNetwork = false,
+                    networkValidated = false
+                )
+            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+            val status = networkStatusFromCapabilities(capabilities)
 
-            val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            val isValidated = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-
-            Log.d(TAG, "Active network check - Internet: $hasInternet, Validated: $isValidated")
-            hasInternet && isValidated
+            Log.d(
+                TAG,
+                "Active network check - transport=${status.hasTransportNetwork}, validated=${status.networkValidated}"
+            )
+            status
         } catch (e: Exception) {
             Log.e(TAG, "Error checking active network: ${e.message}")
-            false
+            NetworkStatus(
+                hasTransportNetwork = false,
+                networkValidated = false
+            )
         }
     }
 
-    private fun updateNetworkState(isConnected: Boolean) {
-        if (currentNetworkState != isConnected) {
-            currentNetworkState = isConnected
-            Log.d(TAG, "Network state CHANGED to: ${if (isConnected) "CONNECTED" else "DISCONNECTED"}")
-            onNetworkChange(isConnected)
+    private fun updateNetworkState(status: NetworkStatus) {
+        if (currentNetworkState != status) {
+            currentNetworkState = status
+            Log.d(
+                TAG,
+                "Network state CHANGED to: transport=${status.hasTransportNetwork} validated=${status.networkValidated}"
+            )
+            onNetworkChange(status)
         } else {
-            Log.d(TAG, "Network state UNCHANGED: ${if (isConnected) "CONNECTED" else "DISCONNECTED"}")
+            Log.d(
+                TAG,
+                "Network state UNCHANGED: transport=${status.hasTransportNetwork} validated=${status.networkValidated}"
+            )
         }
     }
 
@@ -112,9 +178,12 @@ class NetworkMonitor(
 
             connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
 
-            val initialState = isCurrentlyConnected()
+            val initialState = currentActiveNetworkStatus()
             currentNetworkState = initialState
-            Log.d(TAG, "Initial network state: ${if (initialState) "CONNECTED" else "DISCONNECTED"}")
+            Log.d(
+                TAG,
+                "Initial network state: transport=${initialState.hasTransportNetwork} validated=${initialState.networkValidated}"
+            )
 
             onNetworkChange(initialState)
             isMonitoring = true
@@ -133,11 +202,6 @@ class NetworkMonitor(
             isMonitoring = false
         }
     }
-
-    private fun isCurrentlyConnected(): Boolean {
-        return hasAnyActiveNetwork()
-    }
-
     fun cleanup() {
         stopMonitoring()
         scope.cancel()

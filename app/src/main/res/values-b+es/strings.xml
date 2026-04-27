@@ -63,9 +63,12 @@
     <string name="connection_restored_retry_start">Conexión restablecida, vuelve a intentar iniciar el viaje</string>
     <string name="connection_restored_retry_end">Conexión restablecida, vuelve a intentar finalizar el viaje</string>
     <string name="retry_available_when_connection_restored">El reintento estará disponible cuando se restablezca la conexión.</string>
+    <string name="trip_action_recovering_queueable">Conexión débil. La acción puede continuar y se sincronizará automáticamente.</string>
     <string name="start_trip_not_started_yet">El viaje aún no ha iniciado.</string>
     <string name="end_trip_not_ended_yet">El viaje sigue activo y aún no se ha finalizado.</string>
     <string name="using_saved_pricing_snapshot">Usando tarifas guardadas para continuar con el inicio del viaje.</string>
+    <string name="trip_action_syncing_start">Viaje iniciado en este dispositivo. Sincronizando con despacho…</string>
+    <string name="trip_action_syncing_end">Viaje finalizado en este dispositivo. Sincronizando con despacho…</string>
     <string name="start_trip_pricing_unavailable">No fue posible actualizar las tarifas. El viaje aún no ha iniciado.</string>
     <string name="service_trip_already_started">El viaje ya fue iniciado.</string>
     <string name="service_trip_not_started">El viaje aún no ha iniciado.</string>
@@ -218,8 +221,10 @@
     <string name="network_lost_offline_mode">Red perdida - Modo sin conexión activo</string>
     <string name="network_restored">Conexión restaurada - Sincronizando…</string>
     <string name="recovery_banner_no_network">Sin conexión a internet. La reconexión continuará automáticamente.</string>
+    <string name="recovery_banner_weak_network">Conexión débil detectada. La sincronización en tiempo real puede demorarse.</string>
     <string name="recovery_banner_waiting_socket">Conexión restaurada. Restableciendo sincronización en tiempo real…</string>
     <string name="recovery_banner_reconnecting">Reconectando...</string>
+    <string name="recovery_banner_syncing_dispatch">Sincronizando con despacho…</string>
     <string name="cannot_disconnect_no_network">No se puede desconectar sin red. Espere a recuperar la conexión.</string>
     <string name="unsupported_version_title">Actualización requerida</string>
     <string name="unsupported_version_message">Esta versión de la app ya no puede conectarse. Actualiza la aplicación para seguir recibiendo servicios.</string>

@@ -152,7 +152,8 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         val desiredOnline: Boolean = false,
         val actualOnline: Boolean = false,
         val phase: DriverPresencePhase = DriverPresencePhase.DISCONNECTED,
-        val hasNetwork: Boolean = true,
+        val hasTransportNetwork: Boolean = true,
+        val networkValidated: Boolean = true,
         val firebaseConnected: Boolean = false,
         val lastError: String? = null,
         val attemptId: Long = 0L,
@@ -160,7 +161,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         val reconnectReason: String? = null,
         val fatalStopReason: String? = null,
         val reconnectGeneration: Long = 0L
-    )
+    ) {
+        val hasNetwork: Boolean
+            get() = hasTransportNetwork
+    }
 
     data class FeeData(
         val totalFee: Double,
@@ -298,16 +302,22 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         _isTripStarted.postValue(connect)
     }
 
-    fun changeNetWorkStatus(isConnected: Boolean) {
+    fun changeNetWorkStatus(hasTransportNetwork: Boolean, networkValidated: Boolean) {
         val previousState = _isNetWorkConnected.value
-        Log.d(TAG, "Network status changed: $isConnected (previous: $previousState)")
+        Log.d(
+            TAG,
+            "Network status changed: transport=$hasTransportNetwork validated=$networkValidated (previous transport: $previousState)"
+        )
 
-        _isNetWorkConnected.value = isConnected
+        _isNetWorkConnected.value = hasTransportNetwork
         updatePresenceState { current ->
-            current.copy(hasNetwork = isConnected)
+            current.copy(
+                hasTransportNetwork = hasTransportNetwork,
+                networkValidated = networkValidated
+            )
         }
 
-        if (isConnected && shouldAutoRecover()) {
+        if (hasTransportNetwork && shouldAutoRecover()) {
             lastNetworkRestoredAtMs = System.currentTimeMillis()
             logRecoveryEvent(
                 "network_restored_detected",

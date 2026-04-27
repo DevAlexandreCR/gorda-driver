@@ -14,7 +14,7 @@ class DriverStatusPublisherTest {
             desiredOnline = true,
             actualOnline = true,
             phase = MainViewModel.DriverPresencePhase.CONNECTED,
-            hasNetwork = true,
+            hasTransportNetwork = true,
             firebaseConnected = true
         )
         val heartbeatRefreshedState = initialState.copy(lastError = "heartbeat_refresh")
@@ -41,7 +41,7 @@ class DriverStatusPublisherTest {
                 desiredOnline = true,
                 actualOnline = false,
                 phase = MainViewModel.DriverPresencePhase.RECONNECTING,
-                hasNetwork = false,
+                hasTransportNetwork = false,
                 firebaseConnected = false
             )
         )
@@ -64,7 +64,7 @@ class DriverStatusPublisherTest {
                 desiredOnline = true,
                 actualOnline = false,
                 phase = MainViewModel.DriverPresencePhase.WAITING_FOR_FIREBASE_SOCKET,
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = false
             )
         )
@@ -87,7 +87,7 @@ class DriverStatusPublisherTest {
                 desiredOnline = true,
                 actualOnline = false,
                 phase = MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK,
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = true
             )
         )
@@ -110,7 +110,7 @@ class DriverStatusPublisherTest {
                 desiredOnline = true,
                 actualOnline = false,
                 phase = MainViewModel.DriverPresencePhase.PRECHECKING,
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = true
             )
         )

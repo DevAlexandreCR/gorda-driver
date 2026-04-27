@@ -11,7 +11,7 @@ class ApplyViewModelLogicTest {
     fun offlinePresenceBlocksApply() {
         val status = ApplyViewModel.connectionStatusForApply(
             MainViewModel.DriverPresenceState(
-                hasNetwork = false,
+                hasTransportNetwork = false,
                 firebaseConnected = true,
                 actualOnline = true
             )
@@ -24,7 +24,7 @@ class ApplyViewModelLogicTest {
     fun firebaseDisconnectedBlocksApply() {
         val status = ApplyViewModel.connectionStatusForApply(
             MainViewModel.DriverPresenceState(
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = false,
                 actualOnline = true
             )
@@ -37,7 +37,7 @@ class ApplyViewModelLogicTest {
     fun reconnectingPresenceBlocksApply() {
         val status = ApplyViewModel.connectionStatusForApply(
             MainViewModel.DriverPresenceState(
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = true,
                 actualOnline = false,
                 phase = MainViewModel.DriverPresencePhase.RECONNECTING
@@ -51,7 +51,7 @@ class ApplyViewModelLogicTest {
     fun connectedPresenceAllowsApply() {
         val status = ApplyViewModel.connectionStatusForApply(
             MainViewModel.DriverPresenceState(
-                hasNetwork = true,
+                hasTransportNetwork = true,
                 firebaseConnected = true,
                 actualOnline = true,
                 phase = MainViewModel.DriverPresencePhase.CONNECTED
@@ -62,7 +62,7 @@ class ApplyViewModelLogicTest {
         assertTrue(
             ApplyViewModel.isReadyToApply(
                 MainViewModel.DriverPresenceState(
-                    hasNetwork = true,
+                    hasTransportNetwork = true,
                     firebaseConnected = true,
                     actualOnline = true
                 )

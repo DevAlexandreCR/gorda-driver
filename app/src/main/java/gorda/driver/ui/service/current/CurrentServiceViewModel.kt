@@ -7,19 +7,22 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import gorda.driver.R
 import gorda.driver.interfaces.RideFees
+import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import gorda.driver.utils.RideRecoveryPolicy
 import java.io.Serializable
+import java.util.UUID
 
 class CurrentServiceViewModel(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     enum class ServiceActionConnectionStatus {
-        OFFLINE,
-        FIREBASE_DISCONNECTED,
-        RECONNECTING,
-        READY
+        NO_TRANSPORT,
+        RECOVERING_BUT_QUEUEABLE,
+        READY,
+        SYNCING,
+        BLOCKED_FATAL
     }
 
     enum class StartRideFeesSource {
@@ -54,6 +57,11 @@ class CurrentServiceViewModel(
         val source: StartRideFeesSource
     )
 
+    data class ServiceStageOverride(
+        val treatAsStarted: Boolean = false,
+        val treatAsEnded: Boolean = false
+    )
+
     sealed class ServiceActionUiState {
         object Idle : ServiceActionUiState()
 
@@ -62,6 +70,8 @@ class CurrentServiceViewModel(
         object BlockedStartByConnection : ServiceActionUiState()
 
         object StartingTrip : ServiceActionUiState()
+
+        object StartSyncing : ServiceActionUiState()
 
         data class StartFailed(
             @StringRes val messageRes: Int,
@@ -73,6 +83,8 @@ class CurrentServiceViewModel(
         object BlockedEndByConnection : ServiceActionUiState()
 
         object EndingTrip : ServiceActionUiState()
+
+        object EndSyncing : ServiceActionUiState()
 
         data class EndFailed(
             @StringRes val messageRes: Int,
@@ -86,20 +98,34 @@ class CurrentServiceViewModel(
         private const val KEY_BOTTOM_SHEET_SNAPSHOT = "current_service_bottom_sheet_snapshot"
 
         fun connectionStatusForServiceAction(
-            state: MainViewModel.DriverPresenceState
+            state: MainViewModel.DriverPresenceState,
+            hasPendingSync: Boolean = false
         ): ServiceActionConnectionStatus {
             return when {
-                !state.hasNetwork -> ServiceActionConnectionStatus.OFFLINE
-                !state.firebaseConnected -> ServiceActionConnectionStatus.FIREBASE_DISCONNECTED
-                !state.actualOnline -> ServiceActionConnectionStatus.RECONNECTING
+                state.fatalStopReason != null -> ServiceActionConnectionStatus.BLOCKED_FATAL
+                !state.hasTransportNetwork -> ServiceActionConnectionStatus.NO_TRANSPORT
+                hasPendingSync -> ServiceActionConnectionStatus.SYNCING
+                !state.firebaseConnected || !state.actualOnline ->
+                    ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE
                 else -> ServiceActionConnectionStatus.READY
             }
         }
 
         fun isReadyForServiceAction(
-            state: MainViewModel.DriverPresenceState
+            state: MainViewModel.DriverPresenceState,
+            hasPendingSync: Boolean = false
         ): Boolean {
-            return connectionStatusForServiceAction(state) == ServiceActionConnectionStatus.READY
+            return when (connectionStatusForServiceAction(state, hasPendingSync)) {
+                ServiceActionConnectionStatus.READY,
+                ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE -> true
+                ServiceActionConnectionStatus.NO_TRANSPORT,
+                ServiceActionConnectionStatus.SYNCING,
+                ServiceActionConnectionStatus.BLOCKED_FATAL -> false
+            }
+        }
+
+        fun shouldQueueInsteadOfBlocking(state: MainViewModel.DriverPresenceState): Boolean {
+            return connectionStatusForServiceAction(state) == ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE
         }
 
         fun resolveStartRideFees(
@@ -165,6 +191,7 @@ class CurrentServiceViewModel(
         savedStateHandle[KEY_BOTTOM_SHEET_SNAPSHOT]
     private var startTripRequest: StartTripRequest? = pendingActionSnapshot?.startRequest
     private var endTripRequest: EndTripRequest? = pendingActionSnapshot?.endRequest
+    private var pendingFingerprint: PendingServiceActionFingerprint? = pendingActionSnapshot?.fingerprint
 
     fun newAttempt(): Long {
         nextAttemptId += 1
@@ -174,6 +201,31 @@ class CurrentServiceViewModel(
 
     fun isActiveAttempt(attemptId: Long): Boolean {
         return activeAttemptId == attemptId
+    }
+
+    fun hasPendingSyncAction(): Boolean {
+        return pendingActionSnapshot?.optimisticApplied == true
+    }
+
+    fun pendingActionRequiresSync(): Boolean {
+        return pendingActionSnapshot?.phase == PendingServiceActionPhase.SYNCING &&
+            pendingActionSnapshot?.optimisticApplied == true
+    }
+
+    fun serviceStageOverrideFor(service: Service): ServiceStageOverride {
+        val snapshot = pendingActionSnapshot
+            ?.takeIf { it.serviceId == service.id && it.optimisticApplied }
+            ?: return ServiceStageOverride()
+
+        return when (snapshot.actionType) {
+            PendingServiceActionType.START -> ServiceStageOverride(
+                treatAsStarted = service.metadata.start_trip_at == null
+            )
+            PendingServiceActionType.END -> ServiceStageOverride(
+                treatAsEnded = service.metadata.end_trip_at == null &&
+                    service.status == Service.STATUS_IN_PROGRESS
+            )
+        }
     }
 
     fun showIdle() {
@@ -195,6 +247,14 @@ class CurrentServiceViewModel(
         _uiState.value = ServiceActionUiState.StartingTrip
     }
 
+    fun showStartSyncing() {
+        persistRecoverableStartSnapshot(
+            phase = PendingServiceActionPhase.SYNCING,
+            optimisticApplied = true
+        )
+        _uiState.value = ServiceActionUiState.StartSyncing
+    }
+
     fun showStartFailed(@StringRes messageRes: Int, canRetry: Boolean) {
         if (canRetry) {
             persistRecoverableStartSnapshot(
@@ -202,7 +262,10 @@ class CurrentServiceViewModel(
                 failureMessageRes = messageRes
             )
         } else {
-            clearPendingActionSnapshot()
+            persistRecoverableStartSnapshot(
+                phase = PendingServiceActionPhase.CONFLICT,
+                failureMessageRes = messageRes
+            )
         }
         _uiState.value = ServiceActionUiState.StartFailed(messageRes, canRetry)
     }
@@ -221,6 +284,14 @@ class CurrentServiceViewModel(
         _uiState.value = ServiceActionUiState.EndingTrip
     }
 
+    fun showEndSyncing() {
+        persistRecoverableEndSnapshot(
+            phase = PendingServiceActionPhase.SYNCING,
+            optimisticApplied = true
+        )
+        _uiState.value = ServiceActionUiState.EndSyncing
+    }
+
     fun showEndFailed(@StringRes messageRes: Int, canRetry: Boolean) {
         if (canRetry) {
             persistRecoverableEndSnapshot(
@@ -228,18 +299,24 @@ class CurrentServiceViewModel(
                 failureMessageRes = messageRes
             )
         } else {
-            clearPendingActionSnapshot()
+            persistRecoverableEndSnapshot(
+                phase = PendingServiceActionPhase.CONFLICT,
+                failureMessageRes = messageRes
+            )
         }
         _uiState.value = ServiceActionUiState.EndFailed(messageRes, canRetry)
     }
 
-    fun rememberStartTripRequest(request: StartTripRequest) {
+    fun rememberStartTripRequest(request: StartTripRequest, service: Service) {
         startTripRequest = request
         endTripRequest = null
+        pendingFingerprint = RideRecoveryPolicy.fingerprintFor(service)
     }
 
-    fun rememberEndTripRequest(request: EndTripRequest) {
+    fun rememberEndTripRequest(request: EndTripRequest, service: Service) {
         endTripRequest = request
+        startTripRequest = null
+        pendingFingerprint = RideRecoveryPolicy.fingerprintFor(service)
     }
 
     fun getStartTripRequest(): StartTripRequest? {
@@ -270,6 +347,7 @@ class CurrentServiceViewModel(
             _uiState.value == ServiceActionUiState.PreparingStart ||
             _uiState.value == ServiceActionUiState.BlockedStartByConnection ||
             _uiState.value == ServiceActionUiState.StartingTrip ||
+            _uiState.value == ServiceActionUiState.StartSyncing ||
             _uiState.value is ServiceActionUiState.StartFailed
         ) {
             showIdle()
@@ -282,6 +360,7 @@ class CurrentServiceViewModel(
             _uiState.value == ServiceActionUiState.PreparingEnd ||
             _uiState.value == ServiceActionUiState.BlockedEndByConnection ||
             _uiState.value == ServiceActionUiState.EndingTrip ||
+            _uiState.value == ServiceActionUiState.EndSyncing ||
             _uiState.value is ServiceActionUiState.EndFailed
         ) {
             showIdle()
@@ -290,6 +369,15 @@ class CurrentServiceViewModel(
 
     fun getPendingActionSnapshot(): PendingServiceActionSnapshot? {
         return pendingActionSnapshot
+    }
+
+    fun bumpPendingActionAttempt() {
+        val snapshot = pendingActionSnapshot ?: return
+        pendingActionSnapshot = snapshot.copy(
+            attemptCount = snapshot.attemptCount + 1,
+            queuedAt = System.currentTimeMillis()
+        )
+        savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
     }
 
     fun hasRestorableState(): Boolean {
@@ -308,6 +396,7 @@ class CurrentServiceViewModel(
             savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
             startTripRequest = pendingActionSnapshot.startRequest
             endTripRequest = pendingActionSnapshot.endRequest
+            pendingFingerprint = pendingActionSnapshot.fingerprint
         }
 
         if (this.currentServiceUiSnapshot == null && currentServiceUiSnapshot != null) {
@@ -377,14 +466,17 @@ class CurrentServiceViewModel(
     }
 
     fun reconcileRestoredPendingAction(
-        service: gorda.driver.models.Service,
+        service: Service,
         presenceState: MainViewModel.DriverPresenceState
     ): RideRecoveryPolicy.PendingActionReconciliation? {
         val snapshot = pendingActionSnapshot ?: return null
         val reconciliation = RideRecoveryPolicy.reconcilePendingActionSnapshot(
             snapshot = snapshot,
             observedService = service,
-            connectionReady = isReadyForServiceAction(presenceState)
+            connectionReady = isReadyForServiceAction(
+                presenceState,
+                hasPendingSync = snapshot.optimisticApplied
+            )
         )
 
         when (reconciliation) {
@@ -393,28 +485,30 @@ class CurrentServiceViewModel(
                 _uiState.value = ServiceActionUiState.Idle
             }
             is RideRecoveryPolicy.PendingActionReconciliation.Restore -> {
+                pendingActionSnapshot = reconciliation.snapshot
+                savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
                 startTripRequest = reconciliation.snapshot.startRequest
                 endTripRequest = reconciliation.snapshot.endRequest
+                pendingFingerprint = reconciliation.snapshot.fingerprint
                 when (reconciliation.snapshot.actionType) {
                     PendingServiceActionType.START -> {
                         when (reconciliation.renderMode) {
                             RideRecoveryPolicy.RestoredActionRenderMode.BLOCKED -> {
-                                pendingActionSnapshot = reconciliation.snapshot.copy(
-                                    phase = PendingServiceActionPhase.BLOCKED_BY_CONNECTION
-                                )
-                                savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
                                 _uiState.value = ServiceActionUiState.BlockedStartByConnection
                             }
                             RideRecoveryPolicy.RestoredActionRenderMode.RETRYABLE_FAILURE -> {
-                                pendingActionSnapshot = reconciliation.snapshot.copy(
-                                    phase = PendingServiceActionPhase.FAILED,
-                                    failureMessageRes = reconciliation.snapshot.failureMessageRes
-                                        ?: R.string.common_error
-                                )
-                                savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
                                 _uiState.value = ServiceActionUiState.StartFailed(
-                                    pendingActionSnapshot?.failureMessageRes ?: R.string.common_error,
+                                    reconciliation.snapshot.failureMessageRes ?: R.string.common_error,
                                     true
+                                )
+                            }
+                            RideRecoveryPolicy.RestoredActionRenderMode.SYNCING -> {
+                                _uiState.value = ServiceActionUiState.StartSyncing
+                            }
+                            RideRecoveryPolicy.RestoredActionRenderMode.CONFLICT -> {
+                                _uiState.value = ServiceActionUiState.StartFailed(
+                                    reconciliation.snapshot.failureMessageRes ?: R.string.common_error,
+                                    false
                                 )
                             }
                         }
@@ -422,22 +516,21 @@ class CurrentServiceViewModel(
                     PendingServiceActionType.END -> {
                         when (reconciliation.renderMode) {
                             RideRecoveryPolicy.RestoredActionRenderMode.BLOCKED -> {
-                                pendingActionSnapshot = reconciliation.snapshot.copy(
-                                    phase = PendingServiceActionPhase.BLOCKED_BY_CONNECTION
-                                )
-                                savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
                                 _uiState.value = ServiceActionUiState.BlockedEndByConnection
                             }
                             RideRecoveryPolicy.RestoredActionRenderMode.RETRYABLE_FAILURE -> {
-                                pendingActionSnapshot = reconciliation.snapshot.copy(
-                                    phase = PendingServiceActionPhase.FAILED,
-                                    failureMessageRes = reconciliation.snapshot.failureMessageRes
-                                        ?: R.string.common_error
-                                )
-                                savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
                                 _uiState.value = ServiceActionUiState.EndFailed(
-                                    pendingActionSnapshot?.failureMessageRes ?: R.string.common_error,
+                                    reconciliation.snapshot.failureMessageRes ?: R.string.common_error,
                                     true
+                                )
+                            }
+                            RideRecoveryPolicy.RestoredActionRenderMode.SYNCING -> {
+                                _uiState.value = ServiceActionUiState.EndSyncing
+                            }
+                            RideRecoveryPolicy.RestoredActionRenderMode.CONFLICT -> {
+                                _uiState.value = ServiceActionUiState.EndFailed(
+                                    reconciliation.snapshot.failureMessageRes ?: R.string.common_error,
+                                    false
                                 )
                             }
                         }
@@ -458,18 +551,27 @@ class CurrentServiceViewModel(
 
     private fun clearPendingActionSnapshot() {
         pendingActionSnapshot = null
+        pendingFingerprint = null
+        startTripRequest = null
+        endTripRequest = null
         savedStateHandle.remove<PendingServiceActionSnapshot>(KEY_PENDING_ACTION_SNAPSHOT)
     }
 
     private fun persistRecoverableStartSnapshot(
         phase: PendingServiceActionPhase,
-        @StringRes failureMessageRes: Int? = null
+        @StringRes failureMessageRes: Int? = null,
+        optimisticApplied: Boolean = pendingActionSnapshot?.optimisticApplied == true
     ) {
         val request = startTripRequest ?: return
         pendingActionSnapshot = PendingServiceActionSnapshot(
+            actionId = pendingActionSnapshot?.actionId ?: UUID.randomUUID().toString(),
             serviceId = request.serviceId,
             actionType = PendingServiceActionType.START,
             phase = phase,
+            queuedAt = System.currentTimeMillis(),
+            attemptCount = pendingActionSnapshot?.attemptCount ?: 1,
+            optimisticApplied = optimisticApplied,
+            fingerprint = pendingFingerprint,
             failureMessageRes = failureMessageRes,
             startRequest = request
         )
@@ -478,13 +580,19 @@ class CurrentServiceViewModel(
 
     private fun persistRecoverableEndSnapshot(
         phase: PendingServiceActionPhase,
-        @StringRes failureMessageRes: Int? = null
+        @StringRes failureMessageRes: Int? = null,
+        optimisticApplied: Boolean = pendingActionSnapshot?.optimisticApplied == true
     ) {
         val request = endTripRequest ?: return
         pendingActionSnapshot = PendingServiceActionSnapshot(
+            actionId = pendingActionSnapshot?.actionId ?: UUID.randomUUID().toString(),
             serviceId = request.serviceId,
             actionType = PendingServiceActionType.END,
             phase = phase,
+            queuedAt = System.currentTimeMillis(),
+            attemptCount = pendingActionSnapshot?.attemptCount ?: 1,
+            optimisticApplied = optimisticApplied,
+            fingerprint = pendingFingerprint,
             failureMessageRes = failureMessageRes,
             endRequest = request
         )

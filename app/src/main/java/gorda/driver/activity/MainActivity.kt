@@ -171,8 +171,8 @@ class MainActivity : AppCompatActivity() {
 
         networkMonitor = NetworkMonitor(
             context = this,
-            onNetworkChange = { isConnected ->
-                onNetWorkChange(isConnected)
+            onNetworkChange = { status ->
+                onNetWorkChange(status)
             }
         )
 
@@ -451,8 +451,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun onNetWorkChange(isConnected: Boolean) {
-        viewModel.changeNetWorkStatus(isConnected)
+    private fun onNetWorkChange(status: NetworkMonitor.NetworkStatus) {
+        viewModel.changeNetWorkStatus(
+            hasTransportNetwork = status.hasTransportNetwork,
+            networkValidated = status.networkValidated
+        )
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
@@ -782,7 +785,7 @@ class MainActivity : AppCompatActivity() {
 
         when {
             presence.desiredOnline && (
-                !presence.hasNetwork || presence.phase in setOf(
+                !presence.hasTransportNetwork || presence.phase in setOf(
                     MainViewModel.DriverPresencePhase.RECONNECTING,
                     MainViewModel.DriverPresencePhase.WAITING_FOR_FIREBASE_SOCKET
                 )
@@ -830,14 +833,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderConnectionBanner(presence: MainViewModel.DriverPresenceState) {
         val messageRes = when {
-            presence.desiredOnline && !presence.hasNetwork -> R.string.recovery_banner_no_network
+            presence.desiredOnline && !presence.hasTransportNetwork -> R.string.recovery_banner_no_network
+            presence.desiredOnline && presence.hasTransportNetwork && !presence.networkValidated ->
+                R.string.recovery_banner_weak_network
             presence.desiredOnline && presence.phase == MainViewModel.DriverPresencePhase.WAITING_FOR_FIREBASE_SOCKET ->
                 R.string.recovery_banner_waiting_socket
             presence.desiredOnline && presence.phase in setOf(
                 MainViewModel.DriverPresencePhase.RECONNECTING,
                 MainViewModel.DriverPresencePhase.WRITING_PRESENCE,
                 MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK
-            ) -> R.string.recovery_banner_reconnecting
+            ) -> R.string.recovery_banner_syncing_dispatch
             else -> null
         }
 

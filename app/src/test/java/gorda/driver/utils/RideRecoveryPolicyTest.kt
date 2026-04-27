@@ -83,9 +83,13 @@ class RideRecoveryPolicyTest {
     fun pendingStartSnapshotClearsWhenBackendAlreadyShowsStartedTrip() {
         val reconciliation = RideRecoveryPolicy.reconcilePendingActionSnapshot(
             snapshot = PendingServiceActionSnapshot(
+                actionId = "action-1",
                 serviceId = "service-1",
                 actionType = PendingServiceActionType.START,
                 phase = PendingServiceActionPhase.IN_FLIGHT_RECOVERABLE,
+                queuedAt = 100L,
+                attemptCount = 1,
+                optimisticApplied = false,
                 startRequest = CurrentServiceViewModel.StartTripRequest(
                     serviceId = "service-1",
                     startedAt = 100L,
@@ -108,9 +112,13 @@ class RideRecoveryPolicyTest {
     fun pendingEndSnapshotClearsWhenObservedServiceIsNoLongerActive() {
         val reconciliation = RideRecoveryPolicy.reconcilePendingActionSnapshot(
             snapshot = PendingServiceActionSnapshot(
+                actionId = "action-2",
                 serviceId = "service-1",
                 actionType = PendingServiceActionType.END,
                 phase = PendingServiceActionPhase.FAILED,
+                queuedAt = 100L,
+                attemptCount = 1,
+                optimisticApplied = false,
                 endRequest = CurrentServiceViewModel.EndTripRequest(
                     serviceId = "service-1",
                     endedAt = 100L,
@@ -135,9 +143,13 @@ class RideRecoveryPolicyTest {
     fun pendingActionRestoresAsBlockedWhenConnectionIsNotReady() {
         val reconciliation = RideRecoveryPolicy.reconcilePendingActionSnapshot(
             snapshot = PendingServiceActionSnapshot(
+                actionId = "action-3",
                 serviceId = "service-1",
                 actionType = PendingServiceActionType.END,
                 phase = PendingServiceActionPhase.IN_FLIGHT_RECOVERABLE,
+                queuedAt = 100L,
+                attemptCount = 1,
+                optimisticApplied = false,
                 endRequest = CurrentServiceViewModel.EndTripRequest(
                     serviceId = "service-1",
                     endedAt = 100L,

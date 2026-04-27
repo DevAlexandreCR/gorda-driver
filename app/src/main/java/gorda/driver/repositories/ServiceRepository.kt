@@ -46,6 +46,18 @@ object ServiceRepository {
         ALREADY_TERMINATED
     }
 
+    data class StartTransitionPayload(
+        val startedAt: Long
+    )
+
+    data class EndTransitionPayload(
+        val endedAt: Long,
+        val route: String,
+        val tripDistance: Int,
+        val tripFee: Int,
+        val multiplier: Double
+    )
+
     fun observePendingServices(listener: ServicesEventListener): ServiceObserverHandle {
         val query = pendingServicesQuery()
         query.addValueEventListener(listener)
@@ -196,6 +208,17 @@ object ServiceRepository {
         return taskCompletionSource.task
     }
 
+    fun validateObservedServiceForStart(service: Service?, driverId: String): Result<Service> {
+        return when (validateStartTransition(service, driverId)) {
+            StartTransitionValidation.VALID -> Result.success(service!!)
+            StartTransitionValidation.SERVICE_MISSING -> Result.failure(IllegalStateException("Service does not exist"))
+            StartTransitionValidation.WRONG_DRIVER -> Result.failure(IllegalStateException("Service belongs to another driver"))
+            StartTransitionValidation.NOT_IN_PROGRESS -> Result.failure(IllegalStateException("Service is no longer in progress"))
+            StartTransitionValidation.ALREADY_STARTED -> Result.failure(IllegalStateException("Trip already started"))
+            StartTransitionValidation.ALREADY_TERMINATED -> Result.failure(IllegalStateException("Service already terminated"))
+        }
+    }
+
     fun validateServiceForEnd(serviceId: String, driverId: String): Task<Service> {
         val taskCompletionSource = TaskCompletionSource<Service>()
 
@@ -235,6 +258,33 @@ object ServiceRepository {
             }
 
         return taskCompletionSource.task
+    }
+
+    fun validateObservedServiceForEnd(service: Service?, driverId: String): Result<Service> {
+        return when (validateEndTransition(service, driverId)) {
+            EndTransitionValidation.VALID -> Result.success(service!!)
+            EndTransitionValidation.SERVICE_MISSING -> Result.failure(IllegalStateException("Service does not exist"))
+            EndTransitionValidation.WRONG_DRIVER -> Result.failure(IllegalStateException("Service belongs to another driver"))
+            EndTransitionValidation.NOT_IN_PROGRESS -> Result.failure(IllegalStateException("Service is no longer in progress"))
+            EndTransitionValidation.NOT_STARTED -> Result.failure(IllegalStateException("Trip has not started yet"))
+            EndTransitionValidation.ALREADY_TERMINATED -> Result.failure(IllegalStateException("Service already terminated"))
+        }
+    }
+
+    fun submitTripStart(service: Service, payload: StartTransitionPayload): Task<Void> {
+        val metadata = service.metadata.copy(start_trip_at = payload.startedAt)
+        return updateMetadata(service.id, metadata, service.status)
+    }
+
+    fun submitTripEnd(service: Service, payload: EndTransitionPayload): Task<Void> {
+        val metadata = service.metadata.copy(
+            end_trip_at = payload.endedAt,
+            route = payload.route,
+            trip_distance = payload.tripDistance,
+            trip_fee = payload.tripFee,
+            trip_multiplier = payload.multiplier
+        )
+        return updateMetadata(service.id, metadata, Service.STATUS_TERMINATED)
     }
 
     fun onStatusChange(serviceId: String, listener: ValueEventListener) {
