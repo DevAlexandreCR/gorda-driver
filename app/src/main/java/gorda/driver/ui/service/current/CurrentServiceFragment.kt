@@ -11,11 +11,14 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.SystemClock
+import android.view.KeyEvent
 import android.text.Editable
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.Chronometer
 import android.widget.EditText
@@ -1694,6 +1697,22 @@ class CurrentServiceFragment : Fragment() {
             bodyContainer.visibility = View.GONE
         }
 
+        val dialogEditTexts = mutableListOf<EditText>()
+        collectEditTexts(customBody, dialogEditTexts)
+        dialogEditTexts.forEach { editText ->
+            editText.setOnEditorActionListener { _, actionId, event ->
+                val isDoneAction = actionId == EditorInfo.IME_ACTION_DONE
+                val isEnterKey = event?.keyCode == KeyEvent.KEYCODE_ENTER &&
+                    event.action == KeyEvent.ACTION_UP
+                if (isDoneAction || isEnterKey) {
+                    primaryButton.performClick()
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+
         primaryButton.setOnClickListener {
             dialog.dismiss()
             onActionSelected(true)
@@ -1706,7 +1725,22 @@ class CurrentServiceFragment : Fragment() {
 
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+        dialogEditTexts.forEach(EditText::clearFocus)
+        primaryButton.requestFocus()
         return dialog
+    }
+
+    private fun collectEditTexts(view: View?, sink: MutableList<EditText>) {
+        when (view) {
+            null -> return
+            is EditText -> sink.add(view)
+            is ViewGroup -> {
+                for (index in 0 until view.childCount) {
+                    collectEditTexts(view.getChildAt(index), sink)
+                }
+            }
+        }
     }
 
     private fun clearOngoingTripRecoveryDialog(dismiss: Boolean) {
