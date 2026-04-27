@@ -12,7 +12,6 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.SystemClock
 import android.text.Editable
-import android.text.Spanned
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -29,7 +28,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.annotation.StringRes
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.net.toUri
+import androidx.core.view.doOnLayout
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -112,6 +113,7 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var scrollViewFees: ScrollView
     private lateinit var feeDetailsHeader: LinearLayout
     private lateinit var feeDetailsContent: LinearLayout
+    private lateinit var collapsedHeader: View
     private lateinit var feedbackContainer: LinearLayout
     private lateinit var expandIcon: ImageView
     private lateinit var toggleFragmentButton: FloatingActionButton
@@ -133,9 +135,30 @@ class CurrentServiceFragment : Fragment() {
     private var isServiceBound = false
     private var currentService: Service? = null
     private var currentPresenceState = MainViewModel.DriverPresenceState()
+    private var shouldReconcileRestoredAction = true
+    private var deferredInitialNullRecoveryClear = false
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
     private lateinit var endTrip: String
+    private lateinit var bottomSheetBehavior: BottomSheetBehavior<ConstraintLayout>
+
+    private val bottomSheetCallback = object : BottomSheetBehavior.BottomSheetCallback() {
+        override fun onStateChanged(bottomSheet: View, newState: Int) {
+            val serviceId = currentService?.id ?: return
+            when (newState) {
+                BottomSheetBehavior.STATE_EXPANDED -> {
+                    currentServiceViewModel.updateBottomSheetExpanded(serviceId, true)
+                    syncRecoveryStore()
+                }
+                BottomSheetBehavior.STATE_COLLAPSED -> {
+                    currentServiceViewModel.updateBottomSheetExpanded(serviceId, false)
+                    syncRecoveryStore()
+                }
+            }
+        }
+
+        override fun onSlide(bottomSheet: View, slideOffset: Float) = Unit
+    }
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -179,6 +202,8 @@ class CurrentServiceFragment : Fragment() {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {}
 
         bindViews()
+        hydrateRecoveryState()
+        applyFeeDetailsExpandedState(currentServiceViewModel.getCurrentServiceUiSnapshot()?.isFeeDetailsExpanded == true)
         loadFrozenFeesFromStorage()
         setupStaticListeners()
         observeCurrentService()
@@ -192,13 +217,13 @@ class CurrentServiceFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         checkAndBindToExistingService()
-        if (btnStatus.text == endTrip) {
-            setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
-        }
     }
 
     override fun onDestroyView() {
         clearOngoingTripRecoveryDialog(dismiss = true)
+        if (::bottomSheetBehavior.isInitialized) {
+            bottomSheetBehavior.removeBottomSheetCallback(bottomSheetCallback)
+        }
         _binding = null
         super.onDestroyView()
     }
@@ -231,6 +256,7 @@ class CurrentServiceFragment : Fragment() {
         scrollViewFees = binding.scrollViewFees
         feeDetailsHeader = binding.feeDetailsHeader
         feeDetailsContent = binding.feeDetailsContent
+        collapsedHeader = binding.serviceLayout.collapsedHeader
         feedbackContainer = binding.serviceActionFeedback
         textActionStatus = binding.textServiceActionStatus
         expandIcon = binding.expandIcon
@@ -268,7 +294,11 @@ class CurrentServiceFragment : Fragment() {
         }
 
         setupFeeDetailsCollapse()
-        setupBottomSheetBehavior(BottomSheetBehavior.STATE_EXPANDED)
+        setupBottomSheetBehavior()
+
+        collapsedHeader.setOnClickListener {
+            toggleBottomSheet()
+        }
 
         toggleFragmentButton.setOnClickListener {
             toggleFragment()
@@ -289,15 +319,29 @@ class CurrentServiceFragment : Fragment() {
             toggleFragmentButton.visibility = View.GONE
 
             if (service == null) {
-                currentServiceViewModel.reset()
+                if (!deferredInitialNullRecoveryClear && currentServiceViewModel.hasRestorableState()) {
+                    deferredInitialNullRecoveryClear = true
+                    renderServiceActionUi(null)
+                    return@observe
+                }
+
                 stopFeeService()
+                currentServiceViewModel.reset()
+                shouldReconcileRestoredAction = true
+                deferredInitialNullRecoveryClear = false
                 renderServiceActionUi(null)
+                syncRecoveryStore()
                 return@observe
             }
 
+            deferredInitialNullRecoveryClear = false
+            currentServiceViewModel.discardStaleStateForService(service.id)
+            reconcileRecoveredActionIfNeeded(service)
             bindServiceDetails(service)
             bindTripStage(service)
             renderServiceActionUi(service)
+            restorePresentationStateForService(service)
+            syncRecoveryStore()
         }
     }
 
@@ -358,6 +402,7 @@ class CurrentServiceFragment : Fragment() {
     private fun observeActionUiState() {
         currentServiceViewModel.uiState.observe(viewLifecycleOwner) {
             renderServiceActionUi(currentService)
+            syncRecoveryStore()
         }
     }
 
@@ -428,12 +473,12 @@ class CurrentServiceFragment : Fragment() {
             service.metadata.arrived_at == null -> {
                 btnStatus.text = haveArrived
                 scrollViewFees.visibility = View.INVISIBLE
-                stopFeeService()
+                stopFeeService(clearPersistedState = false)
             }
             service.metadata.start_trip_at == null -> {
                 btnStatus.text = startTrip
                 scrollViewFees.visibility = View.INVISIBLE
-                stopFeeService()
+                stopFeeService(clearPersistedState = false)
             }
             else -> {
                 btnStatus.text = endTrip
@@ -598,7 +643,7 @@ class CurrentServiceFragment : Fragment() {
                 }
                 mainViewModel.setLoading(false)
                 currentServiceViewModel.showIdle()
-                setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
+                setBottomSheetState(BottomSheetBehavior.STATE_COLLAPSED)
                 showStartTripDialog(service)
             }
             CurrentServiceViewModel.StartRideFeesSource.FALLBACK -> {
@@ -609,7 +654,7 @@ class CurrentServiceFragment : Fragment() {
                 mainViewModel.setLoading(false)
                 currentServiceViewModel.showIdle()
                 showToast(R.string.using_saved_pricing_snapshot)
-                setupBottomSheetBehavior(BottomSheetBehavior.STATE_COLLAPSED)
+                setBottomSheetState(BottomSheetBehavior.STATE_COLLAPSED)
                 showStartTripDialog(service)
             }
             CurrentServiceViewModel.StartRideFeesSource.UNAVAILABLE -> {
@@ -659,8 +704,14 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private fun executeConfirmedStartTrip(request: CurrentServiceViewModel.StartTripRequest) {
+        feeMultiplier = request.multiplier
+        textFareMultiplier.text = feeMultiplier.toString()
+        textFareMultiplierDisplay.text = feeMultiplier.toString()
+        RideRecoveryStore.persistMultiplier(sharedPreferences, feeMultiplier)
+
         if (!CurrentServiceViewModel.isReadyForServiceAction(currentPresenceState)) {
             currentServiceViewModel.showBlockedStartByConnection()
+            syncRecoveryStore()
             return
         }
 
@@ -773,6 +824,7 @@ class CurrentServiceFragment : Fragment() {
         currentServiceViewModel.showPreparingEnd()
         if (!CurrentServiceViewModel.isReadyForServiceAction(currentPresenceState)) {
             currentServiceViewModel.showBlockedEndByConnection()
+            syncRecoveryStore()
             return
         }
 
@@ -1123,9 +1175,57 @@ class CurrentServiceFragment : Fragment() {
         }
     }
 
-    private fun setupBottomSheetBehavior(state: Int) {
+    private fun hydrateRecoveryState() {
+        currentServiceViewModel.restoreFromStoreIfNeeded(
+            pendingActionSnapshot = RideRecoveryStore.getPendingServiceActionSnapshot(sharedPreferences),
+            currentServiceUiSnapshot = RideRecoveryStore.getCurrentServiceUiSnapshot(sharedPreferences),
+            bottomSheetSnapshot = RideRecoveryStore.getBottomSheetPresentationSnapshot(sharedPreferences)
+        )
+    }
+
+    private fun reconcileRecoveredActionIfNeeded(service: Service, force: Boolean = false) {
+        if (!force && !shouldReconcileRestoredAction) {
+            return
+        }
+
+        currentServiceViewModel.reconcileRestoredPendingAction(service, currentPresenceState)
+        shouldReconcileRestoredAction = false
+    }
+
+    private fun restorePresentationStateForService(service: Service) {
+        val feeDetailsSnapshot = currentServiceViewModel.getCurrentServiceUiSnapshot()
+        applyFeeDetailsExpandedState(
+            feeDetailsSnapshot?.takeIf { it.serviceId == service.id }?.isFeeDetailsExpanded == true
+        )
+
+        val expanded = currentServiceViewModel.getBottomSheetPresentationSnapshot()
+            ?.takeIf { it.serviceId == service.id }
+            ?.isExpanded
+            ?: (baseActionText(service) != endTrip)
+
+        setBottomSheetState(
+            if (expanded) {
+                BottomSheetBehavior.STATE_EXPANDED
+            } else {
+                BottomSheetBehavior.STATE_COLLAPSED
+            }
+        )
+    }
+
+    private fun setupBottomSheetBehavior() {
         val serviceLayoutView = binding.serviceLayout.root
-        BottomSheetBehavior.from(serviceLayoutView).state = state
+        bottomSheetBehavior =                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       BottomSheetBehavior.from(serviceLayoutView).apply {
+            isHideable = false
+            skipCollapsed = false
+            addBottomSheetCallback(bottomSheetCallback)
+        }
+
+        serviceLayoutView.doOnLayout {
+            bottomSheetBehavior.peekHeight = collapsedHeader.bottom + serviceLayoutView.paddingBottom
+            currentService?.let { service ->
+                restorePresentationStateForService(service)
+            }
+        }
     }
 
     private fun setupFeeDetailsCollapse() {
@@ -1135,14 +1235,50 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private fun toggleFeeDetails() {
-        isExpanded = !isExpanded
-        if (isExpanded) {
-            feeDetailsContent.visibility = View.VISIBLE
-            expandIcon.animate().rotation(180f).setDuration(200).start()
-        } else {
-            feeDetailsContent.visibility = View.GONE
-            expandIcon.animate().rotation(0f).setDuration(200).start()
+        val serviceId = currentService?.id
+        applyFeeDetailsExpandedState(!isExpanded, animate = true)
+        if (serviceId != null) {
+            currentServiceViewModel.updateFeeDetailsExpanded(serviceId, isExpanded)
+            syncRecoveryStore()
         }
+    }
+
+    private fun applyFeeDetailsExpandedState(expanded: Boolean, animate: Boolean = false) {
+        isExpanded = expanded
+        feeDetailsContent.visibility = if (expanded) View.VISIBLE else View.GONE
+        if (animate) {
+            expandIcon.animate().rotation(if (expanded) 180f else 0f).setDuration(200).start()
+        } else {
+            expandIcon.rotation = if (expanded) 180f else 0f
+        }
+    }
+
+    private fun toggleBottomSheet() {
+        if (!::bottomSheetBehavior.isInitialized) {
+            return
+        }
+
+        setBottomSheetState(
+            if (bottomSheetBehavior.state == BottomSheetBehavior.STATE_EXPANDED) {
+                BottomSheetBehavior.STATE_COLLAPSED
+            } else {
+                BottomSheetBehavior.STATE_EXPANDED
+            }
+        )
+    }
+
+    private fun setBottomSheetState(state: Int) {
+        if (!::bottomSheetBehavior.isInitialized) {
+            return
+        }
+
+        bottomSheetBehavior.state = state
+        val serviceId = currentService?.id ?: return
+        currentServiceViewModel.updateBottomSheetExpanded(
+            serviceId = serviceId,
+            isExpanded = state == BottomSheetBehavior.STATE_EXPANDED
+        )
+        syncRecoveryStore()
     }
 
     private fun toggleFragment() {
@@ -1224,6 +1360,20 @@ class CurrentServiceFragment : Fragment() {
     private fun persistRideFeesSnapshot(rideFees: RideFees?) {
         rideFees ?: return
         RideRecoveryStore.persistRideFeesSnapshot(sharedPreferences, rideFees)
+    }
+
+    private fun syncRecoveryStore() {
+        currentServiceViewModel.getPendingActionSnapshot()?.let {
+            RideRecoveryStore.persistPendingServiceActionSnapshot(sharedPreferences, it)
+        } ?: RideRecoveryStore.clearPendingServiceActionSnapshot(sharedPreferences)
+
+        currentServiceViewModel.getCurrentServiceUiSnapshot()?.let {
+            RideRecoveryStore.persistCurrentServiceUiSnapshot(sharedPreferences, it)
+        } ?: RideRecoveryStore.clearCurrentServiceUiSnapshot(sharedPreferences)
+
+        currentServiceViewModel.getBottomSheetPresentationSnapshot()?.let {
+            RideRecoveryStore.persistBottomSheetPresentationSnapshot(sharedPreferences, it)
+        } ?: RideRecoveryStore.clearBottomSheetPresentationSnapshot(sharedPreferences)
     }
 
     private fun getStoredRideFeesSnapshot(): RideFees? {
@@ -1358,7 +1508,7 @@ class CurrentServiceFragment : Fragment() {
         }
     }
 
-    private fun stopFeeService() {
+    private fun stopFeeService(clearPersistedState: Boolean = true) {
         if (isServiceBound) {
             requireContext().unbindService(serviceConnection)
             isServiceBound = false
@@ -1370,7 +1520,11 @@ class CurrentServiceFragment : Fragment() {
         chronometer.stop()
         chronometer.base = SystemClock.elapsedRealtime()
 
-        RideRecoveryStore.clear(sharedPreferences)
+        if (clearPersistedState) {
+            RideRecoveryStore.clear(sharedPreferences)
+        } else {
+            RideRecoveryStore.clearRideSession(sharedPreferences)
+        }
 
         mainViewModel.changeConnectTripService(false)
         toggleFragmentButton.visibility = View.GONE

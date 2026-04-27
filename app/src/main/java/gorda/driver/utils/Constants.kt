@@ -25,6 +25,9 @@ class Constants {
         const val START_TIME = "gorda.driver.START_TIME"
         const val MULTIPLIER = "gorda.driver.MULTIPLIER"
         const val POINTS = "gorda.driver.POINTS"
+        const val CURRENT_SERVICE_UI_SNAPSHOT = "gorda.driver.CURRENT_SERVICE_UI_SNAPSHOT"
+        const val PENDING_SERVICE_ACTION_SNAPSHOT = "gorda.driver.PENDING_SERVICE_ACTION_SNAPSHOT"
+        const val CURRENT_SERVICE_BOTTOM_SHEET_SNAPSHOT = "gorda.driver.CURRENT_SERVICE_BOTTOM_SHEET_SNAPSHOT"
         const val ALERT_ACTION = "gorda.driver.SHOW_ALERT"
         const val DRIVER_DESIRED_ONLINE = "gorda.driver.DRIVER_DESIRED_ONLINE"
         const val PENDING_SERVICES_LIMIT = 100

@@ -3,11 +3,17 @@ package gorda.driver.ui.service.current
 import androidx.annotation.StringRes
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import gorda.driver.R
 import gorda.driver.interfaces.RideFees
 import gorda.driver.ui.MainViewModel
+import gorda.driver.utils.RideRecoveryPolicy
+import java.io.Serializable
 
-class CurrentServiceViewModel : ViewModel() {
+class CurrentServiceViewModel(
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
 
     enum class ServiceActionConnectionStatus {
         OFFLINE,
@@ -32,7 +38,7 @@ class CurrentServiceViewModel : ViewModel() {
         val startedAt: Long,
         val multiplier: Double,
         val origin: String
-    )
+    ) : Serializable
 
     data class EndTripRequest(
         val serviceId: String,
@@ -41,7 +47,7 @@ class CurrentServiceViewModel : ViewModel() {
         val tripDistance: Int,
         val tripFee: Int,
         val multiplier: Double
-    )
+    ) : Serializable
 
     data class StartRideFeesResolution(
         val fees: RideFees?,
@@ -75,6 +81,10 @@ class CurrentServiceViewModel : ViewModel() {
     }
 
     companion object {
+        private const val KEY_PENDING_ACTION_SNAPSHOT = "current_service_pending_action_snapshot"
+        private const val KEY_CURRENT_SERVICE_UI_SNAPSHOT = "current_service_ui_snapshot"
+        private const val KEY_BOTTOM_SHEET_SNAPSHOT = "current_service_bottom_sheet_snapshot"
+
         fun connectionStatusForServiceAction(
             state: MainViewModel.DriverPresenceState
         ): ServiceActionConnectionStatus {
@@ -147,8 +157,14 @@ class CurrentServiceViewModel : ViewModel() {
 
     private var nextAttemptId: Long = 0L
     private var activeAttemptId: Long = 0L
-    private var startTripRequest: StartTripRequest? = null
-    private var endTripRequest: EndTripRequest? = null
+    private var pendingActionSnapshot: PendingServiceActionSnapshot? =
+        savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT]
+    private var currentServiceUiSnapshot: CurrentServiceUiSnapshot? =
+        savedStateHandle[KEY_CURRENT_SERVICE_UI_SNAPSHOT]
+    private var bottomSheetPresentationSnapshot: BottomSheetPresentationSnapshot? =
+        savedStateHandle[KEY_BOTTOM_SHEET_SNAPSHOT]
+    private var startTripRequest: StartTripRequest? = pendingActionSnapshot?.startRequest
+    private var endTripRequest: EndTripRequest? = pendingActionSnapshot?.endRequest
 
     fun newAttempt(): Long {
         nextAttemptId += 1
@@ -161,6 +177,7 @@ class CurrentServiceViewModel : ViewModel() {
     }
 
     fun showIdle() {
+        clearPendingActionSnapshot()
         _uiState.value = ServiceActionUiState.Idle
     }
 
@@ -169,14 +186,24 @@ class CurrentServiceViewModel : ViewModel() {
     }
 
     fun showBlockedStartByConnection() {
+        persistRecoverableStartSnapshot(PendingServiceActionPhase.BLOCKED_BY_CONNECTION)
         _uiState.value = ServiceActionUiState.BlockedStartByConnection
     }
 
     fun showStartingTrip() {
+        persistRecoverableStartSnapshot(PendingServiceActionPhase.IN_FLIGHT_RECOVERABLE)
         _uiState.value = ServiceActionUiState.StartingTrip
     }
 
     fun showStartFailed(@StringRes messageRes: Int, canRetry: Boolean) {
+        if (canRetry) {
+            persistRecoverableStartSnapshot(
+                phase = PendingServiceActionPhase.FAILED,
+                failureMessageRes = messageRes
+            )
+        } else {
+            clearPendingActionSnapshot()
+        }
         _uiState.value = ServiceActionUiState.StartFailed(messageRes, canRetry)
     }
 
@@ -185,14 +212,24 @@ class CurrentServiceViewModel : ViewModel() {
     }
 
     fun showBlockedEndByConnection() {
+        persistRecoverableEndSnapshot(PendingServiceActionPhase.BLOCKED_BY_CONNECTION)
         _uiState.value = ServiceActionUiState.BlockedEndByConnection
     }
 
     fun showEndingTrip() {
+        persistRecoverableEndSnapshot(PendingServiceActionPhase.IN_FLIGHT_RECOVERABLE)
         _uiState.value = ServiceActionUiState.EndingTrip
     }
 
     fun showEndFailed(@StringRes messageRes: Int, canRetry: Boolean) {
+        if (canRetry) {
+            persistRecoverableEndSnapshot(
+                phase = PendingServiceActionPhase.FAILED,
+                failureMessageRes = messageRes
+            )
+        } else {
+            clearPendingActionSnapshot()
+        }
         _uiState.value = ServiceActionUiState.EndFailed(messageRes, canRetry)
     }
 
@@ -215,10 +252,16 @@ class CurrentServiceViewModel : ViewModel() {
 
     fun clearStartTripRequest() {
         startTripRequest = null
+        if (pendingActionSnapshot?.actionType == PendingServiceActionType.START) {
+            clearPendingActionSnapshot()
+        }
     }
 
     fun clearEndTripRequest() {
         endTripRequest = null
+        if (pendingActionSnapshot?.actionType == PendingServiceActionType.END) {
+            clearPendingActionSnapshot()
+        }
     }
 
     fun onTripStartedObserved() {
@@ -245,9 +288,206 @@ class CurrentServiceViewModel : ViewModel() {
         }
     }
 
+    fun getPendingActionSnapshot(): PendingServiceActionSnapshot? {
+        return pendingActionSnapshot
+    }
+
+    fun hasRestorableState(): Boolean {
+        return pendingActionSnapshot != null ||
+            currentServiceUiSnapshot != null ||
+            bottomSheetPresentationSnapshot != null
+    }
+
+    fun restoreFromStoreIfNeeded(
+        pendingActionSnapshot: PendingServiceActionSnapshot?,
+        currentServiceUiSnapshot: CurrentServiceUiSnapshot?,
+        bottomSheetSnapshot: BottomSheetPresentationSnapshot?
+    ) {
+        if (this.pendingActionSnapshot == null && pendingActionSnapshot != null) {
+            this.pendingActionSnapshot = pendingActionSnapshot
+            savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
+            startTripRequest = pendingActionSnapshot.startRequest
+            endTripRequest = pendingActionSnapshot.endRequest
+        }
+
+        if (this.currentServiceUiSnapshot == null && currentServiceUiSnapshot != null) {
+            this.currentServiceUiSnapshot = currentServiceUiSnapshot
+            savedStateHandle[KEY_CURRENT_SERVICE_UI_SNAPSHOT] = currentServiceUiSnapshot
+        }
+
+        if (this.bottomSheetPresentationSnapshot == null && bottomSheetSnapshot != null) {
+            this.bottomSheetPresentationSnapshot = bottomSheetSnapshot
+            savedStateHandle[KEY_BOTTOM_SHEET_SNAPSHOT] = bottomSheetSnapshot
+        }
+    }
+
+    fun getCurrentServiceUiSnapshot(): CurrentServiceUiSnapshot? {
+        return currentServiceUiSnapshot
+    }
+
+    fun getBottomSheetPresentationSnapshot(): BottomSheetPresentationSnapshot? {
+        return bottomSheetPresentationSnapshot
+    }
+
+    fun updateFeeDetailsExpanded(serviceId: String, isExpanded: Boolean) {
+        currentServiceUiSnapshot = CurrentServiceUiSnapshot(
+            serviceId = serviceId,
+            isFeeDetailsExpanded = isExpanded
+        )
+        savedStateHandle[KEY_CURRENT_SERVICE_UI_SNAPSHOT] = currentServiceUiSnapshot
+    }
+
+    fun updateBottomSheetExpanded(serviceId: String, isExpanded: Boolean) {
+        bottomSheetPresentationSnapshot = BottomSheetPresentationSnapshot(
+            serviceId = serviceId,
+            isExpanded = isExpanded
+        )
+        savedStateHandle[KEY_BOTTOM_SHEET_SNAPSHOT] = bottomSheetPresentationSnapshot
+    }
+
+    fun clearServiceScopedSnapshots() {
+        clearPendingActionSnapshot()
+        currentServiceUiSnapshot = null
+        bottomSheetPresentationSnapshot = null
+        savedStateHandle.remove<CurrentServiceUiSnapshot>(KEY_CURRENT_SERVICE_UI_SNAPSHOT)
+        savedStateHandle.remove<BottomSheetPresentationSnapshot>(KEY_BOTTOM_SHEET_SNAPSHOT)
+    }
+
+    fun discardStaleStateForService(serviceId: String) {
+        if (pendingActionSnapshot?.serviceId != null &&
+            pendingActionSnapshot?.serviceId != serviceId
+        ) {
+            clearPendingActionSnapshot()
+            _uiState.value = ServiceActionUiState.Idle
+        }
+
+        if (currentServiceUiSnapshot?.serviceId != null &&
+            currentServiceUiSnapshot?.serviceId != serviceId
+        ) {
+            currentServiceUiSnapshot = null
+            savedStateHandle.remove<CurrentServiceUiSnapshot>(KEY_CURRENT_SERVICE_UI_SNAPSHOT)
+        }
+
+        if (bottomSheetPresentationSnapshot?.serviceId != null &&
+            bottomSheetPresentationSnapshot?.serviceId != serviceId
+        ) {
+            bottomSheetPresentationSnapshot = null
+            savedStateHandle.remove<BottomSheetPresentationSnapshot>(KEY_BOTTOM_SHEET_SNAPSHOT)
+        }
+    }
+
+    fun reconcileRestoredPendingAction(
+        service: gorda.driver.models.Service,
+        presenceState: MainViewModel.DriverPresenceState
+    ): RideRecoveryPolicy.PendingActionReconciliation? {
+        val snapshot = pendingActionSnapshot ?: return null
+        val reconciliation = RideRecoveryPolicy.reconcilePendingActionSnapshot(
+            snapshot = snapshot,
+            observedService = service,
+            connectionReady = isReadyForServiceAction(presenceState)
+        )
+
+        when (reconciliation) {
+            is RideRecoveryPolicy.PendingActionReconciliation.Clear -> {
+                clearPendingActionSnapshot()
+                _uiState.value = ServiceActionUiState.Idle
+            }
+            is RideRecoveryPolicy.PendingActionReconciliation.Restore -> {
+                startTripRequest = reconciliation.snapshot.startRequest
+                endTripRequest = reconciliation.snapshot.endRequest
+                when (reconciliation.snapshot.actionType) {
+                    PendingServiceActionType.START -> {
+                        when (reconciliation.renderMode) {
+                            RideRecoveryPolicy.RestoredActionRenderMode.BLOCKED -> {
+                                pendingActionSnapshot = reconciliation.snapshot.copy(
+                                    phase = PendingServiceActionPhase.BLOCKED_BY_CONNECTION
+                                )
+                                savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
+                                _uiState.value = ServiceActionUiState.BlockedStartByConnection
+                            }
+                            RideRecoveryPolicy.RestoredActionRenderMode.RETRYABLE_FAILURE -> {
+                                pendingActionSnapshot = reconciliation.snapshot.copy(
+                                    phase = PendingServiceActionPhase.FAILED,
+                                    failureMessageRes = reconciliation.snapshot.failureMessageRes
+                                        ?: R.string.common_error
+                                )
+                                savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
+                                _uiState.value = ServiceActionUiState.StartFailed(
+                                    pendingActionSnapshot?.failureMessageRes ?: R.string.common_error,
+                                    true
+                                )
+                            }
+                        }
+                    }
+                    PendingServiceActionType.END -> {
+                        when (reconciliation.renderMode) {
+                            RideRecoveryPolicy.RestoredActionRenderMode.BLOCKED -> {
+                                pendingActionSnapshot = reconciliation.snapshot.copy(
+                                    phase = PendingServiceActionPhase.BLOCKED_BY_CONNECTION
+                                )
+                                savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
+                                _uiState.value = ServiceActionUiState.BlockedEndByConnection
+                            }
+                            RideRecoveryPolicy.RestoredActionRenderMode.RETRYABLE_FAILURE -> {
+                                pendingActionSnapshot = reconciliation.snapshot.copy(
+                                    phase = PendingServiceActionPhase.FAILED,
+                                    failureMessageRes = reconciliation.snapshot.failureMessageRes
+                                        ?: R.string.common_error
+                                )
+                                savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
+                                _uiState.value = ServiceActionUiState.EndFailed(
+                                    pendingActionSnapshot?.failureMessageRes ?: R.string.common_error,
+                                    true
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return reconciliation
+    }
+
     fun reset() {
         clearStartTripRequest()
         clearEndTripRequest()
-        showIdle()
+        clearServiceScopedSnapshots()
+        _uiState.value = ServiceActionUiState.Idle
+    }
+
+    private fun clearPendingActionSnapshot() {
+        pendingActionSnapshot = null
+        savedStateHandle.remove<PendingServiceActionSnapshot>(KEY_PENDING_ACTION_SNAPSHOT)
+    }
+
+    private fun persistRecoverableStartSnapshot(
+        phase: PendingServiceActionPhase,
+        @StringRes failureMessageRes: Int? = null
+    ) {
+        val request = startTripRequest ?: return
+        pendingActionSnapshot = PendingServiceActionSnapshot(
+            serviceId = request.serviceId,
+            actionType = PendingServiceActionType.START,
+            phase = phase,
+            failureMessageRes = failureMessageRes,
+            startRequest = request
+        )
+        savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
+    }
+
+    private fun persistRecoverableEndSnapshot(
+        phase: PendingServiceActionPhase,
+        @StringRes failureMessageRes: Int? = null
+    ) {
+        val request = endTripRequest ?: return
+        pendingActionSnapshot = PendingServiceActionSnapshot(
+            serviceId = request.serviceId,
+            actionType = PendingServiceActionType.END,
+            phase = phase,
+            failureMessageRes = failureMessageRes,
+            endRequest = request
+        )
+        savedStateHandle[KEY_PENDING_ACTION_SNAPSHOT] = pendingActionSnapshot
     }
 }
