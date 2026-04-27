@@ -136,6 +136,7 @@ class CurrentServiceFragment : Fragment() {
     private var totalRide: Double = 0.0
     private var feeMultiplier: Double = 1.0
     private var totalDistance = 0.0
+    private var currentRideElapsedSeconds = 0L
     private var startingRide = false
     private var isServiceBound = false
     private var currentService: Service? = null
@@ -326,7 +327,6 @@ class CurrentServiceFragment : Fragment() {
             }
 
             currentService = service
-            toggleFragmentButton.visibility = View.GONE
 
             if (service == null) {
                 val pendingAction = currentServiceViewModel.getPendingActionSnapshot()
@@ -337,12 +337,14 @@ class CurrentServiceFragment : Fragment() {
                     deferredInitialNullRecoveryClear = false
                     renderServiceActionUi(null)
                     syncRecoveryStore()
+                    updateServicesFabVisibility()
                     return@observe
                 }
 
                 if (!deferredInitialNullRecoveryClear && currentServiceViewModel.hasRestorableState()) {
                     deferredInitialNullRecoveryClear = true
                     renderServiceActionUi(null)
+                    updateServicesFabVisibility()
                     return@observe
                 }
 
@@ -352,6 +354,7 @@ class CurrentServiceFragment : Fragment() {
                 deferredInitialNullRecoveryClear = false
                 renderServiceActionUi(null)
                 syncRecoveryStore()
+                updateServicesFabVisibility()
                 return@observe
             }
 
@@ -365,6 +368,7 @@ class CurrentServiceFragment : Fragment() {
                 currentServiceViewModel.reset()
                 mainViewModel.completeCurrentService()
                 syncRecoveryStore()
+                updateServicesFabVisibility()
                 return@observe
             }
 
@@ -373,6 +377,7 @@ class CurrentServiceFragment : Fragment() {
             renderServiceActionUi(service)
             restorePresentationStateForService(service)
             syncRecoveryStore()
+            updateServicesFabVisibility()
         }
     }
 
@@ -387,11 +392,11 @@ class CurrentServiceFragment : Fragment() {
             if (service != null) {
                 connectionDialog = ConnectionServiceDialog(service)
                 connectionServiceButton.visibility = View.VISIBLE
-                toggleFragmentButton.visibility = View.GONE
             } else {
                 connectionDialog = null
                 connectionServiceButton.visibility = View.INVISIBLE
             }
+            updateServicesFabVisibility()
         }
     }
 
@@ -399,6 +404,7 @@ class CurrentServiceFragment : Fragment() {
         mainViewModel.currentFeeData.observe(viewLifecycleOwner) { feeData ->
             totalRide = feeData.totalFee
             totalDistance = feeData.totalDistance
+            currentRideElapsedSeconds = feeData.elapsedSeconds
 
             chronometer.base = SystemClock.elapsedRealtime() - (feeData.elapsedSeconds * 1000)
 
@@ -407,14 +413,7 @@ class CurrentServiceFragment : Fragment() {
             textCurrentDistancePrice.text = NumberHelper.toCurrency(feeData.distanceFee)
             textCurrentDistance.text = getString(R.string.distance_km, feeData.totalDistance / 1000)
             textFareMultiplierDisplay.text = feeMultiplier.toString()
-
-            if (mainViewModel.nextService.value == null) {
-                if (feeData.elapsedSeconds > fees.timeoutToConnection && !toggleFragmentButton.isVisible) {
-                    toggleFragmentButton.visibility = View.VISIBLE
-                }
-            } else {
-                toggleFragmentButton.visibility = View.GONE
-            }
+            updateServicesFabVisibility()
         }
     }
 
@@ -442,6 +441,7 @@ class CurrentServiceFragment : Fragment() {
         currentServiceViewModel.uiState.observe(viewLifecycleOwner) {
             renderServiceActionUi(currentService)
             syncRecoveryStore()
+            updateServicesFabVisibility()
         }
     }
 
@@ -531,6 +531,8 @@ class CurrentServiceFragment : Fragment() {
                 stopFeeService(clearPersistedState = false)
             }
         }
+
+        updateServicesFabVisibility()
     }
 
     private fun maybeRestoreOngoingTrip(service: Service) {
@@ -1772,7 +1774,23 @@ class CurrentServiceFragment : Fragment() {
         }
 
         mainViewModel.changeConnectTripService(false)
-        toggleFragmentButton.visibility = View.GONE
+        currentRideElapsedSeconds = 0L
+        updateServicesFabVisibility()
+    }
+
+    private fun updateServicesFabVisibility() {
+        val service = currentService
+        val shouldShow = CurrentServiceViewModel.shouldShowServicesFab(
+            currentService = service,
+            hasNextService = mainViewModel.nextService.value != null,
+            timeoutToConnectionSeconds = fees.timeoutToConnection,
+            rideElapsedSeconds = currentRideElapsedSeconds,
+            nowEpochSeconds = Date().time / 1000,
+            serviceStageOverride = service?.let(currentServiceViewModel::serviceStageOverrideFor)
+                ?: CurrentServiceViewModel.ServiceStageOverride()
+        )
+
+        toggleFragmentButton.visibility = if (shouldShow) View.VISIBLE else View.GONE
     }
 
     private fun getTotalFee(): Double {

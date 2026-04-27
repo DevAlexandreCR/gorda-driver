@@ -7,6 +7,7 @@ import gorda.driver.interfaces.ServiceMetadata
 import gorda.driver.models.Service
 import gorda.driver.ui.MainViewModel
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -86,6 +87,132 @@ class CurrentServiceViewModelLogicTest {
             CurrentServiceViewModel.connectionStatusForServiceAction(state)
         )
         assertEquals(true, CurrentServiceViewModel.isReadyForServiceAction(state))
+    }
+
+    @Test
+    fun assignedServiceBeforeTimeoutKeepsServicesFabHidden() {
+        assertFalse(
+            CurrentServiceViewModel.shouldShowServicesFab(
+                currentService = inProgressService(createdAt = 900L),
+                hasNextService = false,
+                timeoutToConnectionSeconds = 120,
+                rideElapsedSeconds = 0L,
+                nowEpochSeconds = 1_000L,
+                serviceStageOverride = CurrentServiceViewModel.ServiceStageOverride()
+            )
+        )
+    }
+
+    @Test
+    fun assignedServiceAfterTimeoutShowsServicesFab() {
+        assertTrue(
+            CurrentServiceViewModel.shouldShowServicesFab(
+                currentService = inProgressService(createdAt = 900L),
+                hasNextService = false,
+                timeoutToConnectionSeconds = 120,
+                rideElapsedSeconds = 0L,
+                nowEpochSeconds = 1_021L,
+                serviceStageOverride = CurrentServiceViewModel.ServiceStageOverride()
+            )
+        )
+    }
+
+    @Test
+    fun arrivedServiceBeforeTimeoutStillKeepsServicesFabHidden() {
+        assertFalse(
+            CurrentServiceViewModel.shouldShowServicesFab(
+                currentService = inProgressService(
+                    createdAt = 900L,
+                    metadata = ServiceMetadata(arrived_at = 950L)
+                ),
+                hasNextService = false,
+                timeoutToConnectionSeconds = 120,
+                rideElapsedSeconds = 0L,
+                nowEpochSeconds = 1_000L,
+                serviceStageOverride = CurrentServiceViewModel.ServiceStageOverride()
+            )
+        )
+    }
+
+    @Test
+    fun startedTripBeforeTimeoutKeepsServicesFabHidden() {
+        assertFalse(
+            CurrentServiceViewModel.shouldShowServicesFab(
+                currentService = inProgressService(
+                    createdAt = 900L,
+                    metadata = ServiceMetadata(arrived_at = 910L, start_trip_at = 920L)
+                ),
+                hasNextService = false,
+                timeoutToConnectionSeconds = 120,
+                rideElapsedSeconds = 119L,
+                nowEpochSeconds = 5_000L,
+                serviceStageOverride = CurrentServiceViewModel.ServiceStageOverride()
+            )
+        )
+    }
+
+    @Test
+    fun startedTripAfterTimeoutShowsServicesFab() {
+        assertTrue(
+            CurrentServiceViewModel.shouldShowServicesFab(
+                currentService = inProgressService(
+                    createdAt = 900L,
+                    metadata = ServiceMetadata(arrived_at = 910L, start_trip_at = 920L)
+                ),
+                hasNextService = false,
+                timeoutToConnectionSeconds = 120,
+                rideElapsedSeconds = 121L,
+                nowEpochSeconds = 5_000L,
+                serviceStageOverride = CurrentServiceViewModel.ServiceStageOverride()
+            )
+        )
+    }
+
+    @Test
+    fun nextServiceKeepsServicesFabHidden() {
+        assertFalse(
+            CurrentServiceViewModel.shouldShowServicesFab(
+                currentService = inProgressService(createdAt = 900L),
+                hasNextService = true,
+                timeoutToConnectionSeconds = 120,
+                rideElapsedSeconds = 300L,
+                nowEpochSeconds = 2_000L,
+                serviceStageOverride = CurrentServiceViewModel.ServiceStageOverride()
+            )
+        )
+    }
+
+    @Test
+    fun missingCurrentServiceKeepsServicesFabHidden() {
+        assertFalse(
+            CurrentServiceViewModel.shouldShowServicesFab(
+                currentService = null,
+                hasNextService = false,
+                timeoutToConnectionSeconds = 120,
+                rideElapsedSeconds = 300L,
+                nowEpochSeconds = 2_000L,
+                serviceStageOverride = CurrentServiceViewModel.ServiceStageOverride()
+            )
+        )
+    }
+
+    @Test
+    fun optimisticStartedOverrideUsesRideElapsedInsteadOfCreatedAt() {
+        assertFalse(
+            CurrentServiceViewModel.shouldShowServicesFab(
+                currentService = inProgressService(
+                    createdAt = 100L,
+                    metadata = ServiceMetadata(arrived_at = 150L)
+                ),
+                hasNextService = false,
+                timeoutToConnectionSeconds = 120,
+                rideElapsedSeconds = 60L,
+                nowEpochSeconds = 1_000L,
+                serviceStageOverride = CurrentServiceViewModel.ServiceStageOverride(
+                    treatAsStarted = true
+                )
+            )
+        )
     }
 
     @Test
@@ -334,5 +461,17 @@ class CurrentServiceViewModelLogicTest {
         assertEquals(CurrentServiceViewModel.ServiceActionUiState.Idle, viewModel.uiState.value)
         assertNull(viewModel.getPendingActionSnapshot())
         assertNull(viewModel.getStartTripRequest())
+    }
+
+    private fun inProgressService(
+        createdAt: Long,
+        metadata: ServiceMetadata = ServiceMetadata()
+    ): Service {
+        return Service(
+            id = "service-1",
+            status = Service.STATUS_IN_PROGRESS,
+            created_at = createdAt,
+            metadata = metadata
+        )
     }
 }

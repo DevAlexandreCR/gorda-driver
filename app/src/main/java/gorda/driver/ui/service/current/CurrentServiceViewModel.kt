@@ -176,6 +176,32 @@ class CurrentServiceViewModel(
                 EndTripLocalOutcome.KEEP_ACTIVE_RETRYABLE
             }
         }
+
+        fun shouldShowServicesFab(
+            currentService: Service?,
+            hasNextService: Boolean,
+            timeoutToConnectionSeconds: Int,
+            rideElapsedSeconds: Long,
+            nowEpochSeconds: Long,
+            serviceStageOverride: ServiceStageOverride
+        ): Boolean {
+            val service = currentService ?: return false
+
+            if (hasNextService || !service.isInProgress() || serviceStageOverride.treatAsEnded) {
+                return false
+            }
+
+            val effectiveTripStarted =
+                service.metadata.start_trip_at != null || serviceStageOverride.treatAsStarted
+
+            val elapsedSeconds = if (effectiveTripStarted) {
+                rideElapsedSeconds
+            } else {
+                (nowEpochSeconds - service.created_at).coerceAtLeast(0L)
+            }
+
+            return elapsedSeconds > timeoutToConnectionSeconds.toLong()
+        }
     }
 
     private val _uiState = MutableLiveData<ServiceActionUiState>(ServiceActionUiState.Idle)
