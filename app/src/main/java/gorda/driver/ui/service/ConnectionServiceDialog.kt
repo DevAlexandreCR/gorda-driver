@@ -2,82 +2,72 @@ package gorda.driver.ui.service
 
 import android.app.AlertDialog
 import android.app.Dialog
-import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
-import android.widget.ImageButton
+import android.view.LayoutInflater
+import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.net.toUri
+import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
 import gorda.driver.R
 import gorda.driver.models.Service
-import java.util.Locale
 
-class ConnectionServiceDialog(private val service: Service): DialogFragment() {
+class ConnectionServiceDialog : DialogFragment() {
 
-    private lateinit var imgBtnMaps: ImageButton
-    private lateinit var imgButtonWaze: ImageButton
-    private lateinit var textName: TextView
-    private lateinit var textPhone: TextView
-    private lateinit var textAddress: TextView
-    private lateinit var textDestination: TextView
-    private lateinit var textComment: TextView
+    companion object {
+        const val TAG = "ConnectionServiceDialog"
+        private const val ARG_SERVICE = "arg_service"
+
+        fun newInstance(service: Service): ConnectionServiceDialog {
+            return ConnectionServiceDialog().apply {
+                arguments = bundleOf(ARG_SERVICE to service)
+            }
+        }
+    }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val service = requireService()
         val builder = AlertDialog.Builder(requireContext())
-        val inflater = requireActivity().layoutInflater
-        val view = inflater.inflate(R.layout.connection_service_layout, null)
+        val view = LayoutInflater.from(requireContext())
+            .inflate(R.layout.connection_service_layout, null)
 
-        imgBtnMaps = view.findViewById(R.id.img_btn_maps)
-        imgButtonWaze = view.findViewById(R.id.img_btn_waze)
-        textName = view.findViewById(R.id.current_service_name)
-        textPhone = view.findViewById(R.id.current_phone)
-        textAddress = view.findViewById(R.id.current_address)
-        textDestination = view.findViewById(R.id.current_destination)
-        textComment = view.findViewById(R.id.service_comment)
+        val textName = view.findViewById<TextView>(R.id.next_service_name)
+        val textPhone = view.findViewById<TextView>(R.id.next_service_phone)
+        val textPickup = view.findViewById<TextView>(R.id.next_service_pickup)
+        val phoneRow = view.findViewById<LinearLayout>(R.id.next_service_phone_row)
+        val callButton = view.findViewById<TextView>(R.id.next_service_call_button)
 
         textName.text = service.name
         textPhone.text = service.phone
-        textAddress.text = service.start_loc.name
-        val destinationName = service.end_loc?.name?.takeIf { it.isNotBlank() }
-            ?: getString(R.string.destination_unknown)
-        textDestination.text = destinationName
-        textComment.text = service.comment
-        textPhone.setOnClickListener {
+        textPickup.text = service.start_loc.name
+
+        val openDialer = {
             val intent = Intent(Intent.ACTION_DIAL, ("tel:" + service.phone).toUri())
             startActivity(intent)
         }
-        imgBtnMaps.setOnClickListener {
-            val uri: String = String.format(
-                Locale.ENGLISH, "google.navigation:q=%f,%f",
-                service.start_loc.lat, service.start_loc.lng)
-            val mapIntent = Intent(Intent.ACTION_VIEW, uri.toUri())
-            mapIntent.setPackage("com.google.android.apps.maps")
-            activity?.let { fragmentActivity ->
-                mapIntent.resolveActivity(fragmentActivity.packageManager)?.let {
-                    startActivity(mapIntent)
-                }
-            }
-        }
-        imgButtonWaze.setOnClickListener {
-            val uri: String = String.format(
-                Locale.ENGLISH, "waze://?ll=%f,%f&navigate=yes",
-                service.start_loc.lat, service.start_loc.lng)
-            val wazeIntent = Intent(Intent.ACTION_VIEW, uri.toUri())
-            try {
-                startActivity(wazeIntent)
-            } catch (e: ActivityNotFoundException) {
-                Toast.makeText(requireContext(), R.string.not_waze, Toast.LENGTH_SHORT).show()
-            }
-        }
+
+        textPhone.setOnClickListener { openDialer() }
+        phoneRow.setOnClickListener { openDialer() }
+        callButton.setOnClickListener { openDialer() }
 
         builder.setView(view)
-            .setPositiveButton("OK") { dialog, _ ->
+            .setPositiveButton(R.string.ok) { dialog, _ ->
                 dialog.dismiss()
             }
 
         return builder.create()
+    }
+
+    private fun requireService(): Service {
+        val bundle = requireArguments()
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            bundle.getSerializable(ARG_SERVICE, Service::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            bundle.getSerializable(ARG_SERVICE) as? Service
+        } ?: error("ConnectionServiceDialog requires a Service argument")
     }
 
 }

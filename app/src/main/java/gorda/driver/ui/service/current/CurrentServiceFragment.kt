@@ -63,7 +63,6 @@ import gorda.driver.repositories.ServiceRepository.EndTransitionPayload
 import gorda.driver.repositories.ServiceRepository.StartTransitionPayload
 import gorda.driver.repositories.SettingsRepository
 import gorda.driver.ui.MainViewModel
-import gorda.driver.ui.history.ServiceDialogFragment
 import gorda.driver.ui.home.HomeFragment
 import gorda.driver.ui.service.ConnectionServiceDialog
 import gorda.driver.utils.Constants
@@ -130,7 +129,6 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var homeFragment: HomeFragment
 
     private var isExpanded = false
-    private var connectionDialog: ConnectionServiceDialog? = null
     private var ongoingTripRecoveryDialog: AlertDialog? = null
     private var ongoingTripRecoveryServiceId: String? = null
     private var feesService: FeesService = FeesService()
@@ -299,13 +297,7 @@ class CurrentServiceFragment : Fragment() {
         }
 
         connectionServiceButton.setOnClickListener {
-            connectionDialog?.let { dialog ->
-                if (dialog.isAdded) {
-                    dialog.dismiss()
-                } else {
-                    dialog.show(childFragmentManager, ServiceDialogFragment::javaClass.toString())
-                }
-            }
+            showNextServiceDialog()
         }
 
         textFareMultiplier.setOnClickListener {
@@ -402,14 +394,38 @@ class CurrentServiceFragment : Fragment() {
     private fun observeNextService() {
         mainViewModel.nextService.observe(viewLifecycleOwner) { service ->
             if (service != null) {
-                connectionDialog = ConnectionServiceDialog(service)
                 connectionServiceButton.visibility = View.VISIBLE
+                refreshNextServiceDialog(service)
             } else {
-                connectionDialog = null
                 connectionServiceButton.visibility = View.INVISIBLE
+                dismissNextServiceDialog()
             }
             updateServicesFabVisibility()
         }
+    }
+
+    private fun showNextServiceDialog() {
+        val service = mainViewModel.nextService.value ?: return
+        dismissNextServiceDialog()
+        childFragmentManager.executePendingTransactions()
+        ConnectionServiceDialog.newInstance(service)
+            .show(childFragmentManager, ConnectionServiceDialog.TAG)
+    }
+
+    private fun dismissNextServiceDialog() {
+        (childFragmentManager.findFragmentByTag(ConnectionServiceDialog.TAG) as? ConnectionServiceDialog)
+            ?.dismissAllowingStateLoss()
+    }
+
+    private fun refreshNextServiceDialog(service: Service) {
+        val currentDialog =
+            childFragmentManager.findFragmentByTag(ConnectionServiceDialog.TAG) as? ConnectionServiceDialog
+                ?: return
+
+        currentDialog.dismissAllowingStateLoss()
+        childFragmentManager.executePendingTransactions()
+        ConnectionServiceDialog.newInstance(service)
+            .show(childFragmentManager, ConnectionServiceDialog.TAG)
     }
 
     private fun observeCurrentFeeData() {

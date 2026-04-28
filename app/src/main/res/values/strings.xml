@@ -226,6 +226,9 @@
     <string name="content_desc_privacy_policy">Privacy Policy</string>
     <string name="service_destination">Destination: </string>
     <string name="destination_unknown">Destination pending</string>
+    <string name="next_service_dialog_subtitle">Review the next assigned pickup without leaving the current trip.</string>
+    <string name="pickup_location">Pickup location</string>
+    <string name="call_client">Call</string>
 
     <!-- Network Status Strings -->
     <string name="status_connected_offline">Connected (No network)</string>

@@ -220,6 +220,9 @@
     <string name="content_desc_privacy_policy">Política de Privacidad</string>
     <string name="service_destination">Destino: </string>
     <string name="destination_unknown">Destino pendiente</string>
+    <string name="next_service_dialog_subtitle">Revisa la siguiente recogida asignada sin salir del viaje actual.</string>
+    <string name="pickup_location">Lugar de recogida</string>
+    <string name="call_client">Llamar</string>
 
     <!-- Network Status Strings -->
     <string name="status_connected_offline">Conectado (Sin red)</string>
