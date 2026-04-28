@@ -118,10 +118,15 @@
 
                     <!-- Fee Multiplier Indicator -->
                     <LinearLayout
+                        android:id="@+id/fareMultiplierChip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:background="@drawable/rounded_background"
+                        android:clickable="true"
+                        android:contentDescription="@string/edit_multiplier"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingHorizontal="16dp"
@@ -153,6 +158,14 @@
                             android:textColor="@android:color/white"
                             android:textSize="14sp"
                             android:textStyle="bold" />
+
+                        <ImageView
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:layout_marginStart="8dp"
+                            android:contentDescription="@string/edit_multiplier"
+                            android:src="@drawable/baseline_edit_12"
+                            app:tint="@android:color/white" />
 
                     </LinearLayout>
 

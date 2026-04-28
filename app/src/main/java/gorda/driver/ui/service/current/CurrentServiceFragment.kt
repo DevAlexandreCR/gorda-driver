@@ -36,6 +36,7 @@ import androidx.core.net.toUri
 import androidx.core.view.doOnLayout
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
@@ -115,6 +116,7 @@ class CurrentServiceFragment : Fragment() {
     private lateinit var textFareMultiplierDisplay: TextView
     private lateinit var textTotalFee: TextView
     private lateinit var textActionStatus: TextView
+    private lateinit var fareMultiplierChip: View
     private lateinit var scrollViewFees: ScrollView
     private lateinit var feeDetailsHeader: LinearLayout
     private lateinit var feeDetailsContent: LinearLayout
@@ -137,6 +139,7 @@ class CurrentServiceFragment : Fragment() {
     private var feeMultiplier: Double = 1.0
     private var totalDistance = 0.0
     private var currentRideElapsedSeconds = 0L
+    private var baseScrollViewBottomPadding = 0
     private var startingRide = false
     private var isServiceBound = false
     private var currentService: Service? = null
@@ -150,6 +153,7 @@ class CurrentServiceFragment : Fragment() {
 
     private val bottomSheetCallback = object : BottomSheetBehavior.BottomSheetCallback() {
         override fun onStateChanged(bottomSheet: View, newState: Int) {
+            updateFeesScrollBottomPadding()
             val serviceId = currentService?.id ?: return
             when (newState) {
                 BottomSheetBehavior.STATE_EXPANDED -> {
@@ -163,7 +167,9 @@ class CurrentServiceFragment : Fragment() {
             }
         }
 
-        override fun onSlide(bottomSheet: View, slideOffset: Float) = Unit
+        override fun onSlide(bottomSheet: View, slideOffset: Float) {
+            updateFeesScrollBottomPadding()
+        }
     }
 
     private val serviceConnection = object : ServiceConnection {
@@ -253,6 +259,7 @@ class CurrentServiceFragment : Fragment() {
         textDistancePrice = binding.textDistanceFare
         textCurrentDistance = binding.textCurrentDistance
         textCurrentDistancePrice = binding.textPriceByDistance
+        fareMultiplierChip = binding.fareMultiplierChip
         toggleFragmentButton = binding.toggleButton
         textTimePrice = binding.textTimeFare
         textCurrentTimePrice = binding.textPriceByTime
@@ -273,6 +280,7 @@ class CurrentServiceFragment : Fragment() {
         expandIcon = binding.expandIcon
         homeFragment = HomeFragment()
         connectionServiceButton = binding.connectedServiceButton
+        baseScrollViewBottomPadding = scrollViewFees.paddingBottom
     }
 
     private fun setupStaticListeners() {
@@ -301,6 +309,10 @@ class CurrentServiceFragment : Fragment() {
         }
 
         textFareMultiplier.setOnClickListener {
+            showEditMultiplierDialog()
+        }
+
+        fareMultiplierChip.setOnClickListener {
             showEditMultiplierDialog()
         }
 
@@ -533,6 +545,7 @@ class CurrentServiceFragment : Fragment() {
         }
 
         updateServicesFabVisibility()
+        updateFeesScrollBottomPadding()
     }
 
     private fun maybeRestoreOngoingTrip(service: Service) {
@@ -736,7 +749,7 @@ class CurrentServiceFragment : Fragment() {
 
             val inputMultiplier = editFeeMultiplier.text.toString().toDoubleOrNull() ?: 1.0
             feeMultiplier = if (inputMultiplier < 1.0) 1.0 else inputMultiplier
-            textFareMultiplier.text = feeMultiplier.toString()
+            updateMultiplierViews(feeMultiplier)
             RideRecoveryStore.persistMultiplier(sharedPreferences, feeMultiplier)
 
             val request = CurrentServiceViewModel.StartTripRequest(
@@ -752,8 +765,7 @@ class CurrentServiceFragment : Fragment() {
 
     private fun executeConfirmedStartTrip(request: CurrentServiceViewModel.StartTripRequest) {
         feeMultiplier = request.multiplier
-        textFareMultiplier.text = feeMultiplier.toString()
-        textFareMultiplierDisplay.text = feeMultiplier.toString()
+        updateMultiplierViews(feeMultiplier)
         RideRecoveryStore.persistMultiplier(sharedPreferences, feeMultiplier)
 
         if (!canSubmitTripAction()) {
@@ -1352,8 +1364,15 @@ class CurrentServiceFragment : Fragment() {
             addBottomSheetCallback(bottomSheetCallback)
         }
 
+        binding.coordinatorLayout.doOnLayout {
+            updateFeesScrollBottomPadding()
+        }
+        scrollViewFees.doOnLayout {
+            updateFeesScrollBottomPadding()
+        }
         serviceLayoutView.doOnLayout {
             bottomSheetBehavior.peekHeight = collapsedHeader.bottom + serviceLayoutView.paddingBottom
+            updateFeesScrollBottomPadding()
             currentService?.let { service ->
                 restorePresentationStateForService(service)
             }
@@ -1405,6 +1424,7 @@ class CurrentServiceFragment : Fragment() {
         }
 
         bottomSheetBehavior.state = state
+        updateFeesScrollBottomPadding()
         val serviceId = currentService?.id ?: return
         currentServiceViewModel.updateBottomSheetExpanded(
             serviceId = serviceId,
@@ -1456,8 +1476,7 @@ class CurrentServiceFragment : Fragment() {
             intentFee.putExtra(RESUME_RIDE, true)
             val savedMultiplier = sharedPreferences.getString(Constants.MULTIPLIER, "1.0")?.toDoubleOrNull() ?: 1.0
             feeMultiplier = savedMultiplier
-            textFareMultiplier.text = feeMultiplier.toString()
-            textFareMultiplierDisplay.text = feeMultiplier.toString()
+            updateMultiplierViews(feeMultiplier)
         }
 
         if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
@@ -1566,10 +1585,38 @@ class CurrentServiceFragment : Fragment() {
         textPriceAddFee.text = NumberHelper.toCurrency(rideFees.priceAddFee)
         textDistancePrice.text = NumberHelper.toCurrency(rideFees.priceKm)
         textTimePrice.text = NumberHelper.toCurrency(rideFees.priceMin)
-        textFareMultiplier.text = feeMultiplier.toString()
-        textFareMultiplierDisplay.text = feeMultiplier.toString()
+        updateMultiplierViews(feeMultiplier)
         if (isServiceBound) {
             feesService.setMultiplier(feeMultiplier)
+        }
+    }
+
+    private fun updateMultiplierViews(multiplier: Double) {
+        val displayValue = multiplier.toString()
+        textFareMultiplier.text = displayValue
+        textFareMultiplierDisplay.text = displayValue
+    }
+
+    private fun updateFeesScrollBottomPadding() {
+        val currentBinding = _binding ?: return
+        if (scrollViewFees.visibility != View.VISIBLE) {
+            scrollViewFees.updatePadding(bottom = baseScrollViewBottomPadding)
+            return
+        }
+
+        val serviceLayoutView = currentBinding.serviceLayout.root
+        if (scrollViewFees.height == 0 || serviceLayoutView.height == 0) {
+            scrollViewFees.doOnLayout {
+                updateFeesScrollBottomPadding()
+            }
+            return
+        }
+
+        val obscuredHeight = (scrollViewFees.bottom - serviceLayoutView.top).coerceAtLeast(0)
+        val extraSpacing = (24 * resources.displayMetrics.density).toInt()
+        val targetBottomPadding = baseScrollViewBottomPadding + obscuredHeight + extraSpacing
+        if (scrollViewFees.paddingBottom != targetBottomPadding) {
+            scrollViewFees.updatePadding(bottom = targetBottomPadding)
         }
     }
 
@@ -1641,7 +1688,7 @@ class CurrentServiceFragment : Fragment() {
             }
 
             feeMultiplier = newMultiplier
-            textFareMultiplier.text = newMultiplier.toString()
+            updateMultiplierViews(newMultiplier)
 
             if (isServiceBound) {
                 feesService.setMultiplier(newMultiplier)
