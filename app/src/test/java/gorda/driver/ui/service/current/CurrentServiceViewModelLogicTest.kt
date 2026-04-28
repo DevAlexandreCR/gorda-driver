@@ -292,6 +292,69 @@ class CurrentServiceViewModelLogicTest {
     }
 
     @Test
+    fun observedStartedTripAckSkipsSyncingForSameServiceRequest() {
+        val request = CurrentServiceViewModel.StartTripRequest(
+            serviceId = "service-1",
+            startedAt = 100L,
+            multiplier = 1.2,
+            origin = "Origin"
+        )
+
+        assertTrue(
+            CurrentServiceViewModel.hasObservedStartAck(
+                currentService = Service(
+                    id = "service-1",
+                    status = Service.STATUS_IN_PROGRESS,
+                    metadata = ServiceMetadata(arrived_at = 50L, start_trip_at = 70L)
+                ),
+                request = request
+            )
+        )
+    }
+
+    @Test
+    fun missingObservedStartAckKeepsStartEligibleForSyncing() {
+        val request = CurrentServiceViewModel.StartTripRequest(
+            serviceId = "service-1",
+            startedAt = 100L,
+            multiplier = 1.2,
+            origin = "Origin"
+        )
+
+        assertFalse(
+            CurrentServiceViewModel.hasObservedStartAck(
+                currentService = Service(
+                    id = "service-1",
+                    status = Service.STATUS_IN_PROGRESS,
+                    metadata = ServiceMetadata(arrived_at = 50L)
+                ),
+                request = request
+            )
+        )
+    }
+
+    @Test
+    fun observedStartedTripOnDifferentServiceDoesNotAckRequest() {
+        val request = CurrentServiceViewModel.StartTripRequest(
+            serviceId = "service-1",
+            startedAt = 100L,
+            multiplier = 1.2,
+            origin = "Origin"
+        )
+
+        assertFalse(
+            CurrentServiceViewModel.hasObservedStartAck(
+                currentService = Service(
+                    id = "service-2",
+                    status = Service.STATUS_IN_PROGRESS,
+                    metadata = ServiceMetadata(arrived_at = 50L, start_trip_at = 70L)
+                ),
+                request = request
+            )
+        )
+    }
+
+    @Test
     fun coldStartRestoreOfPendingStartReconcilesToRetryableFailureWhenConnectionReady() {
         val viewModel = CurrentServiceViewModel(SavedStateHandle())
         val request = CurrentServiceViewModel.StartTripRequest(

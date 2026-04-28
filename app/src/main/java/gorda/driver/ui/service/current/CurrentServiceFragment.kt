@@ -813,7 +813,7 @@ class CurrentServiceFragment : Fragment() {
                         return@addOnSuccessListener
                     }
 
-                    applyOptimisticStart(request)
+                    onTripStartWriteSucceeded(request)
                 }.addOnFailureListener { exception ->
                     if (!currentServiceViewModel.isActiveAttempt(attemptId)) {
                         return@addOnFailureListener
@@ -1495,6 +1495,23 @@ class CurrentServiceFragment : Fragment() {
 
     private fun canSubmitTripAction(): Boolean {
         return CurrentServiceViewModel.isReadyForServiceAction(currentPresenceState)
+    }
+
+    private fun onTripStartWriteSucceeded(request: CurrentServiceViewModel.StartTripRequest) {
+        if (CurrentServiceViewModel.hasObservedStartAck(currentService, request)) {
+            applyConfirmedStart(request)
+            return
+        }
+
+        applyOptimisticStart(request)
+    }
+
+    private fun applyConfirmedStart(request: CurrentServiceViewModel.StartTripRequest) {
+        startingRide = true
+        startServiceFee(request.serviceId, request.origin)
+        currentServiceViewModel.onTripStartedObserved()
+        mainViewModel.setLoading(false)
+        syncRecoveryStore()
     }
 
     private fun applyOptimisticStart(request: CurrentServiceViewModel.StartTripRequest) {

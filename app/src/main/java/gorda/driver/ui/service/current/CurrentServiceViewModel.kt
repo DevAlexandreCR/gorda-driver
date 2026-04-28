@@ -177,6 +177,14 @@ class CurrentServiceViewModel(
             }
         }
 
+        fun hasObservedStartAck(
+            currentService: Service?,
+            request: StartTripRequest
+        ): Boolean {
+            return currentService?.id == request.serviceId &&
+                currentService.metadata.start_trip_at != null
+        }
+
         fun shouldShowServicesFab(
             currentService: Service?,
             hasNextService: Boolean,
