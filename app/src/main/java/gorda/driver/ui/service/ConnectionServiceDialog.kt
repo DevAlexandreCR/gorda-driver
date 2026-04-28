@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.core.net.toUri
 import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
+import com.google.android.material.button.MaterialButton
 import gorda.driver.R
 import gorda.driver.models.Service
 
@@ -38,6 +39,7 @@ class ConnectionServiceDialog : DialogFragment() {
         val textPickup = view.findViewById<TextView>(R.id.next_service_pickup)
         val phoneRow = view.findViewById<LinearLayout>(R.id.next_service_phone_row)
         val callButton = view.findViewById<TextView>(R.id.next_service_call_button)
+        val closeButton = view.findViewById<MaterialButton>(R.id.next_service_close_button)
 
         textName.text = service.name
         textPhone.text = service.phone
@@ -51,11 +53,9 @@ class ConnectionServiceDialog : DialogFragment() {
         textPhone.setOnClickListener { openDialer() }
         phoneRow.setOnClickListener { openDialer() }
         callButton.setOnClickListener { openDialer() }
+        closeButton.setOnClickListener { dismiss() }
 
         builder.setView(view)
-            .setPositiveButton(R.string.ok) { dialog, _ ->
-                dialog.dismiss()
-            }
 
         return builder.create()
     }
