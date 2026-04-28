@@ -7,6 +7,7 @@ import android.location.Location
 import android.os.Build
 import android.os.Looper
 import androidx.core.content.ContextCompat
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -188,6 +189,21 @@ class LocationHandler private constructor(context: Context) {
         }
     }
 
+    fun requestCurrentLocation(onLocationResolved: (Location?) -> Unit) {
+        try {
+            val cancellationTokenSource = CancellationTokenSource()
+            fusedLocationClient
+                .getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancellationTokenSource.token)
+                .addOnSuccessListener { location ->
+                    onLocationResolved(location)
+                }
+                .addOnFailureListener {
+                    onLocationResolved(null)
+                }
+        } catch (_: SecurityException) {
+            onLocationResolved(null)
+        }
+    }
 
     private fun stopLocationUpdates() {
         locationCallback.let { fusedLocationClient.removeLocationUpdates(it) }

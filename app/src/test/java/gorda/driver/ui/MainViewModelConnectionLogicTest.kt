@@ -155,4 +155,30 @@ class MainViewModelConnectionLogicTest {
             )
         )
     }
+
+    @Test
+    fun freshCachedLocationCanBeRestoredWithoutPresenceSideEffects() {
+        val decision = MainViewModel.cachedLocationRestoreDecision(
+            capturedAtEpochMs = 10_000L,
+            nowEpochMs = 10_000L + MainViewModel.CACHED_LOCATION_MAX_AGE_MS
+        )
+
+        assertTrue(decision.shouldRestore)
+        assertTrue(decision.emitsUiLocation)
+        assertFalse(decision.schedulesReconnect)
+        assertFalse(decision.sendsPresenceHeartbeat)
+    }
+
+    @Test
+    fun staleCachedLocationIsRejected() {
+        val decision = MainViewModel.cachedLocationRestoreDecision(
+            capturedAtEpochMs = 10_000L,
+            nowEpochMs = 10_000L + MainViewModel.CACHED_LOCATION_MAX_AGE_MS + 1L
+        )
+
+        assertFalse(decision.shouldRestore)
+        assertFalse(decision.emitsUiLocation)
+        assertFalse(decision.schedulesReconnect)
+        assertFalse(decision.sendsPresenceHeartbeat)
+    }
 }

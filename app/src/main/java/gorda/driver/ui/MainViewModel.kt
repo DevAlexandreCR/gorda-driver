@@ -19,6 +19,7 @@ import gorda.driver.interfaces.DeviceInterface
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.interfaces.LocType
 import gorda.driver.interfaces.RideFees
+import gorda.driver.location.CachedLocationStore
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
@@ -53,6 +54,14 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         private const val FIREBASE_SOCKET_WAIT_TIMEOUT_MS = 3_000L
         private const val FIREBASE_SOCKET_WAIT_BUDGET = 1
         private const val FIREBASE_TRANSPORT_RESET_COOLDOWN_MS = 15_000L
+        internal const val CACHED_LOCATION_MAX_AGE_MS = 5 * 60 * 1000L
+
+        internal data class CachedLocationRestoreDecision(
+            val shouldRestore: Boolean,
+            val emitsUiLocation: Boolean,
+            val schedulesReconnect: Boolean,
+            val sendsPresenceHeartbeat: Boolean
+        )
 
         internal fun planManualConnect(hasCachedLocation: Boolean): ManualConnectPlan {
             return if (hasCachedLocation) {
@@ -66,6 +75,24 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                     usesImmediateLocation = false
                 )
             }
+        }
+
+        internal fun cachedLocationRestoreDecision(
+            capturedAtEpochMs: Long?,
+            nowEpochMs: Long,
+            maxAgeMs: Long = CACHED_LOCATION_MAX_AGE_MS
+        ): CachedLocationRestoreDecision {
+            val ageMs = capturedAtEpochMs?.let { nowEpochMs - it }
+            val shouldRestore = capturedAtEpochMs != null &&
+                ageMs != null &&
+                ageMs in 0..maxAgeMs
+
+            return CachedLocationRestoreDecision(
+                shouldRestore = shouldRestore,
+                emitsUiLocation = shouldRestore,
+                schedulesReconnect = false,
+                sendsPresenceHeartbeat = false
+            )
         }
 
         internal fun canConfirmPresenceAck(
@@ -306,6 +333,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         updatePresenceState { current ->
             current.copy(desiredOnline = desiredOnline)
         }
+        restoreCachedLocationFromPreferences(preferences)
     }
 
     fun setRideFees(fees: RideFees) {
@@ -429,6 +457,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun updateLocation(location: Location) {
         latestLocation = location
+        preferences?.let { CachedLocationStore.save(it, location) }
         val state = _presenceState.value
         if (!state.desiredOnline || !state.actualOnline || !state.hasNetwork) {
             queuePendingLocation(location)
@@ -442,7 +471,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         } else {
             maybeSendPresenceHeartbeat(location, force = false)
         }
-        _lastLocation.postValue(LocationUpdates.lastLocation(location))
+        _lastLocation.postValue(LocationUpdates.liveLocation(location))
     }
 
     fun getDriver(driverId: String) {
@@ -1185,6 +1214,29 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     private fun currentUnixSeconds(): Long {
         return System.currentTimeMillis() / 1000
+    }
+
+    private fun restoreCachedLocationFromPreferences(preferences: SharedPreferences) {
+        val snapshot = CachedLocationStore.read(preferences) ?: return
+        val decision = cachedLocationRestoreDecision(
+            capturedAtEpochMs = snapshot.capturedAtEpochMs,
+            nowEpochMs = System.currentTimeMillis()
+        )
+
+        if (!decision.shouldRestore) {
+            CachedLocationStore.clear(preferences)
+            return
+        }
+
+        latestLocation = snapshot.toLocation()
+        if (decision.emitsUiLocation) {
+            _lastLocation.postValue(
+                LocationUpdates.cachedLocation(
+                    location = latestLocation!!,
+                    capturedAtEpochMs = snapshot.capturedAtEpochMs
+                )
+            )
+        }
     }
 
     private fun queuePendingLocation(location: Location) {

@@ -48,10 +48,15 @@
     <string name="cancelApply">La solicitud ha sido cancelada</string>
     <string name="back_to_services">Volver a servicios</string>
     <string name="retry_application">Reintentar</string>
+    <string name="update_location">Actualizar ubicación</string>
     <string name="not_applied_yet">Aún no te has postulado</string>
     <string name="connection_restored_retry_apply">Conexión restablecida, vuelve a intentar postularte</string>
     <string name="reconnecting_dispatch_not_applied">Reconectando. Aún no te has postulado.</string>
     <string name="map_unavailable">Mapa no disponible</string>
+    <string name="map_waiting_for_location">Ubicando tu posición actual…</string>
+    <string name="location_recovery_in_progress">Recuperando tu ubicación actual para continuar automáticamente.</string>
+    <string name="location_recovery_retry_needed">Aún no fue posible actualizar tu ubicación. Intenta actualizarla para continuar.</string>
+    <string name="location_pending_placeholder">—</string>
     <string name="canceling_application">Cancelando postulación</string>
     <string name="service_canceled">El servicio ha sido cancelado</string>
     <string name="retry_start_trip">Reintentar inicio</string>

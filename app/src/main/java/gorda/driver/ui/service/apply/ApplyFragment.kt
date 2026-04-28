@@ -24,6 +24,7 @@ import com.google.android.gms.tasks.Task
 import gorda.driver.R
 import gorda.driver.databinding.FragmentApplyBinding
 import gorda.driver.helpers.withTimeout
+import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
@@ -31,6 +32,8 @@ import gorda.driver.ui.MainViewModel
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 import gorda.driver.utils.StringHelper
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class ApplyFragment : Fragment() {
@@ -41,6 +44,7 @@ class ApplyFragment : Fragment() {
         private const val SERVICE_VALIDATION_TIMEOUT_MS = 8_000L
         private const val APPLICANT_WRITE_TIMEOUT_MS = 8_000L
         private const val CANCEL_TIMEOUT_MS = 8_000L
+        private const val LOCATION_RECOVERY_TIMEOUT_MS = 6_000L
     }
 
     private val mainViewModel: MainViewModel by activityViewModels()
@@ -57,6 +61,8 @@ class ApplyFragment : Fragment() {
     private var currentPresenceState = MainViewModel.DriverPresenceState()
     private var applyAttemptId: Long = 0L
     private var applicantWriteAttemptId: Long? = null
+    private var shouldAutoResumeApplyOnLocation = false
+    private var locationRecoveryJob: Job? = null
     private val writeAttemptsToCancelOnSuccess = mutableSetOf<Long>()
 
     override fun onCreateView(
@@ -84,7 +90,10 @@ class ApplyFragment : Fragment() {
         currentPresenceState = mainViewModel.presenceState.value
         val locationUpdate = mainViewModel.lastLocation.value
         if (locationUpdate is LocationUpdates.LastLocation) {
-            lastKnownLocation = locationUpdate.location
+            applyLocationUpdate(locationUpdate)
+            if (locationUpdate.source == LocationUpdates.Source.CACHED) {
+                requestLocationRefresh()
+            }
         }
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
@@ -95,7 +104,12 @@ class ApplyFragment : Fragment() {
             handlePrimaryAction()
         }
         binding.btnRetry.setOnClickListener {
-            attemptApply(forceRetry = true)
+            when (applyViewModel.uiState.value) {
+                is ApplyViewModel.ApplyUiState.RecoveringLocation -> {
+                    beginLocationRecovery(manualRetry = true)
+                }
+                else -> attemptApply(forceRetry = true)
+            }
         }
 
         observeUiState()
@@ -112,6 +126,7 @@ class ApplyFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        locationRecoveryJob?.cancel()
         destinationChangedListener?.let { listener ->
             navController?.removeOnDestinationChangedListener(listener)
         }
@@ -141,7 +156,15 @@ class ApplyFragment : Fragment() {
     private fun observeLocation() {
         mainViewModel.lastLocation.observe(viewLifecycleOwner) { locationUpdate ->
             if (locationUpdate is LocationUpdates.LastLocation) {
-                lastKnownLocation = locationUpdate.location
+                val wasRecovering = applyViewModel.isRecoveringLocation()
+                applyLocationUpdate(locationUpdate)
+                if (wasRecovering && shouldAutoResumeApplyOnLocation && locationUpdate.isFreshObserved) {
+                    cancelLocationRecovery()
+                    shouldAutoResumeApplyOnLocation = false
+                    attemptApply(forceRetry = true)
+                } else {
+                    render(applyViewModel.uiState.value ?: ApplyViewModel.ApplyUiState.Preparing)
+                }
             }
         }
     }
@@ -207,7 +230,7 @@ class ApplyFragment : Fragment() {
     private fun attemptApply(forceRetry: Boolean) {
         val location = lastKnownLocation
         if (location == null) {
-            applyViewModel.showFailed(R.string.common_error, canRetry = false)
+            beginLocationRecovery(manualRetry = forceRetry)
             return
         }
 
@@ -431,12 +454,56 @@ class ApplyFragment : Fragment() {
             }
     }
 
+    private fun beginLocationRecovery(manualRetry: Boolean) {
+        if (!isAdded) {
+            return
+        }
+
+        shouldAutoResumeApplyOnLocation = true
+        applyViewModel.showRecoveringLocation(canManualRetry = false)
+        requestLocationRefresh()
+        locationRecoveryJob?.cancel()
+        locationRecoveryJob = viewLifecycleOwner.lifecycleScope.launch {
+            delay(LOCATION_RECOVERY_TIMEOUT_MS)
+            if (!isAdded || !applyViewModel.isRecoveringLocation()) {
+                return@launch
+            }
+
+            applyViewModel.showRecoveringLocation(canManualRetry = true)
+            if (manualRetry) {
+                render(applyViewModel.uiState.value ?: ApplyViewModel.ApplyUiState.Preparing)
+            }
+        }
+    }
+
+    private fun cancelLocationRecovery() {
+        locationRecoveryJob?.cancel()
+        locationRecoveryJob = null
+    }
+
+    private fun requestLocationRefresh() {
+        if (!isAdded || !LocationHandler.checkPermissions(requireContext())) {
+            return
+        }
+
+        LocationHandler.getInstance(requireContext()).requestCurrentLocation { location ->
+            if (location != null && isAdded) {
+                mainViewModel.updateLocation(location)
+            }
+        }
+    }
+
+    private fun applyLocationUpdate(locationUpdate: LocationUpdates.LastLocation) {
+        lastKnownLocation = locationUpdate.location
+    }
+
     private fun render(state: ApplyViewModel.ApplyUiState) {
         val currentBinding = _binding ?: return
         val applyReady = ApplyViewModel.isReadyToApply(currentPresenceState)
 
         when (state) {
             ApplyViewModel.ApplyUiState.Preparing -> {
+                cancelLocationRecovery()
                 currentBinding.progressBar.isVisible = true
                 currentBinding.textView.text = getString(R.string.applying)
                 currentBinding.btnCancel.text = getString(applyViewModel.primaryActionRes())
@@ -444,7 +511,18 @@ class ApplyFragment : Fragment() {
                 currentBinding.btnRetry.isGone = true
             }
 
+            is ApplyViewModel.ApplyUiState.RecoveringLocation -> {
+                currentBinding.progressBar.isVisible = !state.canManualRetry
+                currentBinding.textView.text = recoveringLocationMessage(state.canManualRetry)
+                currentBinding.btnCancel.text = getString(R.string.back_to_services)
+                currentBinding.btnCancel.isEnabled = true
+                currentBinding.btnRetry.isVisible = state.canManualRetry
+                currentBinding.btnRetry.isEnabled = state.canManualRetry
+                currentBinding.btnRetry.text = getString(R.string.update_location)
+            }
+
             ApplyViewModel.ApplyUiState.BlockedByConnection -> {
+                cancelLocationRecovery()
                 currentBinding.progressBar.isGone = true
                 currentBinding.textView.text = blockedMessage(applyReady)
                 currentBinding.btnCancel.text = getString(R.string.back_to_services)
@@ -455,6 +533,7 @@ class ApplyFragment : Fragment() {
             }
 
             ApplyViewModel.ApplyUiState.Applying -> {
+                cancelLocationRecovery()
                 currentBinding.progressBar.isVisible = true
                 currentBinding.textView.text = getString(R.string.applying)
                 currentBinding.btnCancel.text = getString(R.string.back_to_services)
@@ -463,6 +542,7 @@ class ApplyFragment : Fragment() {
             }
 
             is ApplyViewModel.ApplyUiState.AppliedWaitingAssignment -> {
+                cancelLocationRecovery()
                 currentBinding.progressBar.isGone = true
                 currentBinding.textView.text = waitForAssignMessage(state.serviceName)
                 currentBinding.btnCancel.text = getString(R.string.cancel_application)
@@ -471,6 +551,7 @@ class ApplyFragment : Fragment() {
             }
 
             is ApplyViewModel.ApplyUiState.Failed -> {
+                cancelLocationRecovery()
                 currentBinding.progressBar.isGone = true
                 currentBinding.textView.text = failedMessage(
                     messageRes = state.messageRes,
@@ -484,12 +565,23 @@ class ApplyFragment : Fragment() {
             }
 
             ApplyViewModel.ApplyUiState.Canceling -> {
+                cancelLocationRecovery()
                 currentBinding.progressBar.isVisible = true
                 currentBinding.textView.text = getString(R.string.canceling_application)
                 currentBinding.btnCancel.text = getString(R.string.cancel_application)
                 currentBinding.btnCancel.isEnabled = false
                 currentBinding.btnRetry.isGone = true
             }
+        }
+    }
+
+    private fun recoveringLocationMessage(canManualRetry: Boolean): CharSequence {
+        return if (canManualRetry) {
+            getString(R.string.location_recovery_retry_needed) + "\n" +
+                getString(R.string.not_applied_yet)
+        } else {
+            getString(R.string.location_recovery_in_progress) + "\n" +
+                getString(R.string.not_applied_yet)
         }
     }
 

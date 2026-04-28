@@ -56,9 +56,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private lateinit var textDistance: TextView
     private var location: Location? = null
     private var statLoc: LocType? = null
+    private var googleMap: GoogleMap? = null
     private var mapReady = false
     private val mapUnavailableRunnable = Runnable {
         if (!mapReady && isAdded) {
+            binding.textMapUnavailable.text = getString(R.string.map_unavailable)
             binding.textMapUnavailable.isVisible = true
         }
     }
@@ -92,69 +94,119 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 statLoc = it.starLoc
             }
         }
+        observeLocationUpdates()
+        observeServiceUpdates()
+        renderLocationPendingStateIfNeeded()
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
+        this.googleMap = googleMap
         mapReady = true
         binding.root.removeCallbacks(mapUnavailableRunnable)
-        binding.textMapUnavailable.isGone = true
         setMapStyle(googleMap)
-        if (null != statLoc && null != location) {
-            val infoWindow = WindowAdapter(requireContext())
-            googleMap.setInfoWindowAdapter(infoWindow)
-            val driverLatLng = LatLng(location!!.latitude, location!!.longitude)
-            val startLatLng = LatLng(statLoc!!.lat, statLoc!!.lng)
-            val driverMarker = googleMap.addMarker(
-                MarkerOptions()
-                    .position(driverLatLng)
-                    .icon(
-                        BitmapDescriptorFactory.fromBitmap(getResizedBitmap(R.mipmap.ic_car))
-                    )
-            )
-            driverMarker?.tag = makeInfoWindowData("A")
-            val markerStartAddress = googleMap.addMarker(
-                MarkerOptions()
-                    .position(startLatLng)
-                    .icon(
-                        BitmapDescriptorFactory.fromBitmap(getResizedBitmap(R.mipmap.ic_loc_a_light ))
-                    )
-                    .title(statLoc!!.name)
-            )
-            markerStartAddress?.tag = makeInfoWindowData("B")
-            val bounds = LatLngBounds
-                .Builder()
-                .include(startLatLng)
-                .include(driverLatLng)
-                .build()
-            val paddingInPixels = resources.getDimensionPixelSize(R.dimen.map_margin_big)
-            googleMap.animateCamera(
-                CameraUpdateFactory.newLatLngBounds(
-                    bounds,
-                    paddingInPixels
-                )
-            )
-            val distance = Map.calculateDistance(
-                LatLng(statLoc!!.lat, statLoc!!.lng),
-                LatLng(location!!.latitude, location!!.longitude))
-            val time = Map.calculateTime(distance)
-            textTime.text = Map.getTimeString(time)
-            textDistance.text = Map.distanceToString(distance)
-            if (markerStartAddress != null) {
-                markerStartAddress.tag = makeInfoWindowData(
-                    statLoc!!.name,
-                    Map.distanceToString(distance),
-                    Map.getTimeString(time)
-                )
-                markerStartAddress.showInfoWindow()
-            }
-        } else {
-            println(statLoc.toString() + location.toString())
-        }
+        renderMapState()
     }
 
     override fun onDestroyView() {
+        googleMap = null
         binding.root.removeCallbacks(mapUnavailableRunnable)
         super.onDestroyView()
+    }
+
+    private fun observeLocationUpdates() {
+        mainViewModel.lastLocation.observe(viewLifecycleOwner) { locationUpdate ->
+            if (locationUpdate is LocationUpdates.LastLocation) {
+                location = locationUpdate.location
+                renderMapState()
+            }
+        }
+    }
+
+    private fun observeServiceUpdates() {
+        mainViewModel.serviceUpdates.observe(viewLifecycleOwner) { update ->
+            if (update is ServiceUpdates.StarLoc) {
+                statLoc = update.starLoc
+                renderMapState()
+            }
+        }
+    }
+
+    private fun renderMapState() {
+        val map = googleMap ?: return
+        val currentLocation = location
+        val startLocation = statLoc
+
+        map.clear()
+
+        if (currentLocation == null || startLocation == null) {
+            renderLocationPendingStateIfNeeded()
+            return
+        }
+
+        binding.textMapUnavailable.isGone = true
+        val infoWindow = WindowAdapter(requireContext())
+        map.setInfoWindowAdapter(infoWindow)
+        val driverLatLng = LatLng(currentLocation.latitude, currentLocation.longitude)
+        val startLatLng = LatLng(startLocation.lat, startLocation.lng)
+        val driverMarker = map.addMarker(
+            MarkerOptions()
+                .position(driverLatLng)
+                .icon(
+                    BitmapDescriptorFactory.fromBitmap(getResizedBitmap(R.mipmap.ic_car))
+                )
+        )
+        driverMarker?.tag = makeInfoWindowData("A")
+        val markerStartAddress = map.addMarker(
+            MarkerOptions()
+                .position(startLatLng)
+                .icon(
+                    BitmapDescriptorFactory.fromBitmap(getResizedBitmap(R.mipmap.ic_loc_a_light))
+                )
+                .title(startLocation.name)
+        )
+        markerStartAddress?.tag = makeInfoWindowData("B")
+        val bounds = LatLngBounds
+            .Builder()
+            .include(startLatLng)
+            .include(driverLatLng)
+            .build()
+        val paddingInPixels = resources.getDimensionPixelSize(R.dimen.map_margin_big)
+        map.animateCamera(
+            CameraUpdateFactory.newLatLngBounds(
+                bounds,
+                paddingInPixels
+            )
+        )
+        val distance = Map.calculateDistance(
+            LatLng(startLocation.lat, startLocation.lng),
+            LatLng(currentLocation.latitude, currentLocation.longitude)
+        )
+        val time = Map.calculateTime(distance)
+        textTime.text = Map.getTimeString(time)
+        textDistance.text = Map.distanceToString(distance)
+        if (markerStartAddress != null) {
+            markerStartAddress.tag = makeInfoWindowData(
+                startLocation.name,
+                Map.distanceToString(distance),
+                Map.getTimeString(time)
+            )
+            markerStartAddress.showInfoWindow()
+        }
+    }
+
+    private fun renderLocationPendingStateIfNeeded() {
+        if (!isAdded) {
+            return
+        }
+
+        textTime.text = getString(R.string.location_pending_placeholder)
+        textDistance.text = getString(R.string.location_pending_placeholder)
+        if (location == null) {
+            binding.textMapUnavailable.text = getString(R.string.map_waiting_for_location)
+            binding.textMapUnavailable.isVisible = true
+        } else {
+            binding.textMapUnavailable.isGone = true
+        }
     }
 
     private fun getResizedBitmap(drawableId: Int): Bitmap {

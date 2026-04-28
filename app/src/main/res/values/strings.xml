@@ -55,10 +55,15 @@
     <string name="cancelApply">The Request has been cancelled</string>
     <string name="back_to_services">Back to services</string>
     <string name="retry_application">Retry application</string>
+    <string name="update_location">Update location</string>
     <string name="not_applied_yet">You have not applied yet</string>
     <string name="connection_restored_retry_apply">Connection restored, retry to apply</string>
     <string name="reconnecting_dispatch_not_applied">Reconnecting to dispatch. You have not applied yet.</string>
     <string name="map_unavailable">Map unavailable</string>
+    <string name="map_waiting_for_location">Finding your current location…</string>
+    <string name="location_recovery_in_progress">Recovering your current location to continue automatically.</string>
+    <string name="location_recovery_retry_needed">Your location is still unavailable. Update it to continue.</string>
+    <string name="location_pending_placeholder">—</string>
     <string name="canceling_application">Canceling application</string>
     <string name="service_canceled">Service has been canceled</string>
     <string name="retry_start_trip">Retry start trip</string>

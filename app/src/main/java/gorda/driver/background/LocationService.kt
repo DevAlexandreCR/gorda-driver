@@ -33,6 +33,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
+import gorda.driver.location.CachedLocationStore
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.repositories.ServiceObserverHandle
@@ -370,6 +371,7 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun publishObservedLocation(location: Location) {
+        CachedLocationStore.save(sharedPreferences, location)
         lastLocation = location
         publishLocationUpdate(location)
         if (starting) {

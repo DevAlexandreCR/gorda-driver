@@ -30,6 +30,10 @@ class ApplyViewModel : ViewModel() {
     sealed class ApplyUiState {
         object Preparing : ApplyUiState()
 
+        data class RecoveringLocation(
+            val canManualRetry: Boolean
+        ) : ApplyUiState()
+
         object BlockedByConnection : ApplyUiState()
 
         object Applying : ApplyUiState()
@@ -121,6 +125,11 @@ class ApplyViewModel : ViewModel() {
         _uiState.value = ApplyUiState.Preparing
     }
 
+    fun showRecoveringLocation(canManualRetry: Boolean) {
+        applicantWriteInFlight = false
+        _uiState.value = ApplyUiState.RecoveringLocation(canManualRetry)
+    }
+
     fun showBlockedByConnection() {
         applicantWriteInFlight = false
         _uiState.value = ApplyUiState.BlockedByConnection
@@ -153,6 +162,10 @@ class ApplyViewModel : ViewModel() {
 
     fun isApplicantWriteInFlight(): Boolean {
         return applicantWriteInFlight
+    }
+
+    fun isRecoveringLocation(): Boolean {
+        return _uiState.value is ApplyUiState.RecoveringLocation
     }
 
     fun primaryActionRes(): Int {

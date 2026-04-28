@@ -1,11 +1,16 @@
 package gorda.driver.ui.service.apply
 
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import gorda.driver.ui.MainViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 
 class ApplyViewModelLogicTest {
+
+    @get:Rule
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
 
     @Test
     fun offlinePresenceBlocksApply() {
@@ -103,5 +108,41 @@ class ApplyViewModelLogicTest {
 
         assertEquals(0, estimate.distanceMeters)
         assertEquals(0, estimate.timeSeconds)
+    }
+
+    @Test
+    fun missingLocationUsesRecoveringStateInsteadOfGenericFailure() {
+        val viewModel = ApplyViewModel()
+
+        viewModel.showRecoveringLocation(canManualRetry = false)
+
+        assertEquals(
+            ApplyViewModel.ApplyUiState.RecoveringLocation(canManualRetry = false),
+            viewModel.uiState.value
+        )
+        assertTrue(viewModel.isRecoveringLocation())
+    }
+
+    @Test
+    fun recoveringLocationCanExposeManualRetry() {
+        val viewModel = ApplyViewModel()
+
+        viewModel.showRecoveringLocation(canManualRetry = true)
+
+        assertEquals(
+            ApplyViewModel.ApplyUiState.RecoveringLocation(canManualRetry = true),
+            viewModel.uiState.value
+        )
+        assertTrue(viewModel.isRecoveringLocation())
+    }
+
+    @Test
+    fun recoveringLocationClearsWhenApplyingStarts() {
+        val viewModel = ApplyViewModel()
+        viewModel.showRecoveringLocation(canManualRetry = true)
+
+        viewModel.showApplying()
+
+        assertEquals(ApplyViewModel.ApplyUiState.Applying, viewModel.uiState.value)
     }
 }
