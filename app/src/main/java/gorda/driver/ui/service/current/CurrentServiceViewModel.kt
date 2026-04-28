@@ -105,9 +105,8 @@ class CurrentServiceViewModel(
                 state.fatalStopReason != null -> ServiceActionConnectionStatus.BLOCKED_FATAL
                 !state.hasTransportNetwork -> ServiceActionConnectionStatus.NO_TRANSPORT
                 hasPendingSync -> ServiceActionConnectionStatus.SYNCING
-                !state.firebaseConnected || !state.actualOnline ->
-                    ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE
-                else -> ServiceActionConnectionStatus.READY
+                state.actualOnline -> ServiceActionConnectionStatus.READY
+                else -> ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE
             }
         }
 

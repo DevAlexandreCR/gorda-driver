@@ -50,9 +50,9 @@ class ApplyViewModel : ViewModel() {
         ): ApplyConnectionStatus {
             return when {
                 !state.hasNetwork -> ApplyConnectionStatus.OFFLINE
+                state.actualOnline -> ApplyConnectionStatus.READY
                 !state.firebaseConnected -> ApplyConnectionStatus.FIREBASE_DISCONNECTED
-                !state.actualOnline -> ApplyConnectionStatus.RECONNECTING
-                else -> ApplyConnectionStatus.READY
+                else -> ApplyConnectionStatus.RECONNECTING
             }
         }
 

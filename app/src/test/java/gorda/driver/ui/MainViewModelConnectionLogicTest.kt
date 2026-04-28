@@ -54,25 +54,39 @@ class MainViewModelConnectionLogicTest {
     }
 
     @Test
-    fun networkRestoredReconnectWaitsForFirebaseSocket() {
-        val gated = MainViewModel.shouldGateAutomaticReconnectOnFirebaseSocket(
+    fun networkRestoredReconnectWaitsForFirebaseSocketWhenBudgetRemains() {
+        val action = MainViewModel.resolveFirebaseSocketRecoveryAction(
             reason = "network_restored",
             firebaseConnected = false,
-            phase = MainViewModel.DriverPresencePhase.RECONNECTING
+            phase = MainViewModel.DriverPresencePhase.RECONNECTING,
+            remainingWaitBudget = 1
         )
 
-        assertTrue(gated)
+        assertEquals(MainViewModel.FirebaseSocketRecoveryAction.WAIT_FOR_SOCKET, action)
+    }
+
+    @Test
+    fun repeatedFirebaseSocketTimeoutFallsThroughToPresenceWriteProbe() {
+        val action = MainViewModel.resolveFirebaseSocketRecoveryAction(
+            reason = "firebase_socket_timeout",
+            firebaseConnected = false,
+            phase = MainViewModel.DriverPresencePhase.RECONNECTING,
+            remainingWaitBudget = 0
+        )
+
+        assertEquals(MainViewModel.FirebaseSocketRecoveryAction.PROBE_PRESENCE_WRITE, action)
     }
 
     @Test
     fun healthySocketSkipsGateForPresenceRewriteFailures() {
-        val gated = MainViewModel.shouldGateAutomaticReconnectOnFirebaseSocket(
+        val action = MainViewModel.resolveFirebaseSocketRecoveryAction(
             reason = "presence_write_failed",
             firebaseConnected = true,
-            phase = MainViewModel.DriverPresencePhase.RECONNECTING
+            phase = MainViewModel.DriverPresencePhase.RECONNECTING,
+            remainingWaitBudget = 1
         )
 
-        assertFalse(gated)
+        assertEquals(MainViewModel.FirebaseSocketRecoveryAction.SKIP, action)
     }
 
     @Test
@@ -96,7 +110,6 @@ class MainViewModelConnectionLogicTest {
             MainViewModel.DriverPresenceState(
                 desiredOnline = true,
                 actualOnline = false,
-                firebaseConnected = true,
                 phase = MainViewModel.DriverPresencePhase.RECONNECTING
             )
         )
@@ -125,5 +138,21 @@ class MainViewModelConnectionLogicTest {
         assertEquals(0L, policy.delayForAttempt(0))
         assertEquals(500L, policy.delayForAttempt(1))
         assertEquals(1_000L, policy.delayForAttempt(2))
+    }
+
+    @Test
+    fun firebaseTransportResetUsesCooldown() {
+        assertTrue(
+            MainViewModel.shouldResetFirebaseTransport(
+                lastResetAtMs = 1_000L,
+                nowMs = 16_000L
+            )
+        )
+        assertFalse(
+            MainViewModel.shouldResetFirebaseTransport(
+                lastResetAtMs = 1_000L,
+                nowMs = 10_000L
+            )
+        )
     }
 }

@@ -436,7 +436,11 @@ class CurrentServiceFragment : Fragment() {
                 mainViewModel.presenceState.collect { presence ->
                     val previousPresence = currentPresenceState
                     currentPresenceState = presence
-                    if (!previousPresence.firebaseConnected && presence.firebaseConnected) {
+                    val recoverySignalRestored =
+                        (!previousPresence.hasTransportNetwork && presence.hasTransportNetwork) ||
+                            (!previousPresence.actualOnline && presence.actualOnline) ||
+                            (!previousPresence.firebaseConnected && presence.firebaseConnected)
+                    if (recoverySignalRestored) {
                         shouldReconcileRestoredAction = true
                         currentService?.let { service ->
                             reconcileRecoveredActionIfNeeded(service, force = true)
@@ -1175,7 +1179,7 @@ class CurrentServiceFragment : Fragment() {
                     statusText = getString(R.string.trip_action_syncing_start),
                     showProgress = true,
                     retryTextRes = R.string.retry_start_trip,
-                    retryEnabled = currentPresenceState.firebaseConnected && currentPresenceState.hasTransportNetwork
+                    retryEnabled = currentPresenceState.hasTransportNetwork
                 )
                 btnStatus.isEnabled = false
             }
@@ -1220,7 +1224,7 @@ class CurrentServiceFragment : Fragment() {
                     statusText = getString(R.string.trip_action_syncing_end),
                     showProgress = true,
                     retryTextRes = R.string.retry_end_trip,
-                    retryEnabled = currentPresenceState.firebaseConnected && currentPresenceState.hasTransportNetwork
+                    retryEnabled = currentPresenceState.hasTransportNetwork
                 )
                 btnStatus.isEnabled = false
             }
@@ -1564,7 +1568,7 @@ class CurrentServiceFragment : Fragment() {
         if (!snapshot.optimisticApplied) {
             return
         }
-        if (!currentPresenceState.hasTransportNetwork || !currentPresenceState.firebaseConnected) {
+        if (!currentPresenceState.hasTransportNetwork) {
             return
         }
 

@@ -21,7 +21,7 @@ class ApplyViewModelLogicTest {
     }
 
     @Test
-    fun firebaseDisconnectedBlocksApply() {
+    fun confirmedOnlinePresenceAllowsApplyWithoutFirebaseSocket() {
         val status = ApplyViewModel.connectionStatusForApply(
             MainViewModel.DriverPresenceState(
                 hasTransportNetwork = true,
@@ -30,7 +30,16 @@ class ApplyViewModelLogicTest {
             )
         )
 
-        assertEquals(ApplyViewModel.ApplyConnectionStatus.FIREBASE_DISCONNECTED, status)
+        assertEquals(ApplyViewModel.ApplyConnectionStatus.READY, status)
+        assertTrue(
+            ApplyViewModel.isReadyToApply(
+                MainViewModel.DriverPresenceState(
+                    hasTransportNetwork = true,
+                    firebaseConnected = false,
+                    actualOnline = true
+                )
+            )
+        )
     }
 
     @Test

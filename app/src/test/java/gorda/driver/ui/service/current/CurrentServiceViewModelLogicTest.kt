@@ -38,11 +38,24 @@ class CurrentServiceViewModelLogicTest {
             MainViewModel.DriverPresenceState(
                 hasTransportNetwork = true,
                 firebaseConnected = false,
-                actualOnline = true
+                actualOnline = false
             )
         )
 
         assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE, status)
+    }
+
+    @Test
+    fun confirmedOnlinePresenceAllowsServiceActionsWithoutFirebaseSocket() {
+        val status = CurrentServiceViewModel.connectionStatusForServiceAction(
+            MainViewModel.DriverPresenceState(
+                hasTransportNetwork = true,
+                firebaseConnected = false,
+                actualOnline = true
+            )
+        )
+
+        assertEquals(CurrentServiceViewModel.ServiceActionConnectionStatus.READY, status)
     }
 
     @Test
