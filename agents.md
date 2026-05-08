@@ -7,6 +7,8 @@
 - **DO NOT** create markdown files explaining what was done
 - **DO** make changes directly to the code
 - **DO** use clear commit messages
+- **DO** run host Gradle commands with Android Studio's bundled JBR when `java` is unavailable in the shell:
+  `export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" && export PATH="$JAVA_HOME/bin:$PATH"`
 - **DO** add inline comments in English when necessary (avoid comments unless absolutely necessary)
 - **DO** update CHANGELOG.md only for version releases
 - **ALL documentation files MUST be written in English**
@@ -1246,4 +1248,3 @@ For issues, feature requests, or questions:
 **Document Version:** 1.0  
 **Last Updated:** November 16, 2025  
 **Project Version:** 1.2.2 (Build 65)
-
