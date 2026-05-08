@@ -251,6 +251,12 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.errorMessageRes.observe(this) { messageRes ->
             messageRes?.let {
+                if (it == R.string.service_canceled) {
+                    if (navController.currentDestination?.id == R.id.nav_current_service) {
+                        navController.navigate(R.id.nav_home)
+                    }
+                    removeFeeServiceData()
+                }
                 Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
                 viewModel.consumeErrorMessage()
             }

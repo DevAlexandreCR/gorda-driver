@@ -23,6 +23,7 @@ import gorda.driver.location.CachedLocationStore
 import gorda.driver.models.Driver
 import gorda.driver.models.Service
 import gorda.driver.repositories.DriverRepository
+import gorda.driver.repositories.ServiceObservationResult
 import gorda.driver.repositories.ServiceObserverHandle
 import gorda.driver.repositories.ServiceRepository
 import gorda.driver.services.firebase.Database
@@ -271,6 +272,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private var currentAttemptAutomatic = false
     private var firebaseSocketWaitBudgetRemaining = FIREBASE_SOCKET_WAIT_BUDGET
     private var pendingRecoveryObserverRefresh = false
+    private var lastTerminalCurrentServiceId: String? = null
     private var lastNetworkRestoredAtMs: Long? = null
     private var lastFirebaseSocketConnectedAtMs: Long? = null
     private var lastPresenceAckAtMs: Long? = null
@@ -288,26 +290,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         )
     }
 
-    private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
-        if (service == null) {
-            _nextService.postValue(null)
-        } else {
-            driver.value?.let {
-                if (it.id == service.driver_id && currentService.value?.id != service.id) {
-                    _nextService.postValue(service)
-                } else {
-                    _nextService.postValue(null)
-                }
-            }
-        }
-    }
-    private val currentServiceListener: ServiceEventListener = ServiceEventListener { service ->
-        if (service == null) {
-            _currentService.postValue(null)
-        } else {
-            _currentService.postValue(service)
-        }
-    }
+    private val nextServiceListener: ServiceEventListener =
+        ServiceEventListener(::handleNextServiceObservation)
+    private val currentServiceListener: ServiceEventListener =
+        ServiceEventListener(::handleCurrentServiceObservation)
 
     val lastLocation: LiveData<LocationUpdates> = _lastLocation
     var driver: LiveData<Driver?> = _driver
@@ -399,10 +385,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun startServiceObservers() {
         serviceObserversActive = true
-        currentServiceObserverHandle?.dispose()
-        nextServiceObserverHandle?.dispose()
-        currentServiceObserverHandle = ServiceRepository.observeCurrentService(currentServiceListener)
-        nextServiceObserverHandle = ServiceRepository.observeConnectionService(nextServiceListener)
+        restartServiceObserversIfActive()
     }
 
     fun stopServiceObservers() {
@@ -415,6 +398,28 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun completeCurrentService() {
         _currentService.postValue(null)
+    }
+
+    internal fun handleCurrentServiceObservation(result: ServiceObservationResult) {
+        val resolution = ServiceObservationReducer.reduceCurrent(
+            result = result,
+            lastTerminalServiceId = lastTerminalCurrentServiceId
+        )
+        lastTerminalCurrentServiceId = resolution.terminalServiceId
+        if (resolution.shouldEmitCanceledFeedback) {
+            emitErrorMessage(R.string.service_canceled)
+        }
+        _currentService.postValue(resolution.currentService)
+    }
+
+    internal fun handleNextServiceObservation(result: ServiceObservationResult) {
+        _nextService.postValue(
+            ServiceObservationReducer.reduceNext(
+                result = result,
+                driverId = driver.value?.id,
+                currentServiceId = currentService.value?.id
+            )
+        )
     }
 
     fun setServiceUpdateDistTime(distance: Int, time: Int) {
@@ -529,7 +534,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                         fatalStopReason = null
                     )
                 }
-                if (pendingRecoveryObserverRefresh) {
+                if (shouldRefreshServiceObserversAfterPresenceConfirmation(currentState)) {
                     pendingRecoveryObserverRefresh = false
                     bumpReconnectGeneration()
                 }
@@ -1424,6 +1429,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             current.copy(reconnectGeneration = current.reconnectGeneration + 1)
         }
         restartServiceObserversIfActive()
+        reconcileObservedServicePointers()
     }
 
     private fun waitForFirebaseSocket(reason: String, attemptIndex: Int) {
@@ -1525,6 +1531,19 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         )
     }
 
+    private fun shouldRefreshServiceObserversAfterPresenceConfirmation(
+        state: DriverPresenceState
+    ): Boolean {
+        return pendingRecoveryObserverRefresh || state.phase in setOf(
+            DriverPresencePhase.RECONNECTING,
+            DriverPresencePhase.WAITING_FOR_PRESENCE_ACK,
+            DriverPresencePhase.WAITING_FOR_FIREBASE_SOCKET
+        ) || (
+            state.phase == DriverPresencePhase.WRITING_PRESENCE &&
+                state.reconnectReason != null
+        )
+    }
+
     private fun logRecoveryEvent(event: String, message: String) {
         Log.i(
             TAG,
@@ -1550,6 +1569,24 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         nextServiceObserverHandle?.dispose()
         currentServiceObserverHandle = ServiceRepository.observeCurrentService(currentServiceListener)
         nextServiceObserverHandle = ServiceRepository.observeConnectionService(nextServiceListener)
+    }
+
+    private fun reconcileObservedServicePointers() {
+        if (!serviceObserversActive) {
+            return
+        }
+
+        ServiceRepository.getCurrentServiceObservation()
+            .addOnSuccessListener(::handleCurrentServiceObservation)
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "event=current_service_reconcile_failed message=${exception.message}")
+            }
+
+        ServiceRepository.getConnectionServiceObservation()
+            .addOnSuccessListener(::handleNextServiceObservation)
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "event=connection_service_reconcile_failed message=${exception.message}")
+            }
     }
 
     private fun confirmPresenceWrite(
@@ -1584,7 +1621,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             )
         }
 
-        if (pendingRecoveryObserverRefresh) {
+        if (shouldRefreshServiceObserversAfterPresenceConfirmation(currentState)) {
             pendingRecoveryObserverRefresh = false
             bumpReconnectGeneration()
         }

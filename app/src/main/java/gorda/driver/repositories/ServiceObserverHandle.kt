@@ -18,7 +18,10 @@ class ServiceObserverHandle(private val disposeAction: () -> Unit) {
 }
 
 internal class ServicePointerObserver(
-    private val observeService: (serviceId: String) -> ServiceObserverHandle,
+    private val observeService: (
+        serviceId: String,
+        onObservedServiceClosed: () -> Unit
+    ) -> ServiceObserverHandle,
     private val onMissing: () -> Unit
 ) {
     private var currentServiceId: String? = null
@@ -36,7 +39,11 @@ internal class ServicePointerObserver(
 
         currentServiceHandle?.dispose()
         currentServiceId = serviceId
-        currentServiceHandle = observeService(serviceId)
+        currentServiceHandle = observeService(serviceId) {
+            if (currentServiceId == serviceId) {
+                currentServiceHandle = null
+            }
+        }
     }
 
     fun dispose() {

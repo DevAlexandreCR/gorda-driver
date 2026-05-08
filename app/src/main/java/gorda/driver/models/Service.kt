@@ -76,4 +76,8 @@ data class Service(
     fun isInProgress(): Boolean {
         return this.status == STATUS_IN_PROGRESS
     }
+
+    fun isTerminal(): Boolean {
+        return this.status == STATUS_TERMINATED || this.status == STATUS_CANCELED
+    }
 }

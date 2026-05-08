@@ -37,6 +37,7 @@ import gorda.driver.location.CachedLocationStore
 import gorda.driver.location.LocationHandler
 import gorda.driver.models.Driver
 import gorda.driver.repositories.ServiceObserverHandle
+import gorda.driver.repositories.ServiceObservationResult
 import gorda.driver.repositories.ServiceRepository
 import gorda.driver.services.firebase.Database
 import gorda.driver.ui.service.ConnectionBroadcastReceiver
@@ -93,45 +94,58 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
             }
         }
     }
-    private val nextServiceListener: ServiceEventListener = ServiceEventListener { service ->
-        if (service == null) {
-            if (nextService != null) {
-                playSound.playCancelSound(nextService!!.created_at.toInt())
-                nextService = null
+    private val nextServiceListener: ServiceEventListener = ServiceEventListener { result ->
+        when (result) {
+            is ServiceObservationResult.Active -> {
+                nextService = result.service
+                playSound.playAssignedSound(result.service.created_at.toInt())
             }
-        } else {
-            nextService = service
-            playSound.playAssignedSound(nextService!!.created_at.toInt())
+            is ServiceObservationResult.Terminal,
+            ServiceObservationResult.Missing -> {
+                if (nextService != null) {
+                    playSound.playCancelSound(nextService!!.created_at.toInt())
+                    nextService = null
+                }
+            }
         }
     }
-    private val currentServiceListener: ServiceEventListener = ServiceEventListener { service ->
-        service?.let { s ->
-            when (s.status) {
-                DBService.STATUS_IN_PROGRESS -> {
+    private val currentServiceListener: ServiceEventListener = ServiceEventListener { result ->
+        when (result) {
+            is ServiceObservationResult.Active -> {
+                if (result.service.status == DBService.STATUS_IN_PROGRESS) {
                     val notifyId = sharedPreferences.getInt(
                         Constants.SERVICES_NOTIFICATION_ID,
                         0
                     )
-                    if (notifyId != service.created_at.toInt())
-                        playSound.playAssignedSound(service.created_at.toInt())
+                    if (notifyId != result.service.created_at.toInt()) {
+                        playSound.playAssignedSound(result.service.created_at.toInt())
+                    }
                 }
-                DBService.STATUS_CANCELED -> {
+            }
+            is ServiceObservationResult.Terminal -> {
+                if (result.service.status == DBService.STATUS_CANCELED) {
                     val cancelNotifyId = sharedPreferences.getInt(
                         Constants.CANCEL_SERVICES_NOTIFICATION_ID,
                         0
                     )
-                    if (cancelNotifyId != service.created_at.toInt()) {
-                        val chanel =
-                            sharedPreferences.getString(Constants.NOTIFICATION_CANCELED, Constants.NOTIFICATION_VOICE)
-                        if (chanel == Constants.NOTIFICATION_VOICE) speech(resources.getString(R.string.service_canceled))
-                        else playSound.playCancelSound(service.created_at.toInt())
+                    if (cancelNotifyId != result.service.created_at.toInt()) {
+                        val chanel = sharedPreferences.getString(
+                            Constants.NOTIFICATION_CANCELED,
+                            Constants.NOTIFICATION_VOICE
+                        )
+                        if (chanel == Constants.NOTIFICATION_VOICE) {
+                            speech(resources.getString(R.string.service_canceled))
+                        } else {
+                            playSound.playCancelSound(result.service.created_at.toInt())
+                        }
 
                         val editor: SharedPreferences.Editor = sharedPreferences.edit()
-                        editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, service.created_at.toInt())
+                        editor.putInt(Constants.CANCEL_SERVICES_NOTIFICATION_ID, result.service.created_at.toInt())
                         editor.apply()
                     }
                 }
             }
+            ServiceObservationResult.Missing -> Unit
         }
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

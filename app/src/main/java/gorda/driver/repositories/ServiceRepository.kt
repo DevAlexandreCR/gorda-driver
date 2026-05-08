@@ -67,10 +67,15 @@ object ServiceRepository {
         }
     }
 
-    fun observeExactService(serviceId: String, listener: ServiceEventListener): ServiceObserverHandle {
+    fun observeExactService(
+        serviceId: String,
+        listener: ServiceEventListener,
+        onClosed: () -> Unit = {}
+    ): ServiceObserverHandle {
         val ref = Database.dbServices().child(serviceId)
         ref.keepSynced(true)
         listener.setRef(ref)
+        listener.setOnClosed(onClosed)
         ref.addValueEventListener(listener)
 
         return ServiceObserverHandle {
@@ -89,6 +94,16 @@ object ServiceRepository {
         val driverId = Auth.getCurrentUserUUID() ?: return ServiceObserverHandle.empty()
         val pointerRef = Database.dbServiceConnections().child(driverId)
         return observeServicePointer(pointerRef, listener)
+    }
+
+    fun getCurrentServiceObservation(): Task<ServiceObservationResult> {
+        val driverId = Auth.getCurrentUserUUID() ?: return Tasks.forResult(ServiceObservationResult.Missing)
+        return getServicePointerObservation(Database.dbDriversAssigned().child(driverId))
+    }
+
+    fun getConnectionServiceObservation(): Task<ServiceObservationResult> {
+        val driverId = Auth.getCurrentUserUUID() ?: return Tasks.forResult(ServiceObservationResult.Missing)
+        return getServicePointerObservation(Database.dbServiceConnections().child(driverId))
     }
 
     fun validateAssignment(serviceId: String): Task<Boolean> {
@@ -358,8 +373,10 @@ object ServiceRepository {
     ): ServiceObserverHandle {
         pointerRef.keepSynced(true)
         val pointerObserver = ServicePointerObserver(
-            observeService = { serviceId -> observeExactService(serviceId, listener) },
-            onMissing = { listener.setNull() }
+            observeService = { serviceId, onClosed ->
+                observeExactService(serviceId, listener, onClosed)
+            },
+            onMissing = { listener.setMissing() }
         )
 
         val valueEventListener = object : ValueEventListener {
@@ -380,6 +397,34 @@ object ServiceRepository {
             pointerRef.keepSynced(false)
             pointerObserver.dispose()
         }
+    }
+
+    private fun getServicePointerObservation(pointerRef: DatabaseReference): Task<ServiceObservationResult> {
+        val taskCompletionSource = TaskCompletionSource<ServiceObservationResult>()
+
+        pointerRef.get()
+            .addOnSuccessListener { pointerSnapshot ->
+                val serviceId = pointerSnapshot.getValue(String::class.java)
+                if (serviceId.isNullOrBlank()) {
+                    taskCompletionSource.setResult(ServiceObservationResult.Missing)
+                    return@addOnSuccessListener
+                }
+
+                Database.dbServices().child(serviceId).get()
+                    .addOnSuccessListener { serviceSnapshot ->
+                        taskCompletionSource.setResult(
+                            ServiceObservationResult.fromSnapshot(serviceSnapshot)
+                        )
+                    }
+                    .addOnFailureListener { exception ->
+                        taskCompletionSource.setException(exception)
+                    }
+            }
+            .addOnFailureListener { exception ->
+                taskCompletionSource.setException(exception)
+            }
+
+        return taskCompletionSource.task
     }
 
     fun getHistoryFromDriver(): Task<MutableList<Service>> {
