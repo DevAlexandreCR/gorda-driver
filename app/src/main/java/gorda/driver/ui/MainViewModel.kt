@@ -317,6 +317,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         presenceManager.stop()
     }
 
+    fun forceReconnect() {
+        presenceManager.forceReconnect()
+    }
+
     fun requestConnect() {
         if (!_isNetWorkConnected.value) {
             emitErrorMessage(R.string.connection_lost)

@@ -10,34 +10,37 @@ import gorda.driver.interfaces.DriverConnected
 import gorda.driver.interfaces.LocInterface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
  * Owns Firebase RTDB presence for a single driver.
  *
- * Source of truth for Firebase connectivity is `.info/connected`. Android's
- * ConnectivityManager is treated as a hint only (it drives the `Offline` UI
- * state but never tears down listeners or the SDK transport).
+ * The visible Connected/Connecting state is driven by `.info/connected`,
+ * NOT by the setValue completion callback. Firebase's setValue callback can
+ * be silently delayed for minutes when the SDK is in a degraded state
+ * (validated socket but stalled write pipeline), and gating UI on it caused
+ * the "stuck disconnected" symptom even after a real reconnect.
  *
- * On every transition of `.info/connected` from false → true, presence is
- * (re)written and `onDisconnect().removeValue()` is (re)armed. This is the
- * fix for the "needs app restart" bug: the previous coordinator armed the
- * onDisconnect handler only once and lost it after socket churn.
+ * Writes are fire-and-forget: we still listen for PERMISSION_DENIED (the
+ * version-unsupported / blocked-driver signal) but never block the UI on a
+ * write ack. Firebase persistence queues writes offline and the SDK retries
+ * its own writes when the socket recovers.
+ *
+ * On every `.info/connected` false → true transition, presence is rewritten
+ * and `onDisconnect().removeValue()` is re-armed. This is the fix for the
+ * "needs app restart" bug.
  */
 class PresenceManager(
     private val onlineDriversRef: DatabaseReference = Database.dbOnlineDrivers(),
     private val infoConnectedRef: DatabaseReference = Database.dbInfoConnected(),
     private val dispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Main,
-    private val nowMillis: () -> Long = { System.currentTimeMillis() },
-    private val nowSeconds: () -> Long = { System.currentTimeMillis() / 1000L }
+    private val nowSeconds: () -> Long = { System.currentTimeMillis() / 1000L },
+    private val transportCycler: TransportCycler = TransportCycler.Default
 ) {
 
     sealed class State {
@@ -46,6 +49,18 @@ class PresenceManager(
         object Connected : State()
         object Offline : State()
         data class Fatal(val reason: String) : State()
+    }
+
+    /** Lets tests stub out goOffline/goOnline. */
+    interface TransportCycler {
+        fun cycle()
+        object Default : TransportCycler {
+            override fun cycle() {
+                val db = com.google.firebase.database.FirebaseDatabase.getInstance()
+                db.goOffline()
+                db.goOnline()
+            }
+        }
     }
 
     private val scope = CoroutineScope(dispatcher + SupervisorJob())
@@ -59,8 +74,6 @@ class PresenceManager(
     private var firebaseConnected: Boolean = false
 
     private var infoConnectedListener: ValueEventListener? = null
-    private var retryJob: Job? = null
-    private var backoffIndex: Int = 0
 
     /** Begin maintaining presence for `driverId` with the given last-known location. */
     fun start(driverId: String, location: LocInterface) {
@@ -72,9 +85,30 @@ class PresenceManager(
         this.driverId = driverId
         this.sessionId = UUID.randomUUID().toString()
         this.latestLocation = location
-        this.backoffIndex = 0
+        // Don't pre-judge: let the .info/connected listener tell us where we are.
+        // If we're already connected, the listener will fire true immediately and we
+        // transition into Connected. If not, it'll fire false and we'll show Connecting.
         transitionTo(if (!hasAndroidNetwork) State.Offline else State.Connecting)
         attachInfoConnectedListener()
+        // Best-effort write. If Firebase is offline, persistence queues it; the SDK
+        // will flush when the socket recovers. We don't gate state on the ack.
+        writePresence()
+    }
+
+    /**
+     * User-initiated kick when the SDK appears stuck (e.g. apply screen retry).
+     * Cycles transport: goOffline → goOnline. Safe because we re-arm onDisconnect
+     * on every `.info/connected` reconnect.
+     */
+    fun forceReconnect() {
+        if (driverId == null) return
+        Log.i(TAG, "force reconnect: cycling transport")
+        try {
+            transportCycler.cycle()
+        } catch (e: Exception) {
+            Log.w(TAG, "transport cycle failed: ${e.message}")
+        }
+        // The .info/connected listener will fire false then true and drive the rest.
     }
 
     /** Stop maintaining presence. Best-effort cleanup of server-side state. */
@@ -111,8 +145,8 @@ class PresenceManager(
         Log.d(TAG, "android network available")
         if (driverId == null) return
         if (_state.value is State.Offline) {
+            // We rely on .info/connected to flip to Connected. Defensive re-attach.
             transitionTo(State.Connecting)
-            // Defensive: re-attach in case the listener died.
             attachInfoConnectedListener()
         }
     }
@@ -122,8 +156,6 @@ class PresenceManager(
         if (!hasAndroidNetwork) return
         hasAndroidNetwork = false
         Log.d(TAG, "android network lost")
-        retryJob?.cancel()
-        retryJob = null
         if (driverId == null) return
         if (_state.value is State.Connected || _state.value is State.Connecting) {
             transitionTo(State.Offline)
@@ -159,10 +191,13 @@ class PresenceManager(
         if (driverId == null) return
 
         if (connected) {
-            // false → true: rearm presence + onDisconnect.
-            backoffIndex = 0
-            retryJob?.cancel()
-            retryJob = null
+            // .info/connected → true is our truth signal for Connected, regardless of
+            // whether any previous setValue has yet acked. UI unblocks here.
+            if (_state.value !is State.Connected && _state.value !is State.Fatal) {
+                transitionTo(State.Connected)
+            }
+            // (Re)write presence + (re)arm onDisconnect on every reconnect. This is
+            // the load-bearing fix for the "needs app restart" bug.
             writePresence()
         } else {
             // Lost socket. Don't tear anything down; the SDK reconnects on its own.
@@ -172,6 +207,11 @@ class PresenceManager(
         }
     }
 
+    /**
+     * Fire-and-forget write of `/online_drivers/{id}`. State is NOT gated on
+     * the ack — only PERMISSION_DENIED is acted on (version unsupported / driver
+     * blocked). All other outcomes are logged for diagnostics.
+     */
     private fun writePresence() {
         val currentDriverId = driverId ?: return
         val currentSession = sessionId ?: return
@@ -189,16 +229,16 @@ class PresenceManager(
             override var last_seen_at: Long = nowSeconds()
             override var session_id: String = currentSession
         }
+
         ref.setValue(payload) { error, _ ->
             when {
                 error == null -> {
+                    Log.d(TAG, "presence write acked")
                     ref.onDisconnect().removeValue { disconnectError, _ ->
                         if (disconnectError != null) {
                             Log.w(TAG, "onDisconnect rearm failed: ${disconnectError.message}")
                         }
                     }
-                    backoffIndex = 0
-                    transitionTo(State.Connected)
                 }
                 error.code == DatabaseError.PERMISSION_DENIED -> {
                     Log.e(TAG, "presence write permission denied (version unsupported?)")
@@ -206,26 +246,7 @@ class PresenceManager(
                 }
                 else -> {
                     Log.w(TAG, "presence write failed: ${error.message}")
-                    scheduleRetry()
                 }
-            }
-        }
-    }
-
-    private fun scheduleRetry() {
-        retryJob?.cancel()
-        if (!hasAndroidNetwork) {
-            transitionTo(State.Offline)
-            return
-        }
-        if (_state.value is State.Connected) return
-        transitionTo(State.Connecting)
-        val delayMs = BACKOFF_MS[backoffIndex.coerceAtMost(BACKOFF_MS.lastIndex)]
-        backoffIndex = (backoffIndex + 1).coerceAtMost(BACKOFF_MS.lastIndex)
-        retryJob = scope.launch {
-            delay(delayMs)
-            if (firebaseConnected && driverId != null && _state.value !is State.Connected) {
-                writePresence()
             }
         }
     }
@@ -238,13 +259,11 @@ class PresenceManager(
     }
 
     private fun stopInternal(clearStateToIdle: Boolean) {
-        retryJob?.cancel()
-        retryJob = null
         detachInfoConnectedListener()
         driverId = null
         sessionId = null
         latestLocation = null
-        backoffIndex = 0
+        firebaseConnected = false
         if (clearStateToIdle) {
             transitionTo(State.Idle)
         }
@@ -259,7 +278,6 @@ class PresenceManager(
     companion object {
         private const val TAG = "PresenceManager"
         const val REASON_VERSION_UNSUPPORTED = "version_unsupported"
-        private val BACKOFF_MS = longArrayOf(1_000L, 2_000L, 5_000L, 10_000L, 30_000L)
     }
 }
 

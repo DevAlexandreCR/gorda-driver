@@ -45,6 +45,7 @@ class ApplyFragment : Fragment() {
         private const val APPLICANT_WRITE_TIMEOUT_MS = 8_000L
         private const val CANCEL_TIMEOUT_MS = 8_000L
         private const val LOCATION_RECOVERY_TIMEOUT_MS = 6_000L
+        private const val RETRY_RECONNECT_WAIT_MS = 4_000L
     }
 
     private val mainViewModel: MainViewModel by activityViewModels()
@@ -64,6 +65,14 @@ class ApplyFragment : Fragment() {
     private var shouldAutoResumeApplyOnLocation = false
     private var locationRecoveryJob: Job? = null
     private val writeAttemptsToCancelOnSuccess = mutableSetOf<Long>()
+    private var pendingRetryAfterReconnect = false
+    private val retryRevertHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val retryRevertRunnable = Runnable {
+        if (!isAdded) return@Runnable
+        if (!pendingRetryAfterReconnect) return@Runnable
+        pendingRetryAfterReconnect = false
+        render(applyViewModel.uiState.value ?: ApplyViewModel.ApplyUiState.Preparing)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -108,6 +117,13 @@ class ApplyFragment : Fragment() {
                 is ApplyViewModel.ApplyUiState.RecoveringLocation -> {
                     beginLocationRecovery(manualRetry = true)
                 }
+                ApplyViewModel.ApplyUiState.BlockedByConnection -> {
+                    if (currentPresenceState.actualOnline) {
+                        attemptApply(forceRetry = true)
+                    } else {
+                        startRetryReconnectFlow()
+                    }
+                }
                 else -> attemptApply(forceRetry = true)
             }
         }
@@ -126,6 +142,7 @@ class ApplyFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        retryRevertHandler.removeCallbacks(retryRevertRunnable)
         locationRecoveryJob?.cancel()
         destinationChangedListener?.let { listener ->
             navController?.removeOnDestinationChangedListener(listener)
@@ -147,10 +164,27 @@ class ApplyFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 mainViewModel.presenceState.collect { presence ->
                     currentPresenceState = presence
-                    render(applyViewModel.uiState.value ?: ApplyViewModel.ApplyUiState.Preparing)
+                    if (pendingRetryAfterReconnect && presence.actualOnline) {
+                        pendingRetryAfterReconnect = false
+                        retryRevertHandler.removeCallbacks(retryRevertRunnable)
+                        attemptApply(forceRetry = true)
+                    } else {
+                        render(applyViewModel.uiState.value ?: ApplyViewModel.ApplyUiState.Preparing)
+                    }
                 }
             }
         }
+    }
+
+    private fun startRetryReconnectFlow() {
+        val currentBinding = _binding ?: return
+        pendingRetryAfterReconnect = true
+        currentBinding.btnRetry.isEnabled = false
+        currentBinding.btnRetry.text = getString(R.string.apply_checking_connection)
+        currentBinding.progressBar.isVisible = true
+        mainViewModel.forceReconnect()
+        retryRevertHandler.removeCallbacks(retryRevertRunnable)
+        retryRevertHandler.postDelayed(retryRevertRunnable, RETRY_RECONNECT_WAIT_MS)
     }
 
     private fun observeLocation() {

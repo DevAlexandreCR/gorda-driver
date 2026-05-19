@@ -15,6 +15,7 @@
     <string name="offline_indicator_description">No internet connection</string>
     <string name="apply_retry_offline">Retry</string>
     <string name="apply_retry_offline_hint">No internet — tap to retry</string>
+    <string name="apply_checking_connection">Checking connection…</string>
     <string name="title_activity_main" translatable="false">MainActivity</string>
     <string name="navigation_drawer_open" translatable="false">Open navigation drawer</string>
     <string name="navigation_drawer_close" translatable="false">Close navigation drawer</string>
