@@ -524,12 +524,12 @@ class ApplyFragment : Fragment() {
             ApplyViewModel.ApplyUiState.BlockedByConnection -> {
                 cancelLocationRecovery()
                 currentBinding.progressBar.isGone = true
-                currentBinding.textView.text = blockedMessage(applyReady)
+                currentBinding.textView.text = getString(R.string.apply_retry_offline_hint)
                 currentBinding.btnCancel.text = getString(R.string.back_to_services)
                 currentBinding.btnCancel.isEnabled = true
                 currentBinding.btnRetry.isVisible = true
-                currentBinding.btnRetry.isEnabled = applyReady
-                currentBinding.btnRetry.text = getString(R.string.retry_application)
+                currentBinding.btnRetry.isEnabled = true
+                currentBinding.btnRetry.text = getString(R.string.apply_retry_offline)
             }
 
             ApplyViewModel.ApplyUiState.Applying -> {
@@ -560,7 +560,7 @@ class ApplyFragment : Fragment() {
                 currentBinding.btnCancel.text = getString(R.string.back_to_services)
                 currentBinding.btnCancel.isEnabled = true
                 currentBinding.btnRetry.isVisible = true
-                currentBinding.btnRetry.isEnabled = applyReady && state.canRetry
+                currentBinding.btnRetry.isEnabled = state.canRetry
                 currentBinding.btnRetry.text = getString(R.string.retry_application)
             }
 
@@ -582,15 +582,6 @@ class ApplyFragment : Fragment() {
         } else {
             getString(R.string.location_recovery_in_progress) + "\n" +
                 getString(R.string.not_applied_yet)
-        }
-    }
-
-    private fun blockedMessage(applyReady: Boolean): CharSequence {
-        return if (applyReady) {
-            getString(R.string.connection_restored_retry_apply) + "\n" +
-                getString(R.string.not_applied_yet)
-        } else {
-            getString(R.string.reconnecting_dispatch_not_applied)
         }
     }
 

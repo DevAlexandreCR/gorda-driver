@@ -15,7 +15,9 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.Message
 import android.os.Messenger
 import android.provider.Settings
@@ -66,7 +68,6 @@ import gorda.driver.services.firebase.Auth
 import gorda.driver.services.firebase.Messaging
 import gorda.driver.services.network.NetworkMonitor
 import gorda.driver.ui.MainViewModel
-import gorda.driver.ui.service.ConnectionBroadcastReceiver
 import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.utils.Constants
@@ -83,6 +84,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
+        private const val OFFLINE_INDICATOR_DEBOUNCE_MS = 10_000L
     }
 
     private lateinit var appBarConfiguration: AppBarConfiguration
@@ -92,7 +94,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var preferences: SharedPreferences
     private lateinit var connectionBar: ProgressBar
-    private lateinit var connectionStatusBanner: TextView
+    private lateinit var offlineIndicator: ImageView
+    private val offlineIndicatorHandler = Handler(Looper.getMainLooper())
+    private val showOfflineIndicatorRunnable = Runnable {
+        offlineIndicator.visibility = View.VISIBLE
+    }
     private var unsupportedVersionDialog: AlertDialog? = null
     private var driverLoadFailureDialog: AlertDialog? = null
     private var authStateListener: FirebaseAuth.AuthStateListener? = null
@@ -108,18 +114,15 @@ class MainActivity : AppCompatActivity() {
     )
     private var locationService: Messenger? = null
     private var mBound: Boolean = false
-    private var lastStartedServiceAttemptId: Long = -1L
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             locationService = Messenger(service)
             mBound = true
-            viewModel.onLocationServiceBound()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             locationService = null
             mBound = false
-            viewModel.onLocationServiceBindFailed()
         }
     }
     private val locationBroadcastReceiver =
@@ -128,16 +131,6 @@ class MainActivity : AppCompatActivity() {
                 val extra: Location? = intent.getParcelableExtra(LOCATION_EXTRA)
                 extra?.let { location ->
                     viewModel.updateLocation(location)
-                }
-            }
-        })
-
-    private val connectionBroadcastReceiver =
-        ConnectionBroadcastReceiver(object : LocationUpdateInterface {
-            override fun onUpdate(intent: Intent) {
-                val extra: Location? = intent.getParcelableExtra(LOCATION_EXTRA)
-                extra?.let { location ->
-                    viewModel.onInitialConnectionLocation(location)
                 }
             }
         })
@@ -155,7 +148,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         connectionBar = binding.root.findViewById(R.id.connectionBar)
-        connectionStatusBanner = binding.root.findViewById(R.id.connectionStatusBanner)
+        offlineIndicator = binding.appBarMain.toolbar.findViewById(R.id.offlineIndicator)
 
         setSupportActionBar(binding.appBarMain.toolbar)
 
@@ -197,15 +190,6 @@ class MainActivity : AppCompatActivity() {
             if (switchConnect.isChecked) {
                 viewModel.requestConnect()
             } else {
-                if (!viewModel.isNetWorkConnected.value) {
-                    Toast.makeText(
-                        this,
-                        R.string.cannot_disconnect_no_network,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    switchConnect.isChecked = true
-                    return@setOnClickListener
-                }
                 viewModel.requestDisconnect()
             }
         }
@@ -472,11 +456,6 @@ class MainActivity : AppCompatActivity() {
                 locationBroadcastReceiver,
                 IntentFilter(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
             )
-        LocalBroadcastManager.getInstance(this)
-            .registerReceiver(
-                connectionBroadcastReceiver,
-                IntentFilter(ConnectionBroadcastReceiver.ACTION_CONNECTION)
-            )
         if (ServiceHelper.isServiceRunning(this, LocationService::class.java)) {
             Intent(this, LocationService::class.java).also { intent ->
                 bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
@@ -509,7 +488,6 @@ class MainActivity : AppCompatActivity() {
         }
         locationService = null
         LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(connectionBroadcastReceiver)
         networkMonitor.stopMonitoring()
     }
 
@@ -758,70 +736,31 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         dismissDriverLoadFailureDialog()
         viewModel.stopPresenceObservation()
+        offlineIndicatorHandler.removeCallbacks(showOfflineIndicatorRunnable)
         super.onDestroy()
         networkMonitor.cleanup()
     }
 
     private fun renderPresenceState(presence: MainViewModel.DriverPresenceState) {
         if (viewModel.driverLoadState.value !is MainViewModel.DriverLoadState.Loaded) {
-            lastStartedServiceAttemptId = -1L
             switchConnect.isEnabled = false
             switchConnect.isChecked = false
             switchConnect.setText(R.string.status_disconnected)
-            connectionStatusBanner.visibility = View.GONE
+            updateOfflineIndicator(showAfterDebounce = false)
             return
         }
 
-        val isConnecting = presence.phase in setOf(
-            MainViewModel.DriverPresencePhase.PRECHECKING,
-            MainViewModel.DriverPresencePhase.WAITING_FOR_BIND,
-            MainViewModel.DriverPresencePhase.WAITING_FOR_LOCATION,
-            MainViewModel.DriverPresencePhase.WRITING_PRESENCE,
-            MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK,
-            MainViewModel.DriverPresencePhase.DISCONNECTING
-        )
-        val isBootstrappingLocation = presence.phase in setOf(
-            MainViewModel.DriverPresencePhase.WAITING_FOR_BIND,
-            MainViewModel.DriverPresencePhase.WAITING_FOR_LOCATION
-        )
-
-        switchConnect.isEnabled = !isConnecting
+        switchConnect.isEnabled = true
         switchConnect.isChecked = presence.desiredOnline
-        renderConnectionBanner(presence)
+        switchConnect.setText(
+            if (presence.desiredOnline) R.string.status_connected else R.string.status_disconnected
+        )
 
-        when {
-            presence.desiredOnline && (
-                !presence.hasTransportNetwork || presence.phase in setOf(
-                    MainViewModel.DriverPresencePhase.RECONNECTING,
-                    MainViewModel.DriverPresencePhase.WAITING_FOR_FIREBASE_SOCKET
-                )
-            ) -> {
-                switchConnect.setText(R.string.status_reconnecting)
-            }
-            presence.actualOnline -> {
-                switchConnect.setText(R.string.status_connected)
-            }
-            isConnecting -> {
-                switchConnect.setText(R.string.status_connecting)
-            }
-            else -> {
-                switchConnect.setText(R.string.status_disconnected)
-            }
-        }
-
-        if (
-            presence.phase == MainViewModel.DriverPresencePhase.WAITING_FOR_BIND &&
-            lastStartedServiceAttemptId != presence.attemptId
-        ) {
-            lastStartedServiceAttemptId = presence.attemptId
-            if (!startLocationService()) {
-                viewModel.onLocationServiceBindFailed()
-            }
-        }
+        val socketHealthy = presence.actualOnline || !presence.desiredOnline
+        updateOfflineIndicator(showAfterDebounce = !socketHealthy)
 
         if (
             presence.desiredOnline &&
-            !isBootstrappingLocation &&
             !mBound &&
             !ServiceHelper.isServiceRunning(this, LocationService::class.java) &&
             LocationHandler.checkPermissions(this)
@@ -837,28 +776,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun renderConnectionBanner(presence: MainViewModel.DriverPresenceState) {
-        val messageRes = when {
-            presence.desiredOnline && !presence.hasTransportNetwork -> R.string.recovery_banner_no_network
-            presence.desiredOnline && presence.hasTransportNetwork && !presence.networkValidated ->
-                R.string.recovery_banner_weak_network
-            presence.desiredOnline && presence.phase == MainViewModel.DriverPresencePhase.WAITING_FOR_FIREBASE_SOCKET ->
-                R.string.recovery_banner_waiting_socket
-            presence.desiredOnline && presence.phase in setOf(
-                MainViewModel.DriverPresencePhase.RECONNECTING,
-                MainViewModel.DriverPresencePhase.WRITING_PRESENCE,
-                MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK
-            ) -> R.string.recovery_banner_syncing_dispatch
-            else -> null
+    private fun updateOfflineIndicator(showAfterDebounce: Boolean) {
+        offlineIndicatorHandler.removeCallbacks(showOfflineIndicatorRunnable)
+        if (showAfterDebounce) {
+            offlineIndicatorHandler.postDelayed(showOfflineIndicatorRunnable, OFFLINE_INDICATOR_DEBOUNCE_MS)
+        } else {
+            offlineIndicator.visibility = View.GONE
         }
-
-        if (messageRes == null) {
-            connectionStatusBanner.visibility = View.GONE
-            connectionStatusBanner.text = ""
-            return
-        }
-
-        connectionStatusBanner.visibility = View.VISIBLE
-        connectionStatusBanner.setText(messageRes)
     }
 }

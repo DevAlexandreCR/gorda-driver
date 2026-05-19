@@ -17,8 +17,6 @@ class ApplyViewModel : ViewModel() {
 
     enum class ApplyConnectionStatus {
         OFFLINE,
-        FIREBASE_DISCONNECTED,
-        RECONNECTING,
         READY
     }
 
@@ -52,18 +50,13 @@ class ApplyViewModel : ViewModel() {
         fun connectionStatusForApply(
             state: MainViewModel.DriverPresenceState
         ): ApplyConnectionStatus {
-            return when {
-                !state.hasNetwork -> ApplyConnectionStatus.OFFLINE
-                state.actualOnline -> ApplyConnectionStatus.READY
-                !state.firebaseConnected -> ApplyConnectionStatus.FIREBASE_DISCONNECTED
-                else -> ApplyConnectionStatus.RECONNECTING
-            }
+            return if (state.actualOnline) ApplyConnectionStatus.READY else ApplyConnectionStatus.OFFLINE
         }
 
         fun isReadyToApply(
             state: MainViewModel.DriverPresenceState
         ): Boolean {
-            return connectionStatusForApply(state) == ApplyConnectionStatus.READY
+            return state.actualOnline
         }
 
         fun estimateRoute(

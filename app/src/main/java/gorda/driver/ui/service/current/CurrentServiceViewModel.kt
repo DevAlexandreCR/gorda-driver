@@ -18,10 +18,8 @@ class CurrentServiceViewModel(
 ) : ViewModel() {
 
     enum class ServiceActionConnectionStatus {
-        NO_TRANSPORT,
         RECOVERING_BUT_QUEUEABLE,
         READY,
-        SYNCING,
         BLOCKED_FATAL
     }
 
@@ -103,8 +101,6 @@ class CurrentServiceViewModel(
         ): ServiceActionConnectionStatus {
             return when {
                 state.fatalStopReason != null -> ServiceActionConnectionStatus.BLOCKED_FATAL
-                !state.hasTransportNetwork -> ServiceActionConnectionStatus.NO_TRANSPORT
-                hasPendingSync -> ServiceActionConnectionStatus.SYNCING
                 state.actualOnline -> ServiceActionConnectionStatus.READY
                 else -> ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE
             }
@@ -114,17 +110,11 @@ class CurrentServiceViewModel(
             state: MainViewModel.DriverPresenceState,
             hasPendingSync: Boolean = false
         ): Boolean {
-            return when (connectionStatusForServiceAction(state, hasPendingSync)) {
-                ServiceActionConnectionStatus.READY,
-                ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE -> true
-                ServiceActionConnectionStatus.NO_TRANSPORT,
-                ServiceActionConnectionStatus.SYNCING,
-                ServiceActionConnectionStatus.BLOCKED_FATAL -> false
-            }
+            return state.fatalStopReason == null
         }
 
         fun shouldQueueInsteadOfBlocking(state: MainViewModel.DriverPresenceState): Boolean {
-            return connectionStatusForServiceAction(state) == ServiceActionConnectionStatus.RECOVERING_BUT_QUEUEABLE
+            return state.fatalStopReason == null && !state.actualOnline
         }
 
         fun resolveStartRideFees(

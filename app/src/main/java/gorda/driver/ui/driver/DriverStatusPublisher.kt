@@ -12,16 +12,8 @@ internal class DriverStatusPublisher {
 
     fun updatesFor(state: MainViewModel.DriverPresenceState): List<DriverUpdates> {
         val nextStatus = DriverStatusSnapshot(
-            connecting = state.phase in setOf(
-                MainViewModel.DriverPresencePhase.PRECHECKING,
-                MainViewModel.DriverPresencePhase.WAITING_FOR_BIND,
-                MainViewModel.DriverPresencePhase.WAITING_FOR_LOCATION,
-                MainViewModel.DriverPresencePhase.WRITING_PRESENCE,
-                MainViewModel.DriverPresencePhase.WAITING_FOR_PRESENCE_ACK,
-                MainViewModel.DriverPresencePhase.RECONNECTING,
-                MainViewModel.DriverPresencePhase.DISCONNECTING
-            ),
-            connected = MainViewModel.shouldKeepDriverFeedConnected(state)
+            connecting = state.connecting,
+            connected = state.actualOnline || (state.desiredOnline && state.connecting)
         )
 
         if (lastPublishedStatus == nextStatus) {

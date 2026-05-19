@@ -28,9 +28,6 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
 import gorda.driver.R
 import gorda.driver.activity.StartActivity
 import gorda.driver.location.CachedLocationStore
@@ -39,8 +36,6 @@ import gorda.driver.models.Driver
 import gorda.driver.repositories.ServiceObserverHandle
 import gorda.driver.repositories.ServiceObservationResult
 import gorda.driver.repositories.ServiceRepository
-import gorda.driver.services.firebase.Database
-import gorda.driver.ui.service.ConnectionBroadcastReceiver
 import gorda.driver.ui.service.LocationBroadcastReceiver
 import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.ServicesEventListener
@@ -61,7 +56,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
 
     private lateinit var lastLocation: Location
     private lateinit var messenger: Messenger
-    private var starting = false
     private var stopped = false
     private var driverID: String = ""
     private var toSpeech: TextToSpeech? = null
@@ -74,8 +68,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     private var pendingServicesObserverHandle: ServiceObserverHandle? = null
     private var currentServiceObserverHandle: ServiceObserverHandle? = null
     private var nextServiceObserverHandle: ServiceObserverHandle? = null
-    private var firebaseConnectionListener: ValueEventListener? = null
-    private var lastFirebaseConnected = false
     private val announcedPendingServiceKeys = linkedSetOf<String>()
     private var hasSeededPendingServices = false
     private val timer = Timer()
@@ -199,7 +191,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         playSound = PlaySound(this, sharedPreferences)
         mediaPlayer = MediaPlayer.create(this, R.raw.new_service)
         listServices = mutableListOf()
-        this.starting = true
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
             if (location != null) {
@@ -211,12 +202,10 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         startPendingServicesObservation()
         startTimer()
         startListenNextService()
-        startFirebaseConnectionObservation()
     }
 
     fun stop() {
         locationManager.removeListener(locationCallback)
-        stopFirebaseConnectionObservation()
         pendingServicesObserverHandle?.dispose()
         pendingServicesObserverHandle = null
         currentServiceObserverHandle?.dispose()
@@ -309,39 +298,6 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         nextServiceObserverHandle = ServiceRepository.observeConnectionService(nextServiceListener)
     }
 
-    private fun startFirebaseConnectionObservation() {
-        if (firebaseConnectionListener != null) {
-            return
-        }
-
-        firebaseConnectionListener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val isConnected = snapshot.getValue(Boolean::class.java) == true
-                if (isConnected && !lastFirebaseConnected) {
-                    Log.i(
-                        this@LocationService.javaClass.toString(),
-                        "event=firebase_socket_restored observersRetained=true"
-                    )
-                }
-                lastFirebaseConnected = isConnected
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Log.e(this@LocationService.javaClass.toString(), error.message)
-            }
-        }
-
-        Database.dbInfoConnected().addValueEventListener(firebaseConnectionListener!!)
-    }
-
-    private fun stopFirebaseConnectionObservation() {
-        firebaseConnectionListener?.let {
-            Database.dbInfoConnected().removeEventListener(it)
-        }
-        firebaseConnectionListener = null
-        lastFirebaseConnected = false
-    }
-
     private fun syncPendingServiceAlerts(services: List<DBService>) {
         if (!hasSeededPendingServices) {
             services.forEach(::announcePendingService)
@@ -372,26 +328,13 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         if (stopped || !::lastLocation.isInitialized) {
             return
         }
-
-        Log.i(
-            this.javaClass.toString(),
-            "event=replay_cached_location_on_bind includeBootstrap=$starting"
-        )
         publishLocationUpdate(lastLocation)
-        if (starting) {
-            starting = false
-            publishInitialConnectionLocation(lastLocation)
-        }
     }
 
     private fun publishObservedLocation(location: Location) {
         CachedLocationStore.save(sharedPreferences, location)
         lastLocation = location
         publishLocationUpdate(location)
-        if (starting) {
-            starting = false
-            publishInitialConnectionLocation(location)
-        }
     }
 
     private fun publishLocationUpdate(location: Location) {
@@ -399,12 +342,5 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
         broadcast.putExtra(LOCATION_EXTRA, location)
         LocalBroadcastManager.getInstance(applicationContext)
             .sendBroadcast(broadcast)
-    }
-
-    private fun publishInitialConnectionLocation(location: Location) {
-        val startingIntent = Intent(ConnectionBroadcastReceiver.ACTION_CONNECTION)
-        startingIntent.putExtra(LOCATION_EXTRA, location)
-        LocalBroadcastManager.getInstance(applicationContext)
-            .sendBroadcast(startingIntent)
     }
 }

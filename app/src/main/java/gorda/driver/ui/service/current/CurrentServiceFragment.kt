@@ -453,9 +453,8 @@ class CurrentServiceFragment : Fragment() {
                     val previousPresence = currentPresenceState
                     currentPresenceState = presence
                     val recoverySignalRestored =
-                        (!previousPresence.hasTransportNetwork && presence.hasTransportNetwork) ||
-                            (!previousPresence.actualOnline && presence.actualOnline) ||
-                            (!previousPresence.firebaseConnected && presence.firebaseConnected)
+                        (!previousPresence.hasNetwork && presence.hasNetwork) ||
+                            (!previousPresence.actualOnline && presence.actualOnline)
                     if (recoverySignalRestored) {
                         shouldReconcileRestoredAction = true
                         currentService?.let { service ->
@@ -631,15 +630,12 @@ class CurrentServiceFragment : Fragment() {
 
     private fun handleHaveArrived(service: Service) {
         val now = Date().time / 1000
-        mainViewModel.setLoading(true)
         service.metadata.arrived_at = now
         service.updateMetadata()
             .addOnSuccessListener {
-                mainViewModel.setLoading(false)
                 Toast.makeText(requireContext(), R.string.service_updated, Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { exception ->
-                mainViewModel.setLoading(false)
                 btnStatus.text = haveArrived
                 Log.e(TAG, exception.message ?: "Unable to mark arrived")
                 Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
@@ -656,8 +652,6 @@ class CurrentServiceFragment : Fragment() {
 
         val attemptId = currentServiceViewModel.newAttempt()
         currentServiceViewModel.showPreparingStart()
-        mainViewModel.setLoading(true)
-
         SettingsRepository.getRideFeesTask()
             .addOnSuccessListener { liveFees ->
                 if (!currentServiceViewModel.isActiveAttempt(attemptId)) {
@@ -721,7 +715,6 @@ class CurrentServiceFragment : Fragment() {
                     mainViewModel.setRideFees(it)
                     persistRideFeesSnapshot(it)
                 }
-                mainViewModel.setLoading(false)
                 currentServiceViewModel.showIdle()
                 setBottomSheetState(BottomSheetBehavior.STATE_COLLAPSED)
                 showStartTripDialog(service)
@@ -731,14 +724,12 @@ class CurrentServiceFragment : Fragment() {
                     applyRideFees(it)
                     mainViewModel.setRideFees(it)
                 }
-                mainViewModel.setLoading(false)
                 currentServiceViewModel.showIdle()
                 showToast(R.string.using_saved_pricing_snapshot)
                 setBottomSheetState(BottomSheetBehavior.STATE_COLLAPSED)
                 showStartTripDialog(service)
             }
             CurrentServiceViewModel.StartRideFeesSource.UNAVAILABLE -> {
-                mainViewModel.setLoading(false)
                 currentServiceViewModel.showStartFailed(
                     messageRes = R.string.start_trip_pricing_unavailable,
                     canRetry = true
@@ -797,8 +788,6 @@ class CurrentServiceFragment : Fragment() {
         val driverId = mainViewModel.driver.value?.id ?: return
         val attemptId = currentServiceViewModel.newAttempt()
         currentServiceViewModel.showStartingTrip()
-        mainViewModel.setLoading(true)
-
         if (CurrentServiceViewModel.shouldQueueInsteadOfBlocking(currentPresenceState)) {
             val localResult = ServiceRepository.validateObservedServiceForStart(currentService, driverId)
             localResult
@@ -840,7 +829,6 @@ class CurrentServiceFragment : Fragment() {
                     }
 
                     Log.e(TAG, "Trip start write failed", exception)
-                    mainViewModel.setLoading(false)
                     currentServiceViewModel.showStartFailed(
                         messageRes = R.string.common_error,
                         canRetry = true
@@ -851,7 +839,6 @@ class CurrentServiceFragment : Fragment() {
                     }
 
                     Log.w(TAG, "Trip start write timed out attemptId=$attemptId")
-                    mainViewModel.setLoading(false)
                     currentServiceViewModel.showStartFailed(
                         messageRes = R.string.error_timeout,
                         canRetry = true
@@ -871,7 +858,6 @@ class CurrentServiceFragment : Fragment() {
                 }
 
                 Log.w(TAG, "Trip start validation timed out attemptId=$attemptId")
-                mainViewModel.setLoading(false)
                 currentServiceViewModel.showStartFailed(
                     messageRes = R.string.error_timeout,
                     canRetry = true
@@ -880,7 +866,6 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private fun handleStartValidationFailure(exception: Exception) {
-        mainViewModel.setLoading(false)
         val message = exception.message.orEmpty()
         val messageRes = when {
             message.contains("does not exist", ignoreCase = true) -> R.string.service_not_exists
@@ -974,8 +959,6 @@ class CurrentServiceFragment : Fragment() {
         val driverId = mainViewModel.driver.value?.id ?: return
         val attemptId = currentServiceViewModel.newAttempt()
         currentServiceViewModel.showEndingTrip()
-        mainViewModel.setLoading(true)
-
         if (CurrentServiceViewModel.shouldQueueInsteadOfBlocking(currentPresenceState)) {
             val localResult = ServiceRepository.validateObservedServiceForEnd(currentService, driverId)
             localResult
@@ -1023,7 +1006,6 @@ class CurrentServiceFragment : Fragment() {
                     }
 
                     Log.e(TAG, "Trip end write failed", exception)
-                    mainViewModel.setLoading(false)
                     currentServiceViewModel.showEndFailed(
                         messageRes = R.string.common_error,
                         canRetry = true
@@ -1034,7 +1016,6 @@ class CurrentServiceFragment : Fragment() {
                     }
 
                     Log.w(TAG, "Trip end write timed out attemptId=$attemptId")
-                    mainViewModel.setLoading(false)
                     currentServiceViewModel.showEndFailed(
                         messageRes = R.string.error_timeout,
                         canRetry = true
@@ -1054,7 +1035,6 @@ class CurrentServiceFragment : Fragment() {
                 }
 
                 Log.w(TAG, "Trip end validation timed out attemptId=$attemptId")
-                mainViewModel.setLoading(false)
                 currentServiceViewModel.showEndFailed(
                     messageRes = R.string.error_timeout,
                     canRetry = true
@@ -1063,7 +1043,6 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private fun handleEndValidationFailure(exception: Exception) {
-        mainViewModel.setLoading(false)
         val message = exception.message.orEmpty()
 
         when {
@@ -1191,12 +1170,10 @@ class CurrentServiceFragment : Fragment() {
                 btnStatus.isEnabled = false
             }
             CurrentServiceViewModel.ServiceActionUiState.StartSyncing -> {
-                showFeedback(
-                    statusText = getString(R.string.trip_action_syncing_start),
-                    showProgress = true,
-                    retryTextRes = R.string.retry_start_trip,
-                    retryEnabled = currentPresenceState.hasTransportNetwork
-                )
+                // Optimistic UX: writes queue via Firebase persistence. Don't show any sync UI;
+                // local listeners reflect the new status immediately. Keep the button hidden
+                // while the service's status transitions to in_progress.
+                feedbackContainer.isVisible = false
                 btnStatus.isEnabled = false
             }
             is CurrentServiceViewModel.ServiceActionUiState.StartFailed -> {
@@ -1236,12 +1213,8 @@ class CurrentServiceFragment : Fragment() {
                 btnStatus.isEnabled = false
             }
             CurrentServiceViewModel.ServiceActionUiState.EndSyncing -> {
-                showFeedback(
-                    statusText = getString(R.string.trip_action_syncing_end),
-                    showProgress = true,
-                    retryTextRes = R.string.retry_end_trip,
-                    retryEnabled = currentPresenceState.hasTransportNetwork
-                )
+                // Optimistic UX: writes queue via Firebase persistence; nothing to show.
+                feedbackContainer.isVisible = false
                 btnStatus.isEnabled = false
             }
             is CurrentServiceViewModel.ServiceActionUiState.EndFailed -> {
@@ -1282,22 +1255,16 @@ class CurrentServiceFragment : Fragment() {
     private fun blockedStartMessage(): String {
         return if (canSubmitTripAction()) {
             getString(R.string.connection_restored_retry_start)
-        } else if (currentPresenceState.hasTransportNetwork) {
-            getString(R.string.trip_action_recovering_queueable)
         } else {
-            getString(R.string.reconnecting_dispatch_trip_not_started) + "\n" +
-                getString(R.string.retry_available_when_connection_restored)
+            getString(R.string.trip_action_recovering_queueable)
         }
     }
 
     private fun blockedEndMessage(): String {
         return if (canSubmitTripAction()) {
             getString(R.string.connection_restored_retry_end)
-        } else if (currentPresenceState.hasTransportNetwork) {
-            getString(R.string.trip_action_recovering_queueable)
         } else {
-            getString(R.string.reconnecting_dispatch_trip_not_ended) + "\n" +
-                getString(R.string.retry_available_when_connection_restored)
+            getString(R.string.trip_action_recovering_queueable)
         }
     }
 
@@ -1530,7 +1497,6 @@ class CurrentServiceFragment : Fragment() {
         startingRide = true
         startServiceFee(request.serviceId, request.origin)
         currentServiceViewModel.onTripStartedObserved()
-        mainViewModel.setLoading(false)
         syncRecoveryStore()
     }
 
@@ -1538,14 +1504,12 @@ class CurrentServiceFragment : Fragment() {
         startingRide = true
         startServiceFee(request.serviceId, request.origin)
         currentServiceViewModel.showStartSyncing()
-        mainViewModel.setLoading(false)
         syncRecoveryStore()
     }
 
     private fun applyOptimisticEnd() {
         stopFeeService(clearPersistedState = false)
         currentServiceViewModel.showEndSyncing()
-        mainViewModel.setLoading(false)
         syncRecoveryStore()
     }
 
@@ -1582,9 +1546,6 @@ class CurrentServiceFragment : Fragment() {
     private fun resumePendingActionSync(service: Service) {
         val snapshot = currentServiceViewModel.getPendingActionSnapshot() ?: return
         if (!snapshot.optimisticApplied) {
-            return
-        }
-        if (!currentPresenceState.hasTransportNetwork) {
             return
         }
 
