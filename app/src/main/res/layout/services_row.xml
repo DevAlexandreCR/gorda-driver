@@ -180,6 +180,22 @@
                 android:textSize="14sp"
                 android:textStyle="normal" />
 
+            <TextView
+                android:id="@+id/badge_client_completed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/badge_client_completed_background"
+                android:ellipsize="end"
+                android:maxLength="4"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:singleLine="true"
+                android:textColor="@color/on_accent_container"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
             <!-- Spacer -->
             <View
                 android:layout_width="0dp"

@@ -24,7 +24,8 @@ data class Service(
     @SerializedName("client_id") var client_id: String? = null,
     @SerializedName("wp_client_id") var wp_client_id: String? = null,
     @SerializedName("created_at") var created_at: Long = 0,
-    @SerializedName("metadata") var metadata: ServiceMetadata = ServiceMetadata()
+    @SerializedName("metadata") var metadata: ServiceMetadata = ServiceMetadata(),
+    @SerializedName("client_completed_services_count") var client_completed_services_count: Int? = null
 ) : Serializable {
     companion object {
         const val CREATED_AT = "created_at"

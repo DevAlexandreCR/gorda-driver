@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep all model classes and their members so R8 does not strip
+# @SerializedName-annotated fields (e.g. client_completed_services_count).
+-keepclassmembers class gorda.driver.models.** { *; }
+-keepattributes Signature,*Annotation*

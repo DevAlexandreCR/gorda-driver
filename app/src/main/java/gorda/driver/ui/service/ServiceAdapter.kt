@@ -39,6 +39,7 @@ class ServiceAdapter(
         val serviceTimer: Chronometer = view.findViewById(R.id.service_timer)
         val btnShowMap: Button = view.findViewById(R.id.btn_show_map)
         val btnApply: Button = view.findViewById(R.id.btn_apply)
+        val badgeClientCompleted: TextView = view.findViewById(R.id.badge_client_completed)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -88,6 +89,13 @@ class ServiceAdapter(
                 LatLng(service.start_loc.lat, service.start_loc.lng),
                 LatLng(it.latitude, it.longitude
                 )))
+        }
+        val completedCount = service.client_completed_services_count
+        if (completedCount != null && completedCount > 0) {
+            holder.badgeClientCompleted.text = completedCount.toString()
+            holder.badgeClientCompleted.visibility = View.VISIBLE
+        } else {
+            holder.badgeClientCompleted.visibility = View.GONE
         }
     }
 

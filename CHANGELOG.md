@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Show the client completed services count badge in the service list and current service detail.
+
 # Release Notes for 2.0.*
 
 ## [2.0.0(2026-04-14)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.0...1.2.4)

@@ -483,6 +483,14 @@ class CurrentServiceFragment : Fragment() {
         textAddressPreview.text = service.start_loc.name
         textComment.text = service.comment
 
+        val completedCount = service.client_completed_services_count
+        if (completedCount != null && completedCount > 0) {
+            binding.serviceLayout.badgeClientCompleted.text = completedCount.toString()
+            binding.serviceLayout.badgeClientCompleted.visibility = View.VISIBLE
+        } else {
+            binding.serviceLayout.badgeClientCompleted.visibility = View.GONE
+        }
+
         val destinationName = service.end_loc?.name?.takeIf { it.isNotBlank() }
         if (destinationName != null) {
             binding.serviceLayout.destinationContainer.visibility = View.VISIBLE
