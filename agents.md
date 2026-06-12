@@ -149,6 +149,7 @@ The application follows a **MVVM (Model-View-ViewModel)** architecture with repo
   - Creates system notifications with custom sounds
   - Manages notification channels
   - Token registration with Firebase
+  - **Force-disconnect handler** (added in `extract-vehicles-table`): when a data-only FCM message arrives with `data.type = "force_disconnect"`, `NotificationService` calls `MainViewModel.handleForcedDisconnect(reason)`. This clears local presence state and shows a non-dismissable dialog with the provided `reason` string. The FCM payload shape is `{ type: "force_disconnect", reason: String }`; `title` and `body` fields are empty strings (FCM type requirement) and are not displayed.
 
 ---
 
@@ -317,6 +318,7 @@ The application follows a **MVVM (Model-View-ViewModel)** architecture with repo
   - Vehicle information
   - Balance display
   - Document verification status
+  - **Vehicle picker** (added in `extract-vehicles-table`): lists the driver's roster fetched from `GET /driver-app/me/vehicles`; the currently selected vehicle is radio-pre-checked. Tapping a different vehicle calls `MasterDataApiService.setSelectedVehicle(vehicleId)` and persists the selection locally to `SharedPreferences` under key `DRIVER_SELECTED_VEHICLE_ID` so the connect handler can read it without an extra round-trip.
 
 ##### settings/SettingsFragment.kt
 - **Navigation ID:** `nav_settings`
@@ -691,13 +693,17 @@ MainActivity
     ↓
 User toggles "Connect" switch
     ↓
-LocationService starts
+GET /driver-app/me/vehicles (refresh roster)
     ↓
-LocationHandler requests location
+Resolve selected vehicle (is_selected = true)
     ↓
-Driver location updated in Firebase
+If roster empty → disable GO ONLINE, show "No vehicle assigned" message
     ↓
-Driver marked as online in /online_drivers
+POST /driver-app/me/connect { vehicle_id, session_id, location }
+    ↓
+On 200 OK → LocationService starts (RTDB written server-side)
+    ↓
+On structured error → show localized dialog/toast
     ↓
 LocationService listens for new services
     ↓
@@ -709,6 +715,14 @@ Sound/Voice notification plays
     ↓
 Service appears in HomeFragment RecyclerView
 ```
+
+**Important**: `PresenceManager` calls `MasterDataApiService.connect(vehicleId, sessionId, location)` before any UI state changes. The API writes `/online_drivers/{id}` to RTDB; the Android app no longer writes this path directly. Similarly, disconnect calls `MasterDataApiService.disconnect()` and the app no longer removes `/online_drivers/{id}` itself.
+
+The connect API can return structured errors that `PresenceManager` maps to `State.ConnectRejected(reason)`:
+- `vehicle_in_use` — vehicle already held by another driver
+- `driver_already_connected` — this driver has an active assignment
+- `vehicle_disabled` — vehicle is not enabled
+- `vehicle_not_selectable` — driver-vehicle link has `selectable=false`
 
 ### 3. Service Application Flow
 ```

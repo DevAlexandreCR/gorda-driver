@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.SharedPreferences
@@ -52,6 +53,7 @@ import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.button.MaterialButton
@@ -95,6 +97,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var preferences: SharedPreferences
     private lateinit var connectionBar: ProgressBar
     private lateinit var offlineIndicator: ImageView
+    private lateinit var onlineBanner: TextView
     private val offlineIndicatorHandler = Handler(Looper.getMainLooper())
     private val showOfflineIndicatorRunnable = Runnable {
         offlineIndicator.visibility = View.VISIBLE
@@ -135,6 +138,13 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+    private val forceDisconnectReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val reason = intent.getStringExtra(Constants.FORCE_DISCONNECT_REASON_EXTRA) ?: ""
+            viewModel.handleForcedDisconnect(reason)
+        }
+    }
+
     @SuppressLint("HardwareIds")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -149,6 +159,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         connectionBar = binding.root.findViewById(R.id.connectionBar)
         offlineIndicator = binding.appBarMain.toolbar.findViewById(R.id.offlineIndicator)
+        onlineBanner = binding.appBarMain.root.findViewById(R.id.onlineBanner)
 
         setSupportActionBar(binding.appBarMain.toolbar)
 
@@ -253,6 +264,61 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        viewModel.vehicleChangedBannerPlate.observe(this) { plate ->
+            plate ?: return@observe
+            showVehicleChangedDialog(plate)
+            viewModel.consumeVehicleChangedBanner()
+        }
+
+        viewModel.forceDisconnectReason.observe(this) { reason ->
+            if (reason != null) {
+                val msg = when (reason) {
+                    "vehicle_disabled" -> getString(R.string.force_disconnect_vehicle_disabled)
+                    "vehicle_not_selectable" -> getString(R.string.force_disconnect_vehicle_not_selectable)
+                    else -> getString(R.string.force_disconnect_generic)
+                }
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.force_disconnect_title)
+                    .setMessage(msg)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.ok) { dialog, _ ->
+                        dialog.dismiss()
+                        viewModel.consumeForceDisconnectReason()
+                    }
+                    .show()
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                var wasConnecting = false
+                viewModel.presenceState.collect { presence ->
+                    val vehicle = viewModel.vehicleForBanner.value
+                    if (presence.connecting && !wasConnecting && vehicle != null) {
+                        val msg = getString(
+                            R.string.connecting_with_vehicle,
+                            vehicle.plate,
+                            vehicle.brand ?: ""
+                        )
+                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
+                    }
+                    wasConnecting = presence.connecting
+
+                    if (presence.actualOnline && vehicle != null) {
+                        val bannerText = getString(
+                            R.string.online_with_vehicle,
+                            vehicle.plate,
+                            vehicle.brand ?: ""
+                        )
+                        onlineBanner.text = bannerText
+                        onlineBanner.visibility = View.VISIBLE
+                    } else {
+                        onlineBanner.visibility = View.GONE
+                    }
+                }
+            }
+        }
+
         viewModel.isLoading.observe(this) {
             if (it) {
                 connectionBar.visibility = View.VISIBLE
@@ -350,6 +416,20 @@ class MainActivity : AppCompatActivity() {
     private fun dismissDriverLoadFailureDialog() {
         driverLoadFailureDialog?.dismiss()
         driverLoadFailureDialog = null
+    }
+
+    private fun showVehicleChangedDialog(plate: String) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.vehicle_changed_dialog_title)
+            .setMessage(getString(R.string.vehicle_changed_dialog_message, plate))
+            .setPositiveButton(R.string.yes) { _, _ ->
+                viewModel.proceedWithConnect()
+            }
+            .setNegativeButton(R.string.pick_another_vehicle) { _, _ ->
+                navController.navigate(R.id.nav_profile)
+            }
+            .setCancelable(false)
+            .show()
     }
 
     private fun showBlockingActionDialog(
@@ -456,6 +536,11 @@ class MainActivity : AppCompatActivity() {
                 locationBroadcastReceiver,
                 IntentFilter(LocationBroadcastReceiver.ACTION_LOCATION_UPDATES)
             )
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(
+                forceDisconnectReceiver,
+                IntentFilter(Constants.FORCE_DISCONNECT_ACTION)
+            )
         if (ServiceHelper.isServiceRunning(this, LocationService::class.java)) {
             Intent(this, LocationService::class.java).also { intent ->
                 bindService(intent, connection, Context.BIND_NOT_FOREGROUND)
@@ -488,6 +573,7 @@ class MainActivity : AppCompatActivity() {
         }
         locationService = null
         LocalBroadcastManager.getInstance(this).unregisterReceiver(locationBroadcastReceiver)
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(forceDisconnectReceiver)
         networkMonitor.stopMonitoring()
     }
 

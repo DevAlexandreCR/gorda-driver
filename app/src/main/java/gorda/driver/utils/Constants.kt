@@ -30,10 +30,13 @@ class Constants {
         const val CURRENT_SERVICE_BOTTOM_SHEET_SNAPSHOT = "gorda.driver.CURRENT_SERVICE_BOTTOM_SHEET_SNAPSHOT"
         const val ALERT_ACTION = "gorda.driver.SHOW_ALERT"
         const val DRIVER_DESIRED_ONLINE = "gorda.driver.DRIVER_DESIRED_ONLINE"
+        const val DRIVER_SELECTED_VEHICLE_ID = "driver_selected_vehicle_id"
         const val CACHED_LOCATION_LAT_BITS = "gorda.driver.CACHED_LOCATION_LAT_BITS"
         const val CACHED_LOCATION_LNG_BITS = "gorda.driver.CACHED_LOCATION_LNG_BITS"
         const val CACHED_LOCATION_ACCURACY = "gorda.driver.CACHED_LOCATION_ACCURACY"
         const val CACHED_LOCATION_CAPTURED_AT_MS = "gorda.driver.CACHED_LOCATION_CAPTURED_AT_MS"
         const val PENDING_SERVICES_LIMIT = 100
+        const val FORCE_DISCONNECT_ACTION = "gorda.driver.FORCE_DISCONNECT"
+        const val FORCE_DISCONNECT_REASON_EXTRA = "reason"
     }
 }

@@ -21,6 +21,8 @@ data class Driver(
     @SerializedName("created_at") override var created_at: Int = 0,
     @SerializedName("device") override var device: Device? = null,
     @SerializedName("vehicle") override var vehicle: Vehicle = Vehicle(),
+    @SerializedName("selected_vehicle") override var selected_vehicle: Vehicle? = null,
+    @SerializedName("roster") override var roster: List<Vehicle> = emptyList(),
     @SerializedName("balance") override var balance: Double = 0.0,
     @SerializedName("availability") var availability: DriverAvailability? = null,
 ): DriverInterface, Serializable {

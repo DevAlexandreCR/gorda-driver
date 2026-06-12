@@ -273,7 +273,7 @@
                     android:orientation="vertical"
                     android:padding="24dp">
 
-                    <!-- Vehicle Info Title -->
+                    <!-- Vehicle Picker Title -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -293,41 +293,19 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:alpha="0.8"
-                            android:text="@string/vehicle_information"
+                            android:text="@string/vehicle_picker_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
 
                     </LinearLayout>
 
-                    <!-- Vehicle Plate -->
+                    <!-- Vehicle Roster Container (populated programmatically) -->
                     <LinearLayout
+                        android:id="@+id/vehicleRosterContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:alpha="0.7"
-                            android:text="@string/fields_plate"
-                            android:textColor="@android:color/white"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/profileVehiclePlate"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@color/accent_container"
-                            android:paddingHorizontal="16dp"
-                            android:paddingVertical="8dp"
-                            android:text="@string/fields_plate"
-                            android:textColor="@android:color/white"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                    </LinearLayout>
+                        android:orientation="vertical" />
 
                 </LinearLayout>
 

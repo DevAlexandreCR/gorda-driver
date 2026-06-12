@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -30,6 +31,17 @@ class NotificationService: FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         val type = remoteMessage.data["type"] ?: "notification"
+
+        if (type == "force_disconnect") {
+            val reason = remoteMessage.data[Constants.FORCE_DISCONNECT_REASON_EXTRA] ?: ""
+            val broadcastIntent = Intent(Constants.FORCE_DISCONNECT_ACTION).apply {
+                putExtra(Constants.FORCE_DISCONNECT_REASON_EXTRA, reason)
+            }
+            LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastIntent)
+            showForceDisconnectNotification(reason)
+            return
+        }
+
         var duration = "15"
         var title = "Notification"
         var body = "New Notification"
@@ -106,6 +118,37 @@ class NotificationService: FirebaseMessagingService() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setSound(msgUri)
             .setContentIntent(pendingIntent)
+            .setAutoCancel(false)
+
+        with(NotificationManagerCompat.from(this)) {
+            notify(notificationId, builder.build())
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showForceDisconnectNotification(reason: String) {
+        val channelId = Constants.MESSAGES_NOTIFICATION_CHANNEL_ID
+        val notificationId = 2000
+        val notificationIntent = Intent(this, StartActivity::class.java)
+        notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(
+            this, 0, notificationIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val body = when (reason) {
+            "vehicle_disabled" -> getString(R.string.force_disconnect_vehicle_disabled)
+            "vehicle_not_selectable" -> getString(R.string.force_disconnect_vehicle_not_selectable)
+            else -> getString(R.string.force_disconnect_generic)
+        }
+
+        val builder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle(getString(R.string.force_disconnect_title))
+            .setContentText(body)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
             .setAutoCancel(false)
 
         with(NotificationManagerCompat.from(this)) {

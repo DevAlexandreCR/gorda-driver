@@ -9,6 +9,8 @@ interface DriverInterface {
     var document: String
     var photoUrl: String
     var vehicle: Vehicle
+    var selected_vehicle: Vehicle?
+    var roster: List<Vehicle>
     var enabled_at: Int
     var created_at: Int
     var device: Device?

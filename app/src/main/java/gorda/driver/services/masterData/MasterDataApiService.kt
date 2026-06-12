@@ -10,6 +10,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.PATCH
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.PUT
 
@@ -50,6 +51,52 @@ data class VersionPolicyBody(
     val driver: DriverVersionPolicy
 )
 
+data class ConnectLocation(
+    val lat: Double,
+    val lng: Double
+)
+
+data class ConnectRequest(
+    val vehicle_id: String,
+    val session_id: String,
+    val location: ConnectLocation
+)
+
+data class ConnectResponse(
+    val connected: Boolean? = null
+)
+
+data class DisconnectResponse(
+    val disconnected: Boolean? = null
+)
+
+data class VehicleColor(
+    val hex: String?,
+    val name: String?
+)
+
+data class RosterVehicle(
+    val id: String,
+    val plate: String,
+    val brand: String?,
+    val model: String?,
+    val color: VehicleColor?,
+    val is_selectable: Boolean,
+    val is_selected: Boolean
+)
+
+data class VehiclesPayload(
+    val vehicles: List<RosterVehicle>
+)
+
+data class SetSelectedVehicleRequest(
+    val vehicle_id: String
+)
+
+data class SetSelectedVehicleResponse(
+    val selected: Boolean? = null
+)
+
 interface MasterDataApiService {
     @GET("public/master-data/ride-fees/snapshot")
     suspend fun getRideFeesSnapshot(): Response<ApiEnvelope<RideFeesPayload>>
@@ -81,4 +128,26 @@ interface MasterDataApiService {
     suspend fun deleteDriverToken(
         @Header("Authorization") authorization: String
     ): Response<ApiEnvelope<Map<String, Any?>>>
+
+    @POST("driver-app/me/connect")
+    suspend fun connect(
+        @Header("Authorization") authorization: String,
+        @Body payload: ConnectRequest
+    ): Response<ApiEnvelope<ConnectResponse>>
+
+    @POST("driver-app/me/disconnect")
+    suspend fun disconnect(
+        @Header("Authorization") authorization: String
+    ): Response<ApiEnvelope<DisconnectResponse>>
+
+    @GET("driver-app/me/vehicles")
+    suspend fun getVehicles(
+        @Header("Authorization") authorization: String
+    ): Response<ApiEnvelope<VehiclesPayload>>
+
+    @PUT("driver-app/me/selected-vehicle")
+    suspend fun setSelectedVehicle(
+        @Header("Authorization") authorization: String,
+        @Body payload: SetSelectedVehicleRequest
+    ): Response<ApiEnvelope<SetSelectedVehicleResponse>>
 }
