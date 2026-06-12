@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.12(2026-06-12)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.12...2.0.11)
+
+### Added
+
+- Add vehicle connect flow and profile vehicle picker for the extracted vehicles roster.
+
 ## [2.0.11(2026-06-08)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.11...2.0.10)
 
 ### Added
