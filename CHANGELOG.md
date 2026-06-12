@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add vehicle connect flow and profile vehicle picker for the extracted vehicles roster.
+- Add vehicle connect flow and profile vehicle picker for the extracted vehicles roster. [#102](https://github.com/DevAlexandreCR/gorda-driver/pull/102)
 
 ## [2.0.11(2026-06-08)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.11...2.0.10)
 
