@@ -118,6 +118,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _vehicleChangedBannerPlate = MutableLiveData<String?>()
     private val _vehicleForBanner = MutableStateFlow<RosterVehicle?>(null)
     private val _forceDisconnectReason = MutableLiveData<String?>()
+    private val _connectSwitchResetEvent = MutableLiveData<Unit?>()
 
     private var preferences: SharedPreferences? = null
     private var observedDriverId: String? = null
@@ -157,6 +158,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val vehicleChangedBannerPlate: LiveData<String?> = _vehicleChangedBannerPlate
     val vehicleForBanner: StateFlow<RosterVehicle?> = _vehicleForBanner.asStateFlow()
     val forceDisconnectReason: LiveData<String?> = _forceDisconnectReason
+    val connectSwitchResetEvent: LiveData<Unit?> = _connectSwitchResetEvent
 
     init {
         presenceCollectorJob = viewModelScope.launch {
@@ -211,6 +213,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         _forceDisconnectReason.postValue(null)
     }
 
+    fun consumeConnectSwitchResetEvent() {
+        _connectSwitchResetEvent.postValue(null)
+    }
+
     /**
      * Called from MainActivity when the driver confirms "Yes" on the vehicle-changed dialog.
      * Resumes the connect flow using the already-refreshed vehicle.
@@ -219,6 +225,11 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         val vehicle = pendingConnectVehicle ?: return
         pendingConnectVehicle = null
         doConnect(vehicle)
+    }
+
+    fun abandonPendingConnect() {
+        pendingConnectVehicle = null
+        emitConnectSwitchResetEvent()
     }
 
     fun changeConnectTripService(connect: Boolean) {
@@ -378,6 +389,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun requestConnect() {
         if (!_isNetWorkConnected.value) {
+            emitConnectSwitchResetEvent()
             emitErrorMessage(R.string.connection_lost)
             return
         }
@@ -385,6 +397,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             val freshVehicle = refreshSelectedVehicle()
             if (freshVehicle == null) {
+                emitConnectSwitchResetEvent()
                 emitErrorMessage(R.string.error_no_vehicle_selected)
                 return@launch
             }
@@ -501,12 +514,16 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         emitFeedback: Boolean,
         onAllowed: (Driver) -> Unit
     ) {
-        val currentDriver = driver.value ?: return
+        val currentDriver = driver.value ?: run {
+            emitConnectSwitchResetEvent()
+            return
+        }
         _isLoading.postValue(true)
 
         DriverRepository.getDriver(currentDriver.id) { refreshedDriver ->
             if (refreshedDriver == null) {
                 _isLoading.postValue(false)
+                emitConnectSwitchResetEvent()
                 if (emitFeedback) {
                     emitErrorMessage(R.string.error_timeout)
                 }
@@ -520,6 +537,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             if (restrictionMessageRes != null) {
                 _isLoading.postValue(false)
                 persistDesiredOnline(false)
+                emitConnectSwitchResetEvent()
                 updatePresenceState { current ->
                     current.copy(
                         desiredOnline = false,
@@ -545,11 +563,13 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 }.onFailure { exception ->
                     _isLoading.postValue(false)
                     if (exception is UnsupportedAppVersionException) {
+                        emitConnectSwitchResetEvent()
                         handleFatalStop(
                             reason = "version_unsupported",
                             unsupportedVersion = true
                         )
                     } else {
+                        emitConnectSwitchResetEvent()
                         if (emitFeedback) {
                             emitErrorMessage(R.string.error_timeout)
                         }
@@ -625,6 +645,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     private fun emitErrorMessage(messageRes: Int) {
         _errorMessageRes.postValue(messageRes)
+    }
+
+    private fun emitConnectSwitchResetEvent() {
+        _connectSwitchResetEvent.postValue(Unit)
     }
 
     private fun persistDesiredOnline(desiredOnline: Boolean) {

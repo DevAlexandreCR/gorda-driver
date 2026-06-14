@@ -289,6 +289,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        viewModel.connectSwitchResetEvent.observe(this) { resetEvent ->
+            if (resetEvent == null) {
+                return@observe
+            }
+            resetConnectSwitchUi()
+            viewModel.consumeConnectSwitchResetEvent()
+        }
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 var wasConnecting = false
@@ -426,6 +434,7 @@ class MainActivity : AppCompatActivity() {
                 viewModel.proceedWithConnect()
             }
             .setNegativeButton(R.string.pick_another_vehicle) { _, _ ->
+                viewModel.abandonPendingConnect()
                 navController.navigate(R.id.nav_profile)
             }
             .setCancelable(false)
@@ -691,9 +700,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleDriverLoadFailed() {
         driver = null
-        switchConnect.isChecked = false
+        resetConnectSwitchUi()
         switchConnect.isEnabled = false
-        switchConnect.setText(R.string.status_disconnected)
         viewModel.handleDriverLoadFailed()
         serviceObserverCoordinator.onDriverNotLoaded()
         viewModel.stopPresenceObservation()
@@ -830,8 +838,7 @@ class MainActivity : AppCompatActivity() {
     private fun renderPresenceState(presence: MainViewModel.DriverPresenceState) {
         if (viewModel.driverLoadState.value !is MainViewModel.DriverLoadState.Loaded) {
             switchConnect.isEnabled = false
-            switchConnect.isChecked = false
-            switchConnect.setText(R.string.status_disconnected)
+            resetConnectSwitchUi()
             updateOfflineIndicator(showAfterDebounce = false)
             return
         }
@@ -860,6 +867,11 @@ class MainActivity : AppCompatActivity() {
         ) {
             stopLocationService()
         }
+    }
+
+    private fun resetConnectSwitchUi() {
+        switchConnect.isChecked = false
+        switchConnect.setText(R.string.status_disconnected)
     }
 
     private fun updateOfflineIndicator(showAfterDebounce: Boolean) {
