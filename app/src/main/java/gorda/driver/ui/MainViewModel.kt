@@ -27,12 +27,17 @@ import gorda.driver.repositories.ServiceObservationResult
 import gorda.driver.repositories.ServiceObserverHandle
 import gorda.driver.repositories.ServiceRepository
 import gorda.driver.services.firebase.PresenceManager
+import gorda.driver.services.masterData.MasterDataApiService
+import gorda.driver.services.masterData.RosterVehicle
+import gorda.driver.services.retrofit.DriverAppRequestRunner
+import gorda.driver.services.retrofit.MasterDataRetrofit
 import gorda.driver.ui.driver.DriverStatusPublisher
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.ServiceEventListener
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 import gorda.driver.utils.Constants
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -110,6 +115,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _currentFeeData = MutableLiveData<FeeData>()
     private val _errorMessageRes = MutableLiveData<Int?>()
     private val _unsupportedVersion = MutableLiveData(false)
+    private val _vehicleChangedBannerPlate = MutableLiveData<String?>()
+    private val _vehicleForBanner = MutableStateFlow<RosterVehicle?>(null)
+    private val _forceDisconnectReason = MutableLiveData<String?>()
+    private val _connectSwitchResetEvent = MutableLiveData<Unit?>()
 
     private var preferences: SharedPreferences? = null
     private var observedDriverId: String? = null
@@ -119,6 +128,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val presenceManager = PresenceManager()
     private val driverStatusPublisher = DriverStatusPublisher()
     private var presenceCollectorJob: Job? = null
+    private var pendingConnectVehicle: RosterVehicle? = null
+
+    /** Set by the vehicle picker flow (task 17/18). Null until a vehicle is selected. */
+    var selectedVehicleId: String? = null
 
     private var currentServiceObserverHandle: ServiceObserverHandle? = null
     private var nextServiceObserverHandle: ServiceObserverHandle? = null
@@ -142,6 +155,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val currentFeeData: LiveData<FeeData> = _currentFeeData
     val errorMessageRes: LiveData<Int?> = _errorMessageRes
     val unsupportedVersion: LiveData<Boolean> = _unsupportedVersion
+    val vehicleChangedBannerPlate: LiveData<String?> = _vehicleChangedBannerPlate
+    val vehicleForBanner: StateFlow<RosterVehicle?> = _vehicleForBanner.asStateFlow()
+    val forceDisconnectReason: LiveData<String?> = _forceDisconnectReason
+    val connectSwitchResetEvent: LiveData<Unit?> = _connectSwitchResetEvent
 
     init {
         presenceCollectorJob = viewModelScope.launch {
@@ -153,7 +170,14 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         this.preferences = preferences
         val desiredOnline = preferences.getBoolean(Constants.DRIVER_DESIRED_ONLINE, false)
         updatePresenceState { it.copy(desiredOnline = desiredOnline) }
+        selectedVehicleId = preferences.getString(Constants.DRIVER_SELECTED_VEHICLE_ID, null)
         restoreCachedLocationFromPreferences(preferences)
+    }
+
+    @JvmName("updateSelectedVehicleId")
+    fun setSelectedVehicleId(vehicleId: String?) {
+        selectedVehicleId = vehicleId
+        preferences?.edit()?.putString(Constants.DRIVER_SELECTED_VEHICLE_ID, vehicleId)?.apply()
     }
 
     fun setRideFees(fees: RideFees) {
@@ -174,6 +198,38 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun consumeUnsupportedVersion() {
         _unsupportedVersion.postValue(false)
+    }
+
+    fun consumeVehicleChangedBanner() {
+        _vehicleChangedBannerPlate.postValue(null)
+    }
+
+    fun handleForcedDisconnect(reason: String) {
+        requestDisconnect()
+        _forceDisconnectReason.postValue(reason)
+    }
+
+    fun consumeForceDisconnectReason() {
+        _forceDisconnectReason.postValue(null)
+    }
+
+    fun consumeConnectSwitchResetEvent() {
+        _connectSwitchResetEvent.postValue(null)
+    }
+
+    /**
+     * Called from MainActivity when the driver confirms "Yes" on the vehicle-changed dialog.
+     * Resumes the connect flow using the already-refreshed vehicle.
+     */
+    fun proceedWithConnect() {
+        val vehicle = pendingConnectVehicle ?: return
+        pendingConnectVehicle = null
+        doConnect(vehicle)
+    }
+
+    fun abandonPendingConnect() {
+        pendingConnectVehicle = null
+        emitConnectSwitchResetEvent()
     }
 
     fun changeConnectTripService(connect: Boolean) {
@@ -280,9 +336,14 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         val state = _presenceState.value
         if (!state.desiredOnline) return
         val driverId = driver.value?.id ?: observedDriverId ?: return
+        val vid = selectedVehicleId
+        if (vid == null) {
+            Log.w(TAG, "updateLocation: no vehicle selected — skipping presence start")
+            return
+        }
 
         val locInterface = location.toLocInterface()
-        presenceManager.start(driverId, locInterface)
+        presenceManager.start(driverId, vid, locInterface)
         presenceManager.updateLocation(locInterface)
     }
 
@@ -306,8 +367,13 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     fun startPresenceObservation(driverId: String) {
         observedDriverId = driverId
         if (_presenceState.value.desiredOnline) {
-            latestLocation?.let { loc ->
-                presenceManager.start(driverId, loc.toLocInterface())
+            val vid = selectedVehicleId
+            if (vid != null) {
+                latestLocation?.let { loc ->
+                    presenceManager.start(driverId, vid, loc.toLocInterface())
+                }
+            } else {
+                Log.w(TAG, "startPresenceObservation: no vehicle selected — skipping presence start")
             }
         }
     }
@@ -323,10 +389,35 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun requestConnect() {
         if (!_isNetWorkConnected.value) {
+            emitConnectSwitchResetEvent()
             emitErrorMessage(R.string.connection_lost)
             return
         }
 
+        viewModelScope.launch(Dispatchers.IO) {
+            val freshVehicle = refreshSelectedVehicle()
+            if (freshVehicle == null) {
+                emitConnectSwitchResetEvent()
+                emitErrorMessage(R.string.error_no_vehicle_selected)
+                return@launch
+            }
+
+            val cachedVehicleId = selectedVehicleId
+            if (cachedVehicleId != null && freshVehicle.id != cachedVehicleId) {
+                // Vehicle changed — pause and ask the driver to confirm
+                pendingConnectVehicle = freshVehicle
+                _vehicleChangedBannerPlate.postValue(freshVehicle.plate)
+                return@launch
+            }
+
+            // Update cache with the freshly resolved vehicle
+            setSelectedVehicleId(freshVehicle.id)
+            doConnect(freshVehicle)
+        }
+    }
+
+    private fun doConnect(vehicle: RosterVehicle) {
+        _vehicleForBanner.value = vehicle
         precheckDriverConnectEligibility(
             emitFeedback = true,
             onAllowed = { refreshedDriver ->
@@ -334,7 +425,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 updatePresenceState { it.copy(desiredOnline = true, fatalStopReason = null) }
                 val loc = latestLocation
                 if (loc != null) {
-                    presenceManager.start(refreshedDriver.id, loc.toLocInterface())
+                    presenceManager.start(refreshedDriver.id, vehicle.id, loc.toLocInterface())
                 }
                 // If no location yet, LocationService's first fix will trigger updateLocation()
                 // which calls presenceManager.start() (idempotent).
@@ -342,8 +433,23 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         )
     }
 
+    private suspend fun refreshSelectedVehicle(): RosterVehicle? {
+        return try {
+            val response = DriverAppRequestRunner.execute("/driver-app/me/vehicles") { authorization ->
+                MasterDataRetrofit.getRetrofit()
+                    .create(MasterDataApiService::class.java)
+                    .getVehicles(authorization = authorization)
+            }
+            val vehicles = response.body()?.data?.vehicles ?: emptyList()
+            vehicles.firstOrNull { it.is_selected }
+        } catch (e: Exception) {
+            Log.w(TAG, "refreshSelectedVehicle failed: ${e.message}")
+            null
+        }
+    }
+
     fun requestDisconnect() {
-        val currentDriver = driver.value ?: return
+        driver.value ?: return
         persistDesiredOnline(false)
         updatePresenceState {
             it.copy(
@@ -353,10 +459,20 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 fatalStopReason = null
             )
         }
-        // Local cleanup. Server-side onDisconnect() will also fire when the socket drops,
-        // so we don't need to fight slow networks for the explicit remove to succeed.
         presenceManager.stop()
-        currentDriver.disconnect()
+        // Fire-and-forget: local state is already cleared. If the API call fails,
+        // the server-side onDisconnect().removeValue() armed at connect time will clean up.
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                DriverAppRequestRunner.execute("/driver-app/me/disconnect") { authorization ->
+                    MasterDataRetrofit.getRetrofit()
+                        .create(MasterDataApiService::class.java)
+                        .disconnect(authorization = authorization)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "API disconnect failed: ${e.message}")
+            }
+        }
     }
 
     fun updateDriverDevice(driverID: String, device: DeviceInterface?): Task<Void> {
@@ -398,12 +514,16 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         emitFeedback: Boolean,
         onAllowed: (Driver) -> Unit
     ) {
-        val currentDriver = driver.value ?: return
+        val currentDriver = driver.value ?: run {
+            emitConnectSwitchResetEvent()
+            return
+        }
         _isLoading.postValue(true)
 
         DriverRepository.getDriver(currentDriver.id) { refreshedDriver ->
             if (refreshedDriver == null) {
                 _isLoading.postValue(false)
+                emitConnectSwitchResetEvent()
                 if (emitFeedback) {
                     emitErrorMessage(R.string.error_timeout)
                 }
@@ -417,6 +537,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             if (restrictionMessageRes != null) {
                 _isLoading.postValue(false)
                 persistDesiredOnline(false)
+                emitConnectSwitchResetEvent()
                 updatePresenceState { current ->
                     current.copy(
                         desiredOnline = false,
@@ -442,11 +563,13 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 }.onFailure { exception ->
                     _isLoading.postValue(false)
                     if (exception is UnsupportedAppVersionException) {
+                        emitConnectSwitchResetEvent()
                         handleFatalStop(
                             reason = "version_unsupported",
                             unsupportedVersion = true
                         )
                     } else {
+                        emitConnectSwitchResetEvent()
                         if (emitFeedback) {
                             emitErrorMessage(R.string.error_timeout)
                         }
@@ -466,6 +589,14 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 null
             }
         }
+    }
+
+    private fun connectRejectedMessageRes(reason: String): Int = when (reason) {
+        PresenceManager.REASON_VEHICLE_IN_USE -> R.string.error_vehicle_in_use
+        PresenceManager.REASON_DRIVER_ALREADY_CONNECTED -> R.string.error_driver_already_connected
+        PresenceManager.REASON_VEHICLE_DISABLED -> R.string.error_vehicle_disabled
+        PresenceManager.REASON_VEHICLE_NOT_SELECTABLE -> R.string.error_vehicle_not_selectable
+        else -> R.string.error_timeout
     }
 
     private fun onPresenceManagerState(state: PresenceManager.State) {
@@ -489,6 +620,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                     handleFatalStop(reason = state.reason)
                 }
             }
+            is PresenceManager.State.ConnectRejected -> {
+                handleFatalStop(reason = state.reason)
+                emitErrorMessage(connectRejectedMessageRes(state.reason))
+            }
         }
     }
 
@@ -510,6 +645,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     private fun emitErrorMessage(messageRes: Int) {
         _errorMessageRes.postValue(messageRes)
+    }
+
+    private fun emitConnectSwitchResetEvent() {
+        _connectSwitchResetEvent.postValue(Unit)
     }
 
     private fun persistDesiredOnline(desiredOnline: Boolean) {

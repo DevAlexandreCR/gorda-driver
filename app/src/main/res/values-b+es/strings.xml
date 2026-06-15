@@ -227,4 +227,28 @@
     <string name="unsupported_version_message">Esta versión de la app ya no puede conectarse. Actualiza la aplicación para seguir recibiendo servicios.</string>
     <string name="unsupported_version_subtitle">Hay una versión más reciente disponible</string>
     <string name="update_app">Actualizar app</string>
+
+    <string name="error_no_vehicle_selected">Sin vehículo seleccionado — contacta a despacho</string>
+    <string name="error_vehicle_in_use">Este vehículo ya está conectado con otro conductor</string>
+    <string name="error_driver_already_connected">Ya estás conectado desde otra sesión</string>
+    <string name="error_vehicle_disabled">Este vehículo ha sido deshabilitado por despacho</string>
+    <string name="error_vehicle_not_selectable">Este vehículo no está disponible para selección</string>
+
+    <!-- Selector de vehículo -->
+    <string name="vehicle_picker_title">Vehículo</string>
+    <string name="vehicle_picker_no_vehicles">Sin vehículos asignados</string>
+    <string name="vehicle_picker_select_error">Error al actualizar vehículo</string>
+
+    <!-- Flujo de conexión -->
+    <string name="vehicle_changed_dialog_title">Vehículo cambiado</string>
+    <string name="vehicle_changed_dialog_message">Tu vehículo predeterminado cambió a %1$s. ¿Conectarte con él?</string>
+    <string name="pick_another_vehicle">Elegir otro</string>
+    <string name="connecting_with_vehicle">Conectando con %1$s · %2$s…</string>
+    <string name="online_with_vehicle">En línea con %1$s · %2$s</string>
+
+    <!-- Desconexión forzada -->
+    <string name="force_disconnect_title">Desconectado por despacho</string>
+    <string name="force_disconnect_vehicle_disabled">Tu vehículo ha sido deshabilitado. Contacta a tu coordinador.</string>
+    <string name="force_disconnect_vehicle_not_selectable">Tu vehículo ya no está disponible. Contacta a tu coordinador.</string>
+    <string name="force_disconnect_generic">Has sido desconectado por despacho.</string>
 </resources>

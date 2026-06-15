@@ -5,9 +5,14 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
-import gorda.driver.BuildConfig
-import gorda.driver.interfaces.DriverConnected
+import com.google.gson.Gson
 import gorda.driver.interfaces.LocInterface
+import gorda.driver.services.masterData.ConnectLocation
+import gorda.driver.services.masterData.ConnectRequest
+import gorda.driver.services.masterData.MasterDataApiService
+import gorda.driver.services.retrofit.DriverAppRequestException
+import gorda.driver.services.retrofit.DriverAppRequestRunner
+import gorda.driver.services.retrofit.MasterDataRetrofit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,6 +20,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
@@ -36,11 +42,10 @@ import java.util.UUID
  * "needs app restart" bug.
  */
 class PresenceManager(
-    private val onlineDriversRef: DatabaseReference = Database.dbOnlineDrivers(),
     private val infoConnectedRef: DatabaseReference = Database.dbInfoConnected(),
     private val dispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Main,
-    private val nowSeconds: () -> Long = { System.currentTimeMillis() / 1000L },
-    private val transportCycler: TransportCycler = TransportCycler.Default
+    private val transportCycler: TransportCycler = TransportCycler.Default,
+    private val apiService: MasterDataApiService = MasterDataRetrofit.getRetrofit().create(MasterDataApiService::class.java)
 ) {
 
     sealed class State {
@@ -49,6 +54,7 @@ class PresenceManager(
         object Connected : State()
         object Offline : State()
         data class Fatal(val reason: String) : State()
+        data class ConnectRejected(val reason: String) : State()
     }
 
     /** Lets tests stub out goOffline/goOnline. */
@@ -68,6 +74,7 @@ class PresenceManager(
     val state: StateFlow<State> = _state.asStateFlow()
 
     private var driverId: String? = null
+    private var vehicleId: String? = null
     private var sessionId: String? = null
     private var latestLocation: LocInterface? = null
     private var hasAndroidNetwork: Boolean = true
@@ -76,23 +83,25 @@ class PresenceManager(
     private var infoConnectedListener: ValueEventListener? = null
 
     /** Begin maintaining presence for `driverId` with the given last-known location. */
-    fun start(driverId: String, location: LocInterface) {
-        if (this.driverId == driverId && _state.value !is State.Idle) {
+    fun start(driverId: String, vehicleId: String, location: LocInterface) {
+        if (this.driverId == driverId && this.vehicleId == vehicleId && _state.value !is State.Idle) {
             latestLocation = location
             return
         }
         stopInternal(clearStateToIdle = false)
         this.driverId = driverId
+        this.vehicleId = vehicleId
         this.sessionId = UUID.randomUUID().toString()
         this.latestLocation = location
         // Don't pre-judge: let the .info/connected listener tell us where we are.
-        // If we're already connected, the listener will fire true immediately and we
-        // transition into Connected. If not, it'll fire false and we'll show Connecting.
+        // When Firebase reports connected, writePresence() will call the API to register.
         transitionTo(if (!hasAndroidNetwork) State.Offline else State.Connecting)
         attachInfoConnectedListener()
-        // Best-effort write. If Firebase is offline, persistence queues it; the SDK
-        // will flush when the socket recovers. We don't gate state on the ack.
-        writePresence()
+        // Kick off an initial connect attempt in case Firebase is already connected.
+        // If Firebase is offline the .info/connected listener will drive the retry.
+        if (firebaseConnected) {
+            writePresence()
+        }
     }
 
     /**
@@ -111,31 +120,14 @@ class PresenceManager(
         // The .info/connected listener will fire false then true and drive the rest.
     }
 
-    /** Stop maintaining presence. Best-effort cleanup of server-side state. */
+    /** Stop maintaining presence. Server-side cleanup is handled by the API disconnect endpoint. */
     fun stop() {
-        val id = driverId
-        if (id != null) {
-            try {
-                onlineDriversRef.child(id).onDisconnect().cancel()
-                onlineDriversRef.child(id).removeValue()
-            } catch (e: Exception) {
-                Log.w(TAG, "stop(): cleanup error: ${e.message}")
-            }
-        }
         stopInternal(clearStateToIdle = true)
     }
 
-    /** Update last-known location. Heartbeat write only fires when Connected. */
+    /** Update last-known location. Location updates are handled by the server via periodic API calls. */
     fun updateLocation(location: LocInterface) {
         latestLocation = location
-        val id = driverId ?: return
-        if (_state.value !is State.Connected) return
-        onlineDriversRef.child(id).updateChildren(
-            mapOf(
-                "location" to location,
-                "last_seen_at" to nowSeconds()
-            )
-        )
     }
 
     /** Hint from ConnectivityManager that the device has a transport network. */
@@ -191,14 +183,12 @@ class PresenceManager(
         if (driverId == null) return
 
         if (connected) {
-            // .info/connected → true is our truth signal for Connected, regardless of
-            // whether any previous setValue has yet acked. UI unblocks here.
-            if (_state.value !is State.Connected && _state.value !is State.Fatal) {
-                transitionTo(State.Connected)
+            // Firebase socket is up; attempt the API connect. State transitions to Connected
+            // only after the API confirms the connect (200 OK). Re-calling writePresence on
+            // every reconnect makes the connect resilient to network interruptions.
+            if (_state.value !is State.Fatal && _state.value !is State.ConnectRejected) {
+                writePresence()
             }
-            // (Re)write presence + (re)arm onDisconnect on every reconnect. This is
-            // the load-bearing fix for the "needs app restart" bug.
-            writePresence()
         } else {
             // Lost socket. Don't tear anything down; the SDK reconnects on its own.
             if (_state.value is State.Connected) {
@@ -208,46 +198,60 @@ class PresenceManager(
     }
 
     /**
-     * Fire-and-forget write of `/online_drivers/{id}`. State is NOT gated on
-     * the ack — only PERMISSION_DENIED is acted on (version unsupported / driver
-     * blocked). All other outcomes are logged for diagnostics.
+     * Call the API to register presence. On 200 OK the API writes /online_drivers/{id}
+     * server-side — the app no longer writes RTDB directly. On 409 the connect is
+     * rejected with a structured reason; other errors are logged and the state stays
+     * in Connecting so the next Firebase reconnect will retry.
      */
     private fun writePresence() {
         val currentDriverId = driverId ?: return
+        val currentVehicleId = vehicleId ?: return
         val currentSession = sessionId ?: return
         val currentLocation = latestLocation
         if (currentLocation == null) {
             Log.d(TAG, "writePresence skipped: no location yet")
             return
         }
-        val ref = onlineDriversRef.child(currentDriverId)
-        val payload = object : DriverConnected {
-            override var id: String = currentDriverId
-            override var location: LocInterface = currentLocation
-            override var version: String = BuildConfig.VERSION_NAME
-            override var versionCode: Int = BuildConfig.VERSION_CODE
-            override var last_seen_at: Long = nowSeconds()
-            override var session_id: String = currentSession
-        }
 
-        ref.setValue(payload) { error, _ ->
-            when {
-                error == null -> {
-                    Log.d(TAG, "presence write acked")
-                    ref.onDisconnect().removeValue { disconnectError, _ ->
-                        if (disconnectError != null) {
-                            Log.w(TAG, "onDisconnect rearm failed: ${disconnectError.message}")
-                        }
-                    }
+        scope.launch(Dispatchers.IO) {
+            try {
+                val payload = ConnectRequest(
+                    vehicle_id = currentVehicleId,
+                    session_id = currentSession,
+                    location = ConnectLocation(
+                        lat = currentLocation.lat,
+                        lng = currentLocation.lng
+                    )
+                )
+                DriverAppRequestRunner.execute("/driver-app/me/connect") { authorization ->
+                    apiService.connect(authorization, payload)
                 }
-                error.code == DatabaseError.PERMISSION_DENIED -> {
-                    Log.e(TAG, "presence write permission denied (version unsupported?)")
-                    transitionTo(State.Fatal(reason = REASON_VERSION_UNSUPPORTED))
+                Log.i(TAG, "connect API success — driverId=$currentDriverId vehicleId=$currentVehicleId")
+                transitionTo(State.Connected)
+            } catch (e: DriverAppRequestException) {
+                if (e.code == 409) {
+                    val reason = parseConnectErrorReason(e.errorBody)
+                    Log.w(TAG, "connect rejected: reason=$reason driverId=$currentDriverId vehicleId=$currentVehicleId")
+                    transitionTo(State.ConnectRejected(reason = reason))
+                } else {
+                    Log.w(TAG, "connect API error: code=${e.code} message=${e.responseMessage}")
+                    // Stay in Connecting; the next Firebase reconnect will retry.
                 }
-                else -> {
-                    Log.w(TAG, "presence write failed: ${error.message}")
-                }
+            } catch (e: Exception) {
+                Log.w(TAG, "connect API exception: ${e.message}")
+                // Stay in Connecting; the next Firebase reconnect will retry.
             }
+        }
+    }
+
+    private data class ConnectErrorBody(val error: String?)
+
+    private fun parseConnectErrorReason(errorBody: String?): String {
+        if (errorBody == null) return REASON_UNKNOWN
+        return try {
+            Gson().fromJson(errorBody, ConnectErrorBody::class.java)?.error ?: REASON_UNKNOWN
+        } catch (_: Exception) {
+            REASON_UNKNOWN
         }
     }
 
@@ -261,6 +265,7 @@ class PresenceManager(
     private fun stopInternal(clearStateToIdle: Boolean) {
         detachInfoConnectedListener()
         driverId = null
+        vehicleId = null
         sessionId = null
         latestLocation = null
         firebaseConnected = false
@@ -278,6 +283,11 @@ class PresenceManager(
     companion object {
         private const val TAG = "PresenceManager"
         const val REASON_VERSION_UNSUPPORTED = "version_unsupported"
+        const val REASON_VEHICLE_IN_USE = "vehicle_in_use"
+        const val REASON_DRIVER_ALREADY_CONNECTED = "driver_already_connected"
+        const val REASON_VEHICLE_DISABLED = "vehicle_disabled"
+        const val REASON_VEHICLE_NOT_SELECTABLE = "vehicle_not_selectable"
+        private const val REASON_UNKNOWN = "unknown"
     }
 }
 

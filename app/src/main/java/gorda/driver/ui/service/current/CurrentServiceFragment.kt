@@ -940,6 +940,8 @@ class CurrentServiceFragment : Fragment() {
                 return@showTripActionDialog
             }
 
+            val rawFee = NumberHelper.roundDouble(getTotalFee()).toInt()
+            val tripFee: Int? = if (rawFee == 0) null else rawFee
             val request = CurrentServiceViewModel.EndTripRequest(
                 serviceId = service.id,
                 endedAt = now,
@@ -949,7 +951,7 @@ class CurrentServiceFragment : Fragment() {
                     ServiceMetadata.serializeRoute(arrayListOf())
                 },
                 tripDistance = NumberHelper.roundDouble(totalDistance).toInt(),
-                tripFee = NumberHelper.roundDouble(getTotalFee()).toInt(),
+                tripFee = tripFee,
                 multiplier = feeMultiplier
             )
             currentServiceViewModel.rememberEndTripRequest(request, service)
@@ -1847,8 +1849,13 @@ class CurrentServiceFragment : Fragment() {
     }
 
     private fun getTotalFee(): Double {
-        return if (isServiceBound) {
-            feesService.getTotalFee()
+        if (isServiceBound) {
+            return feesService.getTotalFee()
+        }
+        val storedFees = getStoredRideFeesSnapshot()
+        val minFee = storedFees?.priceMinFee ?: 0.0
+        return if (minFee > 0.0) {
+            maxOf(totalRide, NumberHelper.roundToMultipleOf500(minFee * feeMultiplier))
         } else {
             totalRide
         }

@@ -5,7 +5,32 @@ plugins {
     id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
 }
 
-def baseUrl = project.findProperty("BASE_URL") ?: ""
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { stream ->
+        localProperties.load(stream)
+    }
+}
+
+def readConfigProperty = { key, defaultValue = null ->
+    def localValue = localProperties.getProperty(key)
+    if (localValue != null) {
+        return localValue
+    }
+    return project.findProperty(key) ?: defaultValue
+}
+
+def firebaseUseEmulators = readConfigProperty("FIREBASE_USE_EMULATORS", "false").toString()
+def firebaseEmulatorHost = (
+        readConfigProperty("FIREBASE_EMULATOR_HOST")
+                ?: readConfigProperty("FIREBASE_AUTH_HOST")
+                ?: readConfigProperty("FIREBASE_DATABASE_HOST")
+                ?: readConfigProperty("FIREBASE_STORAGE_HOST")
+                ?: "10.0.2.2"
+).toString()
+def baseUrl = readConfigProperty("BASE_URL", "").toString()
 
 android {
     compileSdk 35
@@ -14,8 +39,8 @@ android {
         applicationId "gorda.driver"
         minSdk 24
         targetSdk 35
-        versionCode 83
-        versionName "2.0.11"
+        versionCode 84
+        versionName "2.0.12"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -26,7 +51,7 @@ android {
 
     flavorDimensions += "brand"
 
-    def baseVersionCode = 83
+    def baseVersionCode = 84
     def versionCodeSpacing = 1_000_000
 
     signingConfigs {

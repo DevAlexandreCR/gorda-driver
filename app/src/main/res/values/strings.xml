@@ -233,4 +233,28 @@
     <string name="unsupported_version_message">This app version can no longer connect online. Update the app to continue receiving services.</string>
     <string name="unsupported_version_subtitle">A newer version is available</string>
     <string name="update_app">Update app</string>
+
+    <string name="error_no_vehicle_selected">No vehicle selected — contact dispatch</string>
+    <string name="error_vehicle_in_use">This vehicle is already connected with another driver</string>
+    <string name="error_driver_already_connected">You are already connected from another session</string>
+    <string name="error_vehicle_disabled">This vehicle has been disabled by dispatch</string>
+    <string name="error_vehicle_not_selectable">This vehicle is not available for selection</string>
+
+    <!-- Vehicle picker -->
+    <string name="vehicle_picker_title">Vehicle</string>
+    <string name="vehicle_picker_no_vehicles">No vehicles assigned</string>
+    <string name="vehicle_picker_select_error">Failed to update vehicle</string>
+
+    <!-- Connect flow -->
+    <string name="vehicle_changed_dialog_title">Vehicle changed</string>
+    <string name="vehicle_changed_dialog_message">Your default vehicle changed to %1$s. Connect with it?</string>
+    <string name="pick_another_vehicle">Pick another</string>
+    <string name="connecting_with_vehicle">Connecting with %1$s · %2$s…</string>
+    <string name="online_with_vehicle">Online with %1$s · %2$s</string>
+
+    <!-- Force disconnect -->
+    <string name="force_disconnect_title">Disconnected by dispatch</string>
+    <string name="force_disconnect_vehicle_disabled">Your vehicle has been disabled by dispatch. Contact your coordinator.</string>
+    <string name="force_disconnect_vehicle_not_selectable">Your vehicle is no longer available. Contact your coordinator.</string>
+    <string name="force_disconnect_generic">You have been disconnected by dispatch.</string>
 </resources>
