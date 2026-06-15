@@ -136,8 +136,16 @@ class ProfileFragment : Fragment() {
             )
             label.text = displayParts.joinToString(" · ")
             radio.isChecked = vehicle.is_selected
+            radio.isEnabled = vehicle.is_selectable
+            row.alpha = if (vehicle.is_selectable) 1f else 0.45f
             row.setOnClickListener {
-                if (!vehicle.is_selected) {
+                if (!vehicle.is_selectable) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.error_vehicle_not_selectable),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else if (!vehicle.is_selected) {
                     viewModel.selectVehicle(vehicle.id)
                 }
             }

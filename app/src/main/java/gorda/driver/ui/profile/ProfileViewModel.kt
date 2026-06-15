@@ -7,8 +7,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import gorda.driver.interfaces.Vehicle
+import gorda.driver.interfaces.VehicleColor
 import gorda.driver.models.Driver
 import gorda.driver.services.masterData.MasterDataApiService
+import gorda.driver.services.masterData.RosterVehicle
 import gorda.driver.services.masterData.SetSelectedVehicleRequest
 import gorda.driver.services.retrofit.DriverAppRequestException
 import gorda.driver.services.retrofit.DriverAppRequestRunner
@@ -32,8 +34,12 @@ class ProfileViewModel(private val savedStateHandle: SavedStateHandle) : ViewMod
     }
 
     fun setDriver(driver: Driver) {
+        val current = savedStateHandle.get<Driver>(Driver.TAG)
         _driver.postValue(driver)
         savedStateHandle[Driver.TAG] = driver
+        if (current?.id != driver.id) {
+            refreshVehicleRoster()
+        }
     }
 
     fun selectVehicle(vehicleId: String) {
@@ -70,6 +76,39 @@ class ProfileViewModel(private val savedStateHandle: SavedStateHandle) : ViewMod
 
     fun clearErrorMessage() {
         _errorMessage.value = null
+    }
+
+    private fun refreshVehicleRoster() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = DriverAppRequestRunner.execute("driver-app/me/vehicles") { authorization ->
+                    apiService.getVehicles(authorization)
+                }
+                val vehicles = response.body()?.data?.vehicles.orEmpty().map { it.toVehicle() }
+                val current = savedStateHandle.get<Driver>(Driver.TAG) ?: return@launch
+                val selectedVehicle = vehicles.firstOrNull { it.is_selected }
+                val updatedDriver = current.copy(
+                    roster = vehicles,
+                    selected_vehicle = selectedVehicle
+                )
+                _driver.postValue(updatedDriver)
+                savedStateHandle[Driver.TAG] = updatedDriver
+            } catch (e: Exception) {
+                Log.w(TAG, "refreshVehicleRoster failed: ${e.message}")
+            }
+        }
+    }
+
+    private fun RosterVehicle.toVehicle(): Vehicle {
+        return Vehicle(
+            id = id,
+            brand = brand.orEmpty(),
+            model = model.orEmpty(),
+            plate = plate,
+            color = color?.let { VehicleColor(hex = it.hex, name = it.name) },
+            is_selectable = is_selectable,
+            is_selected = is_selected
+        )
     }
 
     companion object {
