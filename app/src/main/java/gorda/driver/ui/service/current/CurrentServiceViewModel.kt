@@ -46,7 +46,7 @@ class CurrentServiceViewModel(
         val endedAt: Long,
         val route: String,
         val tripDistance: Int,
-        val tripFee: Int,
+        val tripFee: Int?,
         val multiplier: Double
     ) : Serializable
 
