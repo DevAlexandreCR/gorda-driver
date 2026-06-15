@@ -51,7 +51,7 @@ android {
 
     flavorDimensions += "brand"
 
-    def baseVersionCode = 84
+    def baseVersionCode = 85
     def versionCodeSpacing = 1_000_000
 
     signingConfigs {
