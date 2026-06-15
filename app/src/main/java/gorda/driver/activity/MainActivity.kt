@@ -25,6 +25,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.Switch
 import android.widget.TextView
@@ -427,18 +428,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showVehicleChangedDialog(plate: String) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.vehicle_changed_dialog_title)
-            .setMessage(getString(R.string.vehicle_changed_dialog_message, plate))
-            .setPositiveButton(R.string.yes) { _, _ ->
+        showBlockingActionDialog(
+            iconRes = R.drawable.ic_baseline_directions_car_24,
+            titleRes = R.string.vehicle_changed_dialog_title,
+            subtitleRes = R.string.red_blanca_driver,
+            messageRes = R.string.vehicle_changed_dialog_message,
+            messageText = getString(R.string.vehicle_changed_dialog_message, plate),
+            primaryTextRes = R.string.yes,
+            secondaryTextRes = R.string.pick_another_vehicle,
+            primaryIconRes = R.drawable.ic_baseline_directions_car_24,
+            secondaryIconRes = R.drawable.ic_profile_24,
+            stackActions = true,
+            onPrimaryAction = {
                 viewModel.proceedWithConnect()
-            }
-            .setNegativeButton(R.string.pick_another_vehicle) { _, _ ->
+            },
+            onSecondaryAction = {
                 viewModel.abandonPendingConnect()
                 navController.navigate(R.id.nav_profile)
             }
-            .setCancelable(false)
-            .show()
+        )
     }
 
     private fun showBlockingActionDialog(
@@ -446,10 +454,12 @@ class MainActivity : AppCompatActivity() {
         @StringRes titleRes: Int,
         @StringRes subtitleRes: Int,
         @StringRes messageRes: Int,
+        messageText: CharSequence? = null,
         @StringRes primaryTextRes: Int,
         @StringRes secondaryTextRes: Int,
         @DrawableRes primaryIconRes: Int,
         @DrawableRes secondaryIconRes: Int,
+        stackActions: Boolean = false,
         onPrimaryAction: () -> Unit,
         onSecondaryAction: () -> Unit = {}
     ): AlertDialog {
@@ -473,11 +483,15 @@ class MainActivity : AppCompatActivity() {
         iconView.setImageResource(iconRes)
         titleView.setText(titleRes)
         subtitleView.setText(subtitleRes)
-        messageView.setText(messageRes)
+        messageView.text = messageText ?: getString(messageRes)
         primaryButton.setText(primaryTextRes)
         primaryButton.setIconResource(primaryIconRes)
         secondaryButton.setText(secondaryTextRes)
         secondaryButton.setIconResource(secondaryIconRes)
+
+        if (stackActions) {
+            stackDialogActions(primaryButton, secondaryButton)
+        }
 
         primaryButton.setOnClickListener {
             dialog.dismiss()
@@ -492,6 +506,38 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         return dialog
+    }
+
+    private fun stackDialogActions(
+        primaryButton: MaterialButton,
+        secondaryButton: MaterialButton
+    ) {
+        val actionsContainer = primaryButton.parent as? LinearLayout ?: return
+        val minimumButtonHeight = (50 * resources.displayMetrics.density).toInt()
+        val buttonSpacing = (10 * resources.displayMetrics.density).toInt()
+
+        actionsContainer.orientation = LinearLayout.VERTICAL
+        actionsContainer.removeAllViews()
+
+        primaryButton.minimumHeight = minimumButtonHeight
+        secondaryButton.minimumHeight = minimumButtonHeight
+
+        actionsContainer.addView(
+            primaryButton,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, buttonSpacing)
+            }
+        )
+        actionsContainer.addView(
+            secondaryButton,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
     }
 
     private fun openPlayStore() {
