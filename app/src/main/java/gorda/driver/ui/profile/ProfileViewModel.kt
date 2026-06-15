@@ -15,8 +15,10 @@ import gorda.driver.services.masterData.SetSelectedVehicleRequest
 import gorda.driver.services.retrofit.DriverAppRequestException
 import gorda.driver.services.retrofit.DriverAppRequestRunner
 import gorda.driver.services.retrofit.MasterDataRetrofit
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ProfileViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     private val _driver = MutableLiveData<Driver>()
@@ -29,8 +31,19 @@ class ProfileViewModel(private val savedStateHandle: SavedStateHandle) : ViewMod
     private val _vehicleSelectInFlight = MutableLiveData(false)
     val vehicleSelectInFlight: LiveData<Boolean> = _vehicleSelectInFlight
 
-    private val apiService: MasterDataApiService by lazy {
-        MasterDataRetrofit.getRetrofit().create(MasterDataApiService::class.java)
+    private var vehicleDataSource: ProfileVehicleDataSource = RetrofitProfileVehicleDataSource()
+    private var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private var mainDispatcher: CoroutineDispatcher = Dispatchers.Main
+
+    internal constructor(
+        savedStateHandle: SavedStateHandle,
+        vehicleDataSource: ProfileVehicleDataSource,
+        ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+        mainDispatcher: CoroutineDispatcher = Dispatchers.Main
+    ) : this(savedStateHandle) {
+        this.vehicleDataSource = vehicleDataSource
+        this.ioDispatcher = ioDispatcher
+        this.mainDispatcher = mainDispatcher
     }
 
     fun setDriver(driver: Driver) {
@@ -44,32 +57,35 @@ class ProfileViewModel(private val savedStateHandle: SavedStateHandle) : ViewMod
 
     fun selectVehicle(vehicleId: String) {
         _vehicleSelectInFlight.value = true
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             try {
-                DriverAppRequestRunner.execute("driver-app/me/selected-vehicle") { authorization ->
-                    apiService.setSelectedVehicle(authorization, SetSelectedVehicleRequest(vehicleId))
-                }
-                val current = savedStateHandle.get<Driver>(Driver.TAG)
-                if (current != null) {
-                    val updatedRoster = current.roster.map { v ->
-                        v.copy(is_selected = v.id == vehicleId)
+                vehicleDataSource.setSelectedVehicle(vehicleId)
+                val updatedVehicles = runCatching { vehicleDataSource.getVehicles() }.getOrNull()
+                withContext(mainDispatcher) {
+                    val current = savedStateHandle.get<Driver>(Driver.TAG)
+                    if (current != null) {
+                        val updatedDriver = if (updatedVehicles != null) {
+                            current.withVehicleRoster(updatedVehicles, fallbackSelectedVehicleId = vehicleId)
+                        } else {
+                            current.withSelectedVehicle(vehicleId)
+                        }
+                        _driver.value = updatedDriver
+                        savedStateHandle[Driver.TAG] = updatedDriver
                     }
-                    val updatedDriver = current.copy(
-                        roster = updatedRoster,
-                        selected_vehicle = updatedRoster.firstOrNull { it.id == vehicleId }
-                            ?: current.selected_vehicle
-                    )
-                    savedStateHandle[Driver.TAG] = updatedDriver
+                    _vehicleSelectInFlight.value = false
                 }
-                _vehicleSelectInFlight.postValue(false)
             } catch (e: DriverAppRequestException) {
-                Log.e(TAG, "selectVehicle failed: code=${e.code} message=${e.responseMessage}")
-                _errorMessage.postValue(ERROR_SELECT)
-                _vehicleSelectInFlight.postValue(false)
+                logError("selectVehicle failed: code=${e.code} message=${e.responseMessage}")
+                withContext(mainDispatcher) {
+                    _errorMessage.value = ERROR_SELECT
+                    _vehicleSelectInFlight.value = false
+                }
             } catch (e: Exception) {
-                Log.e(TAG, "selectVehicle exception: ${e.message}")
-                _errorMessage.postValue(ERROR_SELECT)
-                _vehicleSelectInFlight.postValue(false)
+                logError("selectVehicle exception: ${e.message}")
+                withContext(mainDispatcher) {
+                    _errorMessage.value = ERROR_SELECT
+                    _vehicleSelectInFlight.value = false
+                }
             }
         }
     }
@@ -79,24 +95,92 @@ class ProfileViewModel(private val savedStateHandle: SavedStateHandle) : ViewMod
     }
 
     private fun refreshVehicleRoster() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             try {
-                val response = DriverAppRequestRunner.execute("driver-app/me/vehicles") { authorization ->
-                    apiService.getVehicles(authorization)
+                val vehicles = vehicleDataSource.getVehicles()
+                withContext(mainDispatcher) {
+                    val current = savedStateHandle.get<Driver>(Driver.TAG) ?: return@withContext
+                    val updatedDriver = current.withVehicleRoster(vehicles)
+                    _driver.value = updatedDriver
+                    savedStateHandle[Driver.TAG] = updatedDriver
                 }
-                val vehicles = response.body()?.data?.vehicles.orEmpty().map { it.toVehicle() }
-                val current = savedStateHandle.get<Driver>(Driver.TAG) ?: return@launch
-                val selectedVehicle = vehicles.firstOrNull { it.is_selected }
-                val updatedDriver = current.copy(
-                    roster = vehicles,
-                    selected_vehicle = selectedVehicle
-                )
-                _driver.postValue(updatedDriver)
-                savedStateHandle[Driver.TAG] = updatedDriver
             } catch (e: Exception) {
-                Log.w(TAG, "refreshVehicleRoster failed: ${e.message}")
+                logWarn("refreshVehicleRoster failed: ${e.message}")
             }
         }
+    }
+
+    private fun logError(message: String) {
+        runCatching { Log.e(TAG, message) }
+    }
+
+    private fun logWarn(message: String) {
+        runCatching { Log.w(TAG, message) }
+    }
+
+    private fun Driver.withSelectedVehicle(vehicleId: String): Driver {
+        val updatedRoster = roster.map { vehicle ->
+            vehicle.copy(is_selected = vehicle.id == vehicleId)
+        }
+
+        return copy(
+            roster = updatedRoster,
+            selected_vehicle = updatedRoster.firstOrNull { it.id == vehicleId }
+                ?: selected_vehicle
+        )
+    }
+
+    private fun Driver.withVehicleRoster(
+        vehicles: List<Vehicle>,
+        fallbackSelectedVehicleId: String? = null
+    ): Driver {
+        val selectedId = vehicles.firstOrNull { it.is_selected }?.id
+            ?: fallbackSelectedVehicleId
+            ?: selected_vehicle?.id
+
+        val normalizedRoster = vehicles.map { vehicle ->
+            if (selectedId == null || vehicle.is_selected == (vehicle.id == selectedId)) {
+                vehicle
+            } else {
+                vehicle.copy(is_selected = vehicle.id == selectedId)
+            }
+        }
+
+        return copy(
+            roster = normalizedRoster,
+            selected_vehicle = normalizedRoster.firstOrNull { it.id == selectedId }
+                ?: selected_vehicle
+        )
+    }
+
+    companion object {
+        private const val TAG = "ProfileViewModel"
+        const val ERROR_SELECT = "select_error"
+    }
+}
+
+internal interface ProfileVehicleDataSource {
+    suspend fun setSelectedVehicle(vehicleId: String)
+    suspend fun getVehicles(): List<Vehicle>
+}
+
+internal class RetrofitProfileVehicleDataSource(
+    private val apiService: MasterDataApiService = MasterDataRetrofit
+        .getRetrofit()
+        .create(MasterDataApiService::class.java)
+) : ProfileVehicleDataSource {
+    override suspend fun setSelectedVehicle(vehicleId: String) {
+        DriverAppRequestRunner.execute("driver-app/me/selected-vehicle") { authorization ->
+            apiService.setSelectedVehicle(authorization, SetSelectedVehicleRequest(vehicleId))
+        }
+    }
+
+    override suspend fun getVehicles(): List<Vehicle> {
+        val response = DriverAppRequestRunner.execute("driver-app/me/vehicles") { authorization ->
+            apiService.getVehicles(authorization)
+        }
+
+        return response.body()?.data?.vehicles.orEmpty().map { it.toVehicle() }
     }
 
     private fun RosterVehicle.toVehicle(): Vehicle {
@@ -109,10 +193,5 @@ class ProfileViewModel(private val savedStateHandle: SavedStateHandle) : ViewMod
             is_selectable = is_selectable,
             is_selected = is_selected
         )
-    }
-
-    companion object {
-        private const val TAG = "ProfileViewModel"
-        const val ERROR_SELECT = "select_error"
     }
 }
