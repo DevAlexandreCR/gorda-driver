@@ -1,6 +1,7 @@
 package gorda.driver.services.firebase
 
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -9,18 +10,24 @@ import com.google.gson.Gson
 import gorda.driver.interfaces.LocInterface
 import gorda.driver.services.masterData.ConnectLocation
 import gorda.driver.services.masterData.ConnectRequest
+import gorda.driver.services.masterData.LocationRequest
 import gorda.driver.services.masterData.MasterDataApiService
 import gorda.driver.services.retrofit.DriverAppRequestException
 import gorda.driver.services.retrofit.DriverAppRequestRunner
 import gorda.driver.services.retrofit.MasterDataRetrofit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import retrofit2.Response
 import java.util.UUID
 
 /**
@@ -42,10 +49,15 @@ import java.util.UUID
  * "needs app restart" bug.
  */
 class PresenceManager(
-    private val infoConnectedRef: DatabaseReference = Database.dbInfoConnected(),
+    // Nullable so tests can pass null: real Firebase DatabaseReference instances cannot be
+    // constructed off-device, and this field is only ever dereferenced when a listener was
+    // actually attached (see attachInfoConnectedListener/detachInfoConnectedListener).
+    private val infoConnectedRef: DatabaseReference? = Database.dbInfoConnected(),
     private val dispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Main,
+    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.IO,
     private val transportCycler: TransportCycler = TransportCycler.Default,
-    private val apiService: MasterDataApiService = MasterDataRetrofit.getRetrofit().create(MasterDataApiService::class.java)
+    private val apiService: MasterDataApiService = MasterDataRetrofit.getRetrofit().create(MasterDataApiService::class.java),
+    private val requestExecutor: RequestExecutor = RequestExecutor.Default
 ) {
 
     sealed class State {
@@ -69,6 +81,21 @@ class PresenceManager(
         }
     }
 
+    /** Lets tests stub out the authenticated-request wrapper (bypasses real Firebase Auth). */
+    interface RequestExecutor {
+        suspend fun <T> execute(
+            endpoint: String,
+            request: suspend (authorizationHeader: String) -> Response<T>
+        ): Response<T>
+
+        object Default : RequestExecutor {
+            override suspend fun <T> execute(
+                endpoint: String,
+                request: suspend (String) -> Response<T>
+            ): Response<T> = DriverAppRequestRunner.execute(endpoint, request)
+        }
+    }
+
     private val scope = CoroutineScope(dispatcher + SupervisorJob())
     private val _state = MutableStateFlow<State>(State.Idle)
     val state: StateFlow<State> = _state.asStateFlow()
@@ -81,6 +108,7 @@ class PresenceManager(
     private var firebaseConnected: Boolean = false
 
     private var infoConnectedListener: ValueEventListener? = null
+    private var heartbeatJob: Job? = null
 
     /** Begin maintaining presence for `driverId` with the given last-known location. */
     fun start(driverId: String, vehicleId: String, location: LocInterface) {
@@ -111,11 +139,11 @@ class PresenceManager(
      */
     fun forceReconnect() {
         if (driverId == null) return
-        Log.i(TAG, "force reconnect: cycling transport")
+        logInfo("force reconnect: cycling transport")
         try {
             transportCycler.cycle()
         } catch (e: Exception) {
-            Log.w(TAG, "transport cycle failed: ${e.message}")
+            logWarn("transport cycle failed: ${e.message}")
         }
         // The .info/connected listener will fire false then true and drive the rest.
     }
@@ -134,7 +162,7 @@ class PresenceManager(
     fun onAndroidNetworkAvailable() {
         if (hasAndroidNetwork) return
         hasAndroidNetwork = true
-        Log.d(TAG, "android network available")
+        logDebug("android network available")
         if (driverId == null) return
         if (_state.value is State.Offline) {
             // We rely on .info/connected to flip to Connected. Defensive re-attach.
@@ -147,7 +175,7 @@ class PresenceManager(
     fun onAndroidNetworkLost() {
         if (!hasAndroidNetwork) return
         hasAndroidNetwork = false
-        Log.d(TAG, "android network lost")
+        logDebug("android network lost")
         if (driverId == null) return
         if (_state.value is State.Connected || _state.value is State.Connecting) {
             transitionTo(State.Offline)
@@ -163,23 +191,39 @@ class PresenceManager(
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.w(TAG, ".info/connected cancelled: ${error.message}")
+                logWarn(".info/connected cancelled: ${error.message}")
                 infoConnectedListener = null
             }
         }
         infoConnectedListener = listener
-        infoConnectedRef.addValueEventListener(listener)
+        infoConnectedRef?.addValueEventListener(listener)
     }
 
     private fun detachInfoConnectedListener() {
-        infoConnectedListener?.let { infoConnectedRef.removeEventListener(it) }
+        infoConnectedListener?.let { infoConnectedRef?.removeEventListener(it) }
         infoConnectedListener = null
+    }
+
+    /**
+     * Visible for tests only: simulates the `.info/connected` listener firing, without a real
+     * Firebase DatabaseReference. Production code only ever reaches [onFirebaseConnectedChanged]
+     * through the real listener registered in [attachInfoConnectedListener].
+     */
+    @VisibleForTesting
+    internal fun simulateFirebaseConnectedForTest(connected: Boolean) {
+        onFirebaseConnectedChanged(connected)
+    }
+
+    /** Visible for tests only: forces the next heartbeat tick to see a null location. */
+    @VisibleForTesting
+    internal fun clearLatestLocationForTest() {
+        latestLocation = null
     }
 
     private fun onFirebaseConnectedChanged(connected: Boolean) {
         val previous = firebaseConnected
         firebaseConnected = connected
-        Log.i(TAG, "firebase connected: $connected (was $previous)")
+        logInfo("firebase connected: $connected (was $previous)")
         if (driverId == null) return
 
         if (connected) {
@@ -209,11 +253,11 @@ class PresenceManager(
         val currentSession = sessionId ?: return
         val currentLocation = latestLocation
         if (currentLocation == null) {
-            Log.d(TAG, "writePresence skipped: no location yet")
+            logDebug("writePresence skipped: no location yet")
             return
         }
 
-        scope.launch(Dispatchers.IO) {
+        scope.launch(ioDispatcher) {
             try {
                 val payload = ConnectRequest(
                     vehicle_id = currentVehicleId,
@@ -223,22 +267,22 @@ class PresenceManager(
                         lng = currentLocation.lng
                     )
                 )
-                DriverAppRequestRunner.execute("/driver-app/me/connect") { authorization ->
+                requestExecutor.execute("/driver-app/me/connect") { authorization ->
                     apiService.connect(authorization, payload)
                 }
-                Log.i(TAG, "connect API success — driverId=$currentDriverId vehicleId=$currentVehicleId")
+                logInfo("connect API success — driverId=$currentDriverId vehicleId=$currentVehicleId")
                 transitionTo(State.Connected)
             } catch (e: DriverAppRequestException) {
                 if (e.code == 409) {
                     val reason = parseConnectErrorReason(e.errorBody)
-                    Log.w(TAG, "connect rejected: reason=$reason driverId=$currentDriverId vehicleId=$currentVehicleId")
+                    logWarn("connect rejected: reason=$reason driverId=$currentDriverId vehicleId=$currentVehicleId")
                     transitionTo(State.ConnectRejected(reason = reason))
                 } else {
-                    Log.w(TAG, "connect API error: code=${e.code} message=${e.responseMessage}")
+                    logWarn("connect API error: code=${e.code} message=${e.responseMessage}")
                     // Stay in Connecting; the next Firebase reconnect will retry.
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "connect API exception: ${e.message}")
+                logWarn("connect API exception: ${e.message}")
                 // Stay in Connecting; the next Firebase reconnect will retry.
             }
         }
@@ -258,12 +302,82 @@ class PresenceManager(
     private fun transitionTo(next: State) {
         val previous = _state.value
         if (previous == next) return
-        Log.i(TAG, "state $previous → $next")
+        logInfo("state $previous → $next")
         _state.value = next
+        if (next is State.Connected) {
+            startHeartbeatTicker()
+        } else if (previous is State.Connected) {
+            stopHeartbeatTicker()
+        }
+    }
+
+    /** Starts the periodic location heartbeat. Only ever active while State.Connected. */
+    private fun startHeartbeatTicker() {
+        if (heartbeatJob?.isActive == true) return
+        heartbeatJob = scope.launch {
+            while (isActive) {
+                delay(HEARTBEAT_INTERVAL_MS)
+                sendHeartbeat()
+            }
+        }
+    }
+
+    private fun stopHeartbeatTicker() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
+    }
+
+    /**
+     * Reports the latest cached location to keep /online_drivers/{id} current while connected.
+     * On 410 (not_connected) presence was evicted server-side — re-run writePresence() so the
+     * driver transparently reconnects. On 409 (session_superseded) another session owns the
+     * connection: stop heartbeating and surface ConnectRejected. Any other error (including
+     * network failures) is skipped silently; the next tick retries.
+     */
+    private suspend fun sendHeartbeat() {
+        val currentSession = sessionId ?: return
+        val currentLocation = latestLocation
+        if (currentLocation == null) {
+            logDebug("heartbeat skipped: no location yet")
+            return
+        }
+
+        try {
+            withContext(ioDispatcher) {
+                val payload = LocationRequest(
+                    session_id = currentSession,
+                    location = ConnectLocation(
+                        lat = currentLocation.lat,
+                        lng = currentLocation.lng
+                    )
+                )
+                requestExecutor.execute("/driver-app/me/location") { authorization ->
+                    apiService.updateLocation(authorization, payload)
+                }
+            }
+        } catch (e: DriverAppRequestException) {
+            when (e.code) {
+                410 -> {
+                    logWarn("heartbeat: presence not_connected (410), reconnecting")
+                    writePresence()
+                }
+                409 -> {
+                    val reason = parseConnectErrorReason(e.errorBody)
+                    logWarn("heartbeat: session_superseded (409), reason=$reason")
+                    transitionTo(State.ConnectRejected(reason = reason))
+                }
+                else -> {
+                    logWarn("heartbeat API error: code=${e.code} message=${e.responseMessage}")
+                }
+            }
+        } catch (e: Exception) {
+            logWarn("heartbeat exception: ${e.message}")
+        }
     }
 
     private fun stopInternal(clearStateToIdle: Boolean) {
         detachInfoConnectedListener()
+        stopHeartbeatTicker()
         driverId = null
         vehicleId = null
         sessionId = null
@@ -280,8 +394,24 @@ class PresenceManager(
         scope.cancel()
     }
 
+    // android.util.Log is unmocked in plain JVM unit tests and throws; wrapping every call in
+    // runCatching (matching ProfileViewModel's logError/logWarn convention) keeps this class
+    // testable without a mocking framework or a project-wide testOptions.unitTests flag.
+    private fun logInfo(message: String) {
+        runCatching { Log.i(TAG, message) }
+    }
+
+    private fun logDebug(message: String) {
+        runCatching { Log.d(TAG, message) }
+    }
+
+    private fun logWarn(message: String) {
+        runCatching { Log.w(TAG, message) }
+    }
+
     companion object {
         private const val TAG = "PresenceManager"
+        private const val HEARTBEAT_INTERVAL_MS = 30_000L
         const val REASON_VERSION_UNSUPPORTED = "version_unsupported"
         const val REASON_VEHICLE_IN_USE = "vehicle_in_use"
         const val REASON_DRIVER_ALREADY_CONNECTED = "driver_already_connected"

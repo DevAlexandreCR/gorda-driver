@@ -70,6 +70,15 @@ data class DisconnectResponse(
     val disconnected: Boolean? = null
 )
 
+data class LocationRequest(
+    val session_id: String,
+    val location: ConnectLocation
+)
+
+data class LocationResponse(
+    val updated: Boolean? = null
+)
+
 data class VehicleColor(
     val hex: String?,
     val name: String?
@@ -139,6 +148,12 @@ interface MasterDataApiService {
     suspend fun disconnect(
         @Header("Authorization") authorization: String
     ): Response<ApiEnvelope<DisconnectResponse>>
+
+    @PUT("driver-app/me/location")
+    suspend fun updateLocation(
+        @Header("Authorization") authorization: String,
+        @Body payload: LocationRequest
+    ): Response<ApiEnvelope<LocationResponse>>
 
     @GET("driver-app/me/vehicles")
     suspend fun getVehicles(
