@@ -10,7 +10,7 @@
 - **DO** run host Gradle commands with Android Studio's bundled JBR when `java` is unavailable in the shell:
   `export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" && export PATH="$JAVA_HOME/bin:$PATH"`
 - **DO** add inline comments in English when necessary (avoid comments unless absolutely necessary)
-- **DO** update CHANGELOG.md only for version releases
+- **DO** add a short entry to `CHANGELOG.md` under `## [Unreleased]` when a change (OpenSpec or otherwise) is completed, matching the file's current Keep a Changelog format — never add a new version heading (those are added at release time)
 - **ALL documentation files MUST be written in English**
 - **ALL code comments MUST be written in English**
 - Focus on code implementation, not documentation of changes

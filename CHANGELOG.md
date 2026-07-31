@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Send a location heartbeat every 30 seconds while connected so dispatch sees live positions on the map.
+- Automatically reconnect if presence was evicted (HTTP 410); stop with a rejected connection state if another session took over (HTTP 409).
+
 ## [2.0.12(2026-06-12)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.12...2.0.11)
 
 ### Added
