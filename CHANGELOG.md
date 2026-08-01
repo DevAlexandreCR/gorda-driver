@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.14(2026-08-01)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.14...2.0.13)
+
 ### Added
 
 - Send a location heartbeat every 30 seconds while connected so dispatch sees live positions on the map.
