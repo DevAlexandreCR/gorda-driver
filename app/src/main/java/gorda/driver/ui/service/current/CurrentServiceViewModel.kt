@@ -199,6 +199,30 @@ class CurrentServiceViewModel(
 
             return elapsedSeconds > timeoutToConnectionSeconds.toLong()
         }
+
+        /**
+         * Windowed cancel action for self-service trips only (add-driver-self-service task 4.5,
+         * design D6). [isSelfService] gates out every normal assigned service unconditionally, so
+         * the cancel action can never appear for them regardless of the other parameters.
+         * [isCancelable] folds in whatever local state already disqualifies the trip (not
+         * in-progress, an optimistic end already applied, another action in flight, or — for a
+         * still-unsynced provisional trip — already marked terminal). The window itself is a plain
+         * wall-clock check against [cancelWindowSeconds] (from the cached ride-fees snapshot),
+         * mirroring how [CurrentServiceFragment] already gates `timeoutToComplete`.
+         */
+        fun shouldShowSelfServiceCancel(
+            isSelfService: Boolean,
+            isCancelable: Boolean,
+            startedAtEpochSeconds: Long?,
+            nowEpochSeconds: Long,
+            cancelWindowSeconds: Int
+        ): Boolean {
+            if (!isSelfService || !isCancelable || startedAtEpochSeconds == null) {
+                return false
+            }
+
+            return nowEpochSeconds - startedAtEpochSeconds <= cancelWindowSeconds
+        }
     }
 
     private val _uiState = MutableLiveData<ServiceActionUiState>(ServiceActionUiState.Idle)

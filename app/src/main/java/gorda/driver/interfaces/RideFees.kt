@@ -14,4 +14,5 @@ data class RideFees (
     @SerializedName("timeout_to_complete") var timeoutToComplete: Int = 240,
     @SerializedName("timeout_to_connection") var timeoutToConnection: Int = 120,
     @SerializedName("fee_multiplier") var feeMultiplier: Double = 1.0,
+    @SerializedName("self_service_cancel_window") var selfServiceCancelWindow: Int = 120,
 )

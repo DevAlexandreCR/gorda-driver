@@ -24,6 +24,7 @@ import android.os.Messenger
 import android.provider.Settings
 import android.util.Log
 import android.view.View
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -55,7 +56,6 @@ import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var appBarConfiguration: AppBarConfiguration
-    private lateinit var notificationButton: FloatingActionButton
+    private lateinit var notificationButton: ImageButton
     private lateinit var networkMonitor: NetworkMonitor
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
@@ -562,17 +562,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun setIconNotificationButton(isNotificationMute: Boolean) {
         if (isNotificationMute) {
-            notificationButton.backgroundTintList =
-                ColorStateList.valueOf(getColor(R.color.danger_container))
-            notificationButton.imageTintList =
-                ColorStateList.valueOf(getColor(R.color.on_danger_container))
             notificationButton.setImageResource(R.drawable.notifications_off)
-        } else {
-            notificationButton.backgroundTintList =
-                ColorStateList.valueOf(getColor(R.color.accent_container))
             notificationButton.imageTintList =
-                ColorStateList.valueOf(getColor(R.color.on_accent_container))
+                ColorStateList.valueOf(getColor(R.color.warning))
+        } else {
             notificationButton.setImageResource(R.drawable.notifications_active)
+            notificationButton.imageTintList =
+                ColorStateList.valueOf(getColor(R.color.white))
         }
     }
 

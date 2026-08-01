@@ -28,6 +28,7 @@ class Constants {
         const val CURRENT_SERVICE_UI_SNAPSHOT = "gorda.driver.CURRENT_SERVICE_UI_SNAPSHOT"
         const val PENDING_SERVICE_ACTION_SNAPSHOT = "gorda.driver.PENDING_SERVICE_ACTION_SNAPSHOT"
         const val CURRENT_SERVICE_BOTTOM_SHEET_SNAPSHOT = "gorda.driver.CURRENT_SERVICE_BOTTOM_SHEET_SNAPSHOT"
+        const val SELF_SERVICE_PROVISIONAL_TRIP = "gorda.driver.SELF_SERVICE_PROVISIONAL_TRIP"
         const val ALERT_ACTION = "gorda.driver.SHOW_ALERT"
         const val DRIVER_DESIRED_ONLINE = "gorda.driver.DRIVER_DESIRED_ONLINE"
         const val DRIVER_SELECTED_VEHICLE_ID = "driver_selected_vehicle_id"

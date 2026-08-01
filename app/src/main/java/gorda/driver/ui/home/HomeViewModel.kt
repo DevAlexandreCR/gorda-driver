@@ -24,9 +24,26 @@ class HomeViewModel : ViewModel() {
     }
 
     private var _serviceList = MutableLiveData<ServiceUpdates>()
+    private val _selfServiceEntryVisible = MutableLiveData(false)
 
     val serviceList: LiveData<ServiceUpdates> = _serviceList
     val text: LiveData<Int> = _text
+    val selfServiceEntryVisible: LiveData<Boolean> = _selfServiceEntryVisible
+
+    companion object {
+        /**
+         * Entry point (add-driver-self-service D4): visible only while the driver session
+         * is connected and eligible per `DriverAvailability.canGoOnline`. The API remains
+         * the authoritative eligibility check on creation (task 4.3+).
+         */
+        fun isSelfServiceEntryVisible(connected: Boolean, canGoOnline: Boolean): Boolean {
+            return connected && canGoOnline
+        }
+    }
+
+    fun updateSelfServiceEligibility(connected: Boolean, canGoOnline: Boolean) {
+        _selfServiceEntryVisible.value = isSelfServiceEntryVisible(connected, canGoOnline)
+    }
 
     fun startListenServices() {
         pendingFeedSubscriptionController.start()

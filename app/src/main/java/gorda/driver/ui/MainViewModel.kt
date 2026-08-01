@@ -3,6 +3,7 @@ package gorda.driver.ui
 import android.content.SharedPreferences
 import android.location.Location
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
@@ -12,6 +13,7 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
+import com.google.gson.Gson
 import gorda.driver.R
 import gorda.driver.exceptions.UnsupportedAppVersionException
 import gorda.driver.helpers.withTimeout
@@ -29,20 +31,27 @@ import gorda.driver.repositories.ServiceRepository
 import gorda.driver.services.firebase.PresenceManager
 import gorda.driver.services.masterData.MasterDataApiService
 import gorda.driver.services.masterData.RosterVehicle
+import gorda.driver.services.masterData.SelfServiceCancelRejectionReason
+import gorda.driver.services.masterData.SelfServiceErrorBody
+import gorda.driver.services.retrofit.DriverAppRequestException
 import gorda.driver.services.retrofit.DriverAppRequestRunner
 import gorda.driver.services.retrofit.MasterDataRetrofit
+import gorda.driver.services.selfservice.SelfServiceTripManager
 import gorda.driver.ui.driver.DriverStatusPublisher
 import gorda.driver.ui.driver.DriverUpdates
 import gorda.driver.ui.service.ServiceEventListener
+import gorda.driver.ui.service.current.SelfServiceProvisionalTrip
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 import gorda.driver.utils.Constants
+import gorda.driver.utils.RideRecoveryStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     companion object {
@@ -93,6 +102,13 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         val elapsedSeconds: Long
     )
 
+    /** Outcome of [cancelSelfServiceTrip] (add-driver-self-service design D6, task 4.5). */
+    sealed class SelfServiceCancelResult {
+        object Success : SelfServiceCancelResult()
+        data class Rejected(@StringRes val messageRes: Int) : SelfServiceCancelResult()
+        object Failed : SelfServiceCancelResult()
+    }
+
     private val _lastLocation = MutableLiveData<LocationUpdates>()
     private val _driverState = MutableStateFlow<DriverUpdates?>(null)
     val driverStatus: StateFlow<DriverUpdates?> = _driverState.asStateFlow()
@@ -119,6 +135,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _vehicleForBanner = MutableStateFlow<RosterVehicle?>(null)
     private val _forceDisconnectReason = MutableLiveData<String?>()
     private val _connectSwitchResetEvent = MutableLiveData<Unit?>()
+    private val _selfServiceRejection = MutableLiveData<Int?>()
 
     private var preferences: SharedPreferences? = null
     private var observedDriverId: String? = null
@@ -126,8 +143,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private var lastTerminalCurrentServiceId: String? = null
 
     private val presenceManager = PresenceManager()
+    private val selfServiceTripManager = SelfServiceTripManager()
     private val driverStatusPublisher = DriverStatusPublisher()
     private var presenceCollectorJob: Job? = null
+    private var selfServiceSyncJob: Job? = null
     private var pendingConnectVehicle: RosterVehicle? = null
 
     /** Set by the vehicle picker flow (task 17/18). Null until a vehicle is selected. */
@@ -160,6 +179,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val forceDisconnectReason: LiveData<String?> = _forceDisconnectReason
     val connectSwitchResetEvent: LiveData<Unit?> = _connectSwitchResetEvent
 
+    /** Non-null when a queued self-service creation was terminally rejected (add-driver-self-service D5). */
+    val selfServiceRejection: LiveData<Int?> = _selfServiceRejection
+
     init {
         presenceCollectorJob = viewModelScope.launch {
             presenceManager.state.collect(::onPresenceManagerState)
@@ -172,6 +194,171 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         updatePresenceState { it.copy(desiredOnline = desiredOnline) }
         selectedVehicleId = preferences.getString(Constants.DRIVER_SELECTED_VEHICLE_ID, null)
         restoreCachedLocationFromPreferences(preferences)
+        restorePendingSelfServiceTrip(preferences)
+    }
+
+    /**
+     * Starts the queued creation for a self-service trip whose `FeesService` metering already
+     * began locally (add-driver-self-service design D5, step 1). Persists the provisional trip so
+     * it survives process death, then attempts an immediate sync; if that fails transiently the
+     * trip stays queued and later retries fire from network/presence/location signals below.
+     */
+    fun startSelfServiceTrip(
+        localId: String,
+        startedAt: Long,
+        multiplier: Double,
+        gpsFix: Location?
+    ) {
+        val trip = SelfServiceProvisionalTrip(
+            localId = localId,
+            startedAt = startedAt,
+            multiplier = multiplier,
+            gpsLat = gpsFix?.latitude ?: latestLocation?.latitude,
+            gpsLng = gpsFix?.longitude ?: latestLocation?.longitude
+        )
+        selfServiceTripManager.enqueue(trip)
+        preferences?.let { RideRecoveryStore.persistSelfServiceProvisionalTrip(it, trip) }
+        triggerSelfServiceSync()
+    }
+
+    fun hasPendingSelfServiceTrip(): Boolean = selfServiceTripManager.hasPendingTrip()
+
+    fun getPendingSelfServiceTrip(): SelfServiceProvisionalTrip? = selfServiceTripManager.getPendingTrip()
+
+    /**
+     * The driver ended a self-service trip whose creation hasn't synced yet (design D5, step 2;
+     * task 4.4). Marks the queued trip terminal so the very next sync sends a single deferred
+     * payload carrying both the creation and this terminal data — never a create followed by a
+     * separate terminate. [route]/[tripDistance]/[tripFee] mirror what a normal termination
+     * writes (`CurrentServiceFragment.beginEndTrip`), including the zero-fee-is-null rule.
+     */
+    fun endUnsyncedSelfServiceTrip(endedAt: Long, route: String, tripDistance: Int, tripFee: Int?) {
+        selfServiceTripManager.markTerminated(endedAt, route, tripDistance, tripFee)
+        persistPendingSelfServiceTrip()
+        triggerSelfServiceSync()
+    }
+
+    /**
+     * Marks the queued (not-yet-synced) trip canceled so the next sync sends a deferred
+     * `status="canceled"` payload (add-driver-self-service design D5's "Deferred cancellations
+     * are audited, not trusted"; task 4.5's windowed cancel UI). Reached from
+     * `CurrentServiceFragment` while there is no RTDB-backed [Service] yet.
+     */
+    fun cancelUnsyncedSelfServiceTrip() {
+        selfServiceTripManager.markCanceled()
+        persistPendingSelfServiceTrip()
+        triggerSelfServiceSync()
+    }
+
+    /**
+     * Calls the server-authoritative windowed cancel for an already-synced self-service trip
+     * (add-driver-self-service design D6, task 4.5). The app only offers the action while its own
+     * cached-snapshot window check passes, but the server re-validates `origin`, ownership,
+     * `status`, and the elapsed window against its own `start_trip_at` — a `cancel_window_elapsed`
+     * (or any other typed) rejection means the trip is still genuinely running, so [onResult]
+     * lets the caller reconcile the UI instead of assuming the cancellation went through.
+     */
+    fun cancelSelfServiceTrip(serviceId: String, onResult: (SelfServiceCancelResult) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = try {
+                DriverAppRequestRunner.execute("/driver-app/me/services/$serviceId/cancel") { authorization ->
+                    MasterDataRetrofit.getRetrofit()
+                        .create(MasterDataApiService::class.java)
+                        .cancelSelfService(authorization = authorization, serviceId = serviceId)
+                }
+                SelfServiceCancelResult.Success
+            } catch (e: DriverAppRequestException) {
+                Log.w(TAG, "cancelSelfServiceTrip rejected: ${e.errorBody}")
+                SelfServiceCancelResult.Rejected(
+                    messageResForCancelRejection(parseCancelRejectionReason(e.errorBody))
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "cancelSelfServiceTrip failed: ${e.message}")
+                SelfServiceCancelResult.Failed
+            }
+            withContext(Dispatchers.Main) {
+                onResult(result)
+            }
+        }
+    }
+
+    private fun parseCancelRejectionReason(errorBody: String?): String? {
+        if (errorBody == null) return null
+        return try {
+            Gson().fromJson(errorBody, SelfServiceErrorBody::class.java)?.error
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    @StringRes
+    private fun messageResForCancelRejection(reason: String?): Int = when (reason) {
+        SelfServiceCancelRejectionReason.CANCEL_WINDOW_ELAPSED -> R.string.self_service_cancel_rejected_window_elapsed
+        else -> R.string.self_service_cancel_rejected_generic
+    }
+
+    private fun persistPendingSelfServiceTrip() {
+        val trip = selfServiceTripManager.getPendingTrip() ?: return
+        preferences?.let { RideRecoveryStore.persistSelfServiceProvisionalTrip(it, trip) }
+    }
+
+    fun consumeSelfServiceRejection() {
+        _selfServiceRejection.postValue(null)
+    }
+
+    private fun restorePendingSelfServiceTrip(preferences: SharedPreferences) {
+        val trip = RideRecoveryStore.getSelfServiceProvisionalTrip(preferences) ?: return
+        selfServiceTripManager.restore(trip)
+        triggerSelfServiceSync()
+    }
+
+    /**
+     * Attempts one sync of the pending self-service trip, if any. Safe to call opportunistically
+     * (network/presence reconnect, fresh location, cold start): no-ops when there's nothing
+     * pending or a sync is already in flight (`SelfServiceTripManager` de-dupes internally).
+     */
+    private fun triggerSelfServiceSync() {
+        if (!selfServiceTripManager.hasPendingTrip()) return
+        if (selfServiceSyncJob?.isActive == true) return
+
+        selfServiceSyncJob = viewModelScope.launch(Dispatchers.IO) {
+            val result = selfServiceTripManager.trySync()
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is SelfServiceTripManager.Result.Created -> onSelfServiceTripCreated(result.trip, result.service)
+                    is SelfServiceTripManager.Result.Rejected -> onSelfServiceTripRejected(result.messageRes)
+                    SelfServiceTripManager.Result.Retryable,
+                    SelfServiceTripManager.Result.NoPendingTrip,
+                    SelfServiceTripManager.Result.AlreadySyncing -> {
+                        // Stays queued; the next network/presence/location signal retries.
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Reconciles a synced self-service trip, online or deferred (design D5, steps 2-3; task 4.4).
+     * Re-keys the recovery record so `CurrentServiceFragment` doesn't treat the (possibly already
+     * stopped) `FeesService` as stale, then publishes the service exactly like any other
+     * driver-assigned one. For a still-running trip this is `in_progress` and the fragment binds
+     * to it normally; for a deferred (terminal) payload it already comes back `terminated`/
+     * `canceled` — the fragment's existing "service is not in progress" handling resets local
+     * state without attempting a second terminate, since the API already applied it server-side.
+     * The RTDB `drivers_assigned/{driverId}` listener will shortly confirm the same service;
+     * posting it here makes the rebind immediate instead of depending on listener timing.
+     */
+    private fun onSelfServiceTripCreated(trip: SelfServiceProvisionalTrip, service: Service) {
+        preferences?.let { prefs ->
+            RideRecoveryStore.rebindTrackedServiceId(prefs, trip.localId, service.id)
+            RideRecoveryStore.clearSelfServiceProvisionalTrip(prefs)
+        }
+        _currentService.postValue(service)
+    }
+
+    private fun onSelfServiceTripRejected(messageRes: Int) {
+        preferences?.let { RideRecoveryStore.clearSelfServiceProvisionalTrip(it) }
+        _selfServiceRejection.postValue(messageRes)
     }
 
     @JvmName("updateSelectedVehicleId")
@@ -242,6 +429,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         updatePresenceState { it.copy(hasNetwork = hasTransportNetwork) }
         if (hasTransportNetwork) {
             presenceManager.onAndroidNetworkAvailable()
+            triggerSelfServiceSync()
         } else {
             presenceManager.onAndroidNetworkLost()
         }
@@ -332,6 +520,9 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         latestLocation = location
         preferences?.let { CachedLocationStore.save(it, location) }
         _lastLocation.postValue(LocationUpdates.liveLocation(location))
+
+        selfServiceTripManager.updateLocationIfMissing(location.latitude, location.longitude)
+        triggerSelfServiceSync()
 
         val state = _presenceState.value
         if (!state.desiredOnline) return
@@ -656,9 +847,15 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     }
 
     private fun updatePresenceState(transform: (DriverPresenceState) -> DriverPresenceState) {
-        val next = transform(_presenceState.value)
+        val previous = _presenceState.value
+        val next = transform(previous)
         _presenceState.value = next
         publishDriverStatus(next)
+        if (!previous.actualOnline && next.actualOnline) {
+            // Presence just came back (e.g. after a driver_not_connected rejection) — retry the
+            // queued self-service creation, if any (add-driver-self-service design D5).
+            triggerSelfServiceSync()
+        }
     }
 
     private fun publishDriverStatus(state: DriverPresenceState) {

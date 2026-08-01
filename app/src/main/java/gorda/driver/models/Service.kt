@@ -26,7 +26,8 @@ data class Service(
     @SerializedName("created_at") var created_at: Long = 0,
     @SerializedName("metadata") var metadata: ServiceMetadata = ServiceMetadata(),
     @SerializedName("client_completed_services_count") var client_completed_services_count: Int? = null,
-    @SerializedName("directed_to") var directed_to: String? = null
+    @SerializedName("directed_to") var directed_to: String? = null,
+    @SerializedName("origin") var origin: String? = null
 ) : Serializable {
     companion object {
         const val CREATED_AT = "created_at"
@@ -40,6 +41,10 @@ data class Service(
         const val DRIVER_ID = "driver_id"
         const val ID = "id"
         const val DIRECTED_TO = "directed_to"
+
+        // Self-service (driver-created) trips: see openspec change add-driver-self-service.
+        const val ORIGIN_DRIVER = "driver"
+        const val WP_CLIENT_ID_DRIVER_APP = "driver-app"
     }
 
     fun updateMetadata(): Task<Void> {
@@ -78,6 +83,11 @@ data class Service(
 
     fun isInProgress(): Boolean {
         return this.status == STATUS_IN_PROGRESS
+    }
+
+    /** Self-service (driver-created) trips skip the "arrived" stage entirely (design D5/D3). */
+    fun isSelfService(): Boolean {
+        return this.origin == ORIGIN_DRIVER
     }
 
     fun isTerminal(): Boolean {

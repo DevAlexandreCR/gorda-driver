@@ -13,10 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatically reconnect if presence was evicted (HTTP 410); stop with a rejected connection state if another session took over (HTTP 409).
 - Hide services directed to another driver from the pending feed (home list and voice/sound alerts) and reject applying to a service directed to someone else; `Service` gained a `directed_to` field.
 - Show a confirmation dialog with the pickup and destination when the driver taps "Apply" on a pending service, only navigating to the apply screen once the driver confirms.
+- Add a "start own trip" action for connected, available drivers: one-step start reusing the existing multiplier dialog and taximeter, with the GPS fix captured silently.
+- Meter self trips immediately without connectivity; sync the creation, and the terminal data if the trip ended offline, as a single deferred request once the network returns.
+- Allow canceling a self trip within the configurable window delivered by the ride-fees snapshot; normal assigned services are unaffected.
 
 ### Fixed
 
 - Style Material alert dialogs with the app palette (elevated surface, 24dp corners, accent buttons without forced uppercase) instead of the default gray Material look; affects the logout-error and force-disconnect dialogs.
+- Move the notifications-mute button from a floating corner button into the app bar, next to the "Connected" switch. It previously overlaid the bottom-right corner of every NavHost-hosted screen (Home, Apply, Map, History, Profile), which on Home blocked the "start own trip" button; that button is now unobstructed.
 
 ## [2.0.12(2026-06-12)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.12...2.0.11)
 

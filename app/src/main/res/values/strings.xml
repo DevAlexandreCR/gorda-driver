@@ -173,6 +173,19 @@
     <string name="expand_collapse">Expand or collapse fee details</string>
     <string name="multiplier_minimum_value">Minimum multiplier value is 1.0</string>
     <string name="multiplier_updated">Multiplier updated to %1$.1f</string>
+    <string name="self_service_entry_description">Start own trip</string>
+    <string name="self_service_start_title">Start own trip</string>
+    <string name="self_service_start_message">No client — this trip is metered as your own. Modify multiplier if needed:</string>
+    <string name="self_service_notification_label">your own trip</string>
+    <string name="self_service_rejected_disabled">Unable to start your trip: your account is disabled.</string>
+    <string name="self_service_rejected_negative_balance">Unable to start your trip: insufficient balance.</string>
+    <string name="self_service_rejected_already_in_service">Unable to start your trip: you already have a service in progress.</string>
+    <string name="self_service_rejected_malformed_deferred_payload">Unable to sync your trip: check your device\'s date and time.</string>
+    <string name="self_service_cancel_action">Cancel trip</string>
+    <string name="self_service_cancel_title">Cancel own trip?</string>
+    <string name="self_service_cancel_message">This trip will be canceled with no charge. This action cannot be undone.</string>
+    <string name="self_service_cancel_rejected_window_elapsed">Unable to cancel: the cancel window has passed. You can only end the trip now.</string>
+    <string name="self_service_cancel_rejected_generic">Unable to cancel this trip. Try again or end it normally.</string>
     <string name="distance_km">%1$.1f</string>
 
     <!-- History Fragment Strings -->

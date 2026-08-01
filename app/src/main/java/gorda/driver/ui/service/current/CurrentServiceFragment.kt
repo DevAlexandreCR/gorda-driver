@@ -11,18 +11,14 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.SystemClock
-import android.view.KeyEvent
 import android.text.Editable
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
-import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.Chronometer
 import android.widget.EditText
-import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -70,6 +66,7 @@ import gorda.driver.utils.NumberHelper
 import gorda.driver.utils.RideRecoveryPolicy
 import gorda.driver.utils.RideRecoveryStore
 import gorda.driver.utils.ServiceHelper
+import gorda.driver.utils.showTripActionDialog
 import gorda.driver.utils.StringHelper
 import kotlinx.coroutines.launch
 import java.util.Date
@@ -94,6 +91,7 @@ class CurrentServiceFragment : Fragment() {
 
     private lateinit var btnStatus: Button
     private lateinit var btnRetryAction: MaterialButton
+    private lateinit var btnCancelSelfService: MaterialButton
     private lateinit var imgBtnMaps: ImageButton
     private lateinit var imgButtonWaze: ImageButton
     private lateinit var textName: TextView
@@ -144,6 +142,7 @@ class CurrentServiceFragment : Fragment() {
     private var currentPresenceState = MainViewModel.DriverPresenceState()
     private var shouldReconcileRestoredAction = true
     private var deferredInitialNullRecoveryClear = false
+    private var cancelingSelfService = false
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
     private lateinit var endTrip: String
@@ -222,6 +221,7 @@ class CurrentServiceFragment : Fragment() {
         observeCurrentFeeData()
         observePresence()
         observeActionUiState()
+        observeSelfServiceRejection()
     }
 
     override fun onResume() {
@@ -266,6 +266,7 @@ class CurrentServiceFragment : Fragment() {
         textTotalFee = binding.textPrice
         btnStatus = binding.btnServiceStatus
         btnRetryAction = binding.btnRetryServiceAction
+        btnCancelSelfService = binding.btnCancelSelfService
         imgBtnMaps = binding.serviceLayout.imgBtnMaps
         imgButtonWaze = binding.serviceLayout.imgBtnWaze
         chronometer = binding.chronometer
@@ -283,7 +284,16 @@ class CurrentServiceFragment : Fragment() {
 
     private fun setupStaticListeners() {
         btnStatus.setOnClickListener {
-            val service = currentService ?: return@setOnClickListener
+            val service = currentService
+            if (service == null) {
+                // No RTDB-backed service yet: either idle, or a self-service trip still queued
+                // for creation sync (add-driver-self-service task 4.4). Ending is the only action
+                // reachable before that sync — see renderUnsyncedSelfServiceActionUi.
+                if (mainViewModel.hasPendingSelfServiceTrip()) {
+                    beginEndUnsyncedSelfServiceTrip()
+                }
+                return@setOnClickListener
+            }
 
             when (baseActionText(service)) {
                 haveArrived -> handleHaveArrived(service)
@@ -294,6 +304,10 @@ class CurrentServiceFragment : Fragment() {
 
         btnRetryAction.setOnClickListener {
             retryCurrentAction()
+        }
+
+        btnCancelSelfService.setOnClickListener {
+            beginCancelSelfServiceTrip()
         }
 
         connectionServiceButton.setOnClickListener {
@@ -342,6 +356,16 @@ class CurrentServiceFragment : Fragment() {
                     renderServiceActionUi(null)
                     syncRecoveryStore()
                     updateServicesFabVisibility()
+                    return@observe
+                }
+
+                if (mainViewModel.hasPendingSelfServiceTrip()) {
+                    // Self-service creation still syncing (add-driver-self-service design D5,
+                    // steps 1-3): there is no RTDB-backed service yet. Metering keeps running
+                    // against the local id until the driver ends it (task 4.4) or the create
+                    // syncs and onSelfServiceTripCreated rebinds it; observeSelfServiceRejection
+                    // handles the terminal-rejection case.
+                    renderUnsyncedSelfServiceActionUi()
                     return@observe
                 }
 
@@ -468,6 +492,23 @@ class CurrentServiceFragment : Fragment() {
         }
     }
 
+    /**
+     * A queued self-service creation was terminally rejected (add-driver-self-service design D5,
+     * step 2 — e.g. `driver_already_in_service`, `driver_disabled`). No server record was ever
+     * created, so there is nothing to settle: stop the local meter, surface the reason, and let
+     * the driver retry from Home. `driver_not_connected` is not terminal and never reaches here —
+     * it stays queued in [SelfServiceTripManager] and retries once presence self-heals.
+     */
+    private fun observeSelfServiceRejection() {
+        mainViewModel.selfServiceRejection.observe(viewLifecycleOwner) { messageRes ->
+            if (messageRes == null) return@observe
+            stopFeeService(clearPersistedState = true)
+            currentServiceViewModel.reset()
+            Toast.makeText(requireContext(), messageRes, Toast.LENGTH_LONG).show()
+            mainViewModel.consumeSelfServiceRejection()
+        }
+    }
+
     private fun observeActionUiState() {
         currentServiceViewModel.uiState.observe(viewLifecycleOwner) {
             renderServiceActionUi(currentService)
@@ -544,9 +585,13 @@ class CurrentServiceFragment : Fragment() {
 
     private fun bindTripStage(service: Service) {
         val override = currentServiceViewModel.serviceStageOverrideFor(service)
+        // Self-service trips (add-driver-self-service) never go through an "arrived" stage —
+        // they're born in_progress with start_trip_at already stamped — so the arrived_at gate
+        // below never applies to them.
+        val requiresArrivalStage = !service.isSelfService()
 
         when {
-            service.metadata.arrived_at == null -> {
+            requiresArrivalStage && service.metadata.arrived_at == null -> {
                 btnStatus.text = haveArrived
                 scrollViewFees.visibility = View.INVISIBLE
                 stopFeeService(clearPersistedState = false)
@@ -607,6 +652,7 @@ class CurrentServiceFragment : Fragment() {
 
         ongoingTripRecoveryServiceId = service.id
         ongoingTripRecoveryDialog = showTripActionDialog(
+            requireContext(),
             titleRes = R.string.service_start_trip,
             message = getText(R.string.ride_in_progress),
             primaryTextRes = R.string.yes,
@@ -752,6 +798,7 @@ class CurrentServiceFragment : Fragment() {
         editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(feeMultiplier.toString())
 
         showTripActionDialog(
+            requireContext(),
             titleRes = R.string.start_ride,
             message = getText(R.string.start_ride_message),
             primaryTextRes = R.string.start_ride_action,
@@ -927,6 +974,7 @@ class CurrentServiceFragment : Fragment() {
         currentServiceViewModel.showIdle()
         val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee(), true))
         showTripActionDialog(
+            requireContext(),
             titleRes = R.string.finalize_service,
             message = StringHelper.getString(message),
             primaryTextRes = R.string.yes,
@@ -956,6 +1004,151 @@ class CurrentServiceFragment : Fragment() {
             )
             currentServiceViewModel.rememberEndTripRequest(request, service)
             executeConfirmedEndTrip(request)
+        }
+    }
+
+    /**
+     * Ends a self-service trip whose creation request hasn't synced yet (add-driver-self-service
+     * task 4.4): there is no RTDB [Service] to drive the normal `beginEndTrip`/`EndTripRequest`
+     * machinery, so this stops `FeesService` and hands the terminal data straight to
+     * [MainViewModel.endUnsyncedSelfServiceTrip], which folds it into the still-queued creation —
+     * exactly one request reaches the API (design D5, step 2). Metering, the completion timeout,
+     * the finalize confirmation, and the zero-fee-is-null rule all mirror [beginEndTrip] so ending
+     * a self trip behaves the same whether or not it has synced yet.
+     */
+    private fun beginEndUnsyncedSelfServiceTrip() {
+        val trip = mainViewModel.getPendingSelfServiceTrip() ?: return
+        if (trip.terminal != null) {
+            // Already ended locally, only awaiting sync — nothing left for a tap to do.
+            return
+        }
+
+        val now = Date().time / 1000
+        if (now - trip.startedAt <= fees.timeoutToComplete) {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.cannot_complete_service_yet, fees.timeoutToComplete / 60),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        val message = getString(R.string.finalizing_message, NumberHelper.toCurrency(getTotalFee(), true))
+        showTripActionDialog(
+            requireContext(),
+            titleRes = R.string.finalize_service,
+            message = StringHelper.getString(message),
+            primaryTextRes = R.string.yes,
+            secondaryTextRes = R.string.no,
+            iconRes = R.drawable.ic_monetization_on_24,
+            primaryIconRes = R.drawable.assign_24,
+            secondaryIconRes = R.drawable.cancel_24
+        ) { confirmed ->
+            if (!confirmed) {
+                return@showTripActionDialog
+            }
+
+            val rawFee = NumberHelper.roundDouble(getTotalFee()).toInt()
+            val tripFee: Int? = if (rawFee == 0) null else rawFee
+            val route = if (isServiceBound) {
+                ServiceMetadata.serializeRoute(feesService.getPoints())
+            } else {
+                ServiceMetadata.serializeRoute(arrayListOf())
+            }
+            val tripDistance = NumberHelper.roundDouble(totalDistance).toInt()
+
+            stopFeeService(clearPersistedState = false)
+            mainViewModel.endUnsyncedSelfServiceTrip(
+                endedAt = now,
+                route = route,
+                tripDistance = tripDistance,
+                tripFee = tripFee
+            )
+            renderUnsyncedSelfServiceActionUi()
+        }
+    }
+
+    /**
+     * Windowed cancel for self-service trips only (add-driver-self-service task 4.5, design D6):
+     * [btnCancelSelfService] is only ever visible while [updateSelfServiceCancelVisibility] finds
+     * an eligible self-service trip within the cached-snapshot window, so reaching this function
+     * already implies one of [currentService] (synced) or a pending provisional trip (unsynced)
+     * exists. Confirmation mirrors the existing finalize-trip idiom (yes/no via
+     * [showTripActionDialog]).
+     */
+    private fun beginCancelSelfServiceTrip() {
+        if (cancelingSelfService) {
+            return
+        }
+
+        val service = currentService
+        val pendingTrip = if (service == null) mainViewModel.getPendingSelfServiceTrip() else null
+        if (service == null && pendingTrip == null) {
+            return
+        }
+
+        showTripActionDialog(
+            requireContext(),
+            titleRes = R.string.self_service_cancel_title,
+            message = getText(R.string.self_service_cancel_message),
+            primaryTextRes = R.string.yes,
+            secondaryTextRes = R.string.no,
+            iconRes = R.drawable.cancel_24,
+            primaryIconRes = R.drawable.assign_24,
+            secondaryIconRes = R.drawable.cancel_24
+        ) { confirmed ->
+            if (!confirmed) {
+                return@showTripActionDialog
+            }
+
+            if (service != null) {
+                executeCancelSyncedSelfServiceTrip(service)
+            } else {
+                executeCancelUnsyncedSelfServiceTrip()
+            }
+        }
+    }
+
+    /**
+     * Unsynced path (design D5, steps 1/3): no RTDB [Service] exists yet, so cancellation is a
+     * purely local transition — the queued creation now carries `status="canceled"` and folds
+     * into the next deferred sync via [MainViewModel.cancelUnsyncedSelfServiceTrip].
+     */
+    private fun executeCancelUnsyncedSelfServiceTrip() {
+        stopFeeService(clearPersistedState = false)
+        mainViewModel.cancelUnsyncedSelfServiceTrip()
+        renderUnsyncedSelfServiceActionUi()
+        updateSelfServiceCancelVisibility()
+    }
+
+    /**
+     * Synced path (design D6): the server is authoritative for the window, so nothing is applied
+     * optimistically. On success this mirrors the "already terminated" handling in
+     * [handleEndValidationFailure]. On a typed rejection (or a network failure) local state is
+     * left untouched and the button visibility is simply recomputed — there is no phantom
+     * canceled state to walk back because none was ever applied.
+     */
+    private fun executeCancelSyncedSelfServiceTrip(service: Service) {
+        cancelingSelfService = true
+        updateSelfServiceCancelVisibility()
+        mainViewModel.cancelSelfServiceTrip(service.id) { result ->
+            cancelingSelfService = false
+            when (result) {
+                MainViewModel.SelfServiceCancelResult.Success -> {
+                    currentServiceViewModel.onTripEndedObserved()
+                    stopFeeService(clearPersistedState = false)
+                    currentServiceViewModel.reset()
+                    mainViewModel.completeCurrentService()
+                }
+                is MainViewModel.SelfServiceCancelResult.Rejected -> {
+                    Toast.makeText(requireContext(), result.messageRes, Toast.LENGTH_LONG).show()
+                    updateSelfServiceCancelVisibility()
+                }
+                MainViewModel.SelfServiceCancelResult.Failed -> {
+                    Toast.makeText(requireContext(), R.string.common_error, Toast.LENGTH_SHORT).show()
+                    updateSelfServiceCancelVisibility()
+                }
+            }
         }
     }
 
@@ -1133,6 +1326,25 @@ class CurrentServiceFragment : Fragment() {
         }
     }
 
+    /**
+     * Minimal action surface for a self-service trip that has no RTDB-backed [Service] yet
+     * (add-driver-self-service task 4.4): [renderServiceActionUi]'s state machine is keyed off a
+     * [Service], which doesn't exist during this window, so this only makes ending the trip
+     * reachable and reflects whether it was already ended locally and is awaiting sync. Richer
+     * offline presentation (progress states, cancel window) belongs to tasks 4.5/4.6.
+     */
+    private fun renderUnsyncedSelfServiceActionUi() {
+        feedbackContainer.isGone = true
+        binding.serviceActionProgress.isGone = true
+        textActionStatus.isGone = true
+        btnRetryAction.isGone = true
+
+        val trip = mainViewModel.getPendingSelfServiceTrip()
+        btnStatus.text = endTrip
+        btnStatus.isEnabled = trip != null && trip.terminal == null
+        updateSelfServiceCancelVisibility()
+    }
+
     private fun renderServiceActionUi(service: Service?) {
         val state = currentServiceViewModel.uiState.value ?: CurrentServiceViewModel.ServiceActionUiState.Idle
         if (service == null) {
@@ -1303,7 +1515,7 @@ class CurrentServiceFragment : Fragment() {
         return when {
             override.treatAsEnded -> endTrip
             override.treatAsStarted -> endTrip
-            service.metadata.arrived_at == null -> haveArrived
+            !service.isSelfService() && service.metadata.arrived_at == null -> haveArrived
             service.metadata.start_trip_at == null -> startTrip
             else -> endTrip
         }
@@ -1674,6 +1886,7 @@ class CurrentServiceFragment : Fragment() {
         editFeeMultiplier.text = Editable.Factory.getInstance().newEditable(currentMultiplier.toString())
 
         showTripActionDialog(
+            requireContext(),
             titleRes = R.string.edit_multiplier,
             message = getText(R.string.start_ride_message),
             primaryTextRes = R.string.save,
@@ -1709,94 +1922,6 @@ class CurrentServiceFragment : Fragment() {
                 getString(R.string.multiplier_updated, newMultiplier),
                 Toast.LENGTH_SHORT
             ).show()
-        }
-    }
-
-    private fun showTripActionDialog(
-        titleRes: Int,
-        message: CharSequence,
-        primaryTextRes: Int,
-        secondaryTextRes: Int,
-        iconRes: Int,
-        primaryIconRes: Int,
-        secondaryIconRes: Int,
-        customBody: View? = null,
-        onActionSelected: (Boolean) -> Unit
-    ): AlertDialog {
-        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_trip_action, null)
-        val dialog = AlertDialog.Builder(requireContext())
-            .setView(dialogView)
-            .create()
-
-        dialog.setCancelable(false)
-        dialog.setCanceledOnTouchOutside(false)
-
-        val iconView = dialogView.findViewById<ImageView>(R.id.dialogIcon)
-        val titleView = dialogView.findViewById<TextView>(R.id.dialogTitle)
-        val messageView = dialogView.findViewById<TextView>(R.id.dialogMessage)
-        val bodyContainer = dialogView.findViewById<FrameLayout>(R.id.dialogBodyContainer)
-        val primaryButton = dialogView.findViewById<MaterialButton>(R.id.btnPrimary)
-        val secondaryButton = dialogView.findViewById<MaterialButton>(R.id.btnSecondary)
-
-        iconView.setImageResource(iconRes)
-        titleView.setText(titleRes)
-        messageView.text = message
-        primaryButton.setText(primaryTextRes)
-        primaryButton.setIconResource(primaryIconRes)
-        secondaryButton.setText(secondaryTextRes)
-        secondaryButton.setIconResource(secondaryIconRes)
-
-        if (customBody != null) {
-            (customBody.parent as? ViewGroup)?.removeView(customBody)
-            bodyContainer.visibility = View.VISIBLE
-            bodyContainer.addView(customBody)
-        } else {
-            bodyContainer.visibility = View.GONE
-        }
-
-        val dialogEditTexts = mutableListOf<EditText>()
-        collectEditTexts(customBody, dialogEditTexts)
-        dialogEditTexts.forEach { editText ->
-            editText.setOnEditorActionListener { _, actionId, event ->
-                val isDoneAction = actionId == EditorInfo.IME_ACTION_DONE
-                val isEnterKey = event?.keyCode == KeyEvent.KEYCODE_ENTER &&
-                    event.action == KeyEvent.ACTION_UP
-                if (isDoneAction || isEnterKey) {
-                    primaryButton.performClick()
-                    true
-                } else {
-                    false
-                }
-            }
-        }
-
-        primaryButton.setOnClickListener {
-            dialog.dismiss()
-            onActionSelected(true)
-        }
-
-        secondaryButton.setOnClickListener {
-            dialog.dismiss()
-            onActionSelected(false)
-        }
-
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
-        dialogEditTexts.forEach(EditText::clearFocus)
-        primaryButton.requestFocus()
-        return dialog
-    }
-
-    private fun collectEditTexts(view: View?, sink: MutableList<EditText>) {
-        when (view) {
-            null -> return
-            is EditText -> sink.add(view)
-            is ViewGroup -> {
-                for (index in 0 until view.childCount) {
-                    collectEditTexts(view.getChildAt(index), sink)
-                }
-            }
         }
     }
 
@@ -1846,6 +1971,49 @@ class CurrentServiceFragment : Fragment() {
         )
 
         toggleFragmentButton.visibility = if (shouldShow) View.VISIBLE else View.GONE
+        updateSelfServiceCancelVisibility()
+    }
+
+    /**
+     * Windowed cancel action for self-service trips only (add-driver-self-service task 4.5,
+     * design D6). Piggybacks on the same triggers as [updateServicesFabVisibility] — including
+     * the per-second `FeesService` tick relayed through [observeCurrentFeeData] — so the button
+     * disappears on its own once `now - start_trip_at` exceeds `fees.selfServiceCancelWindow`,
+     * without a dedicated timer. Covers both a synced self-service [currentService] and a
+     * still-unsynced provisional trip (task 4.4/[renderUnsyncedSelfServiceActionUi]); normal
+     * assigned services never satisfy [Service.isSelfService] and never show the button.
+     */
+    private fun updateSelfServiceCancelVisibility() {
+        if (!::btnCancelSelfService.isInitialized) {
+            return
+        }
+
+        val service = currentService
+        val pendingTrip = if (service == null) mainViewModel.getPendingSelfServiceTrip() else null
+        val override = service?.let(currentServiceViewModel::serviceStageOverrideFor)
+            ?: CurrentServiceViewModel.ServiceStageOverride()
+
+        val isSelfService = service?.isSelfService() == true || pendingTrip != null
+        val isCancelable = when {
+            service != null ->
+                service.isInProgress() &&
+                    !override.treatAsEnded &&
+                    currentServiceViewModel.uiState.value == CurrentServiceViewModel.ServiceActionUiState.Idle
+            pendingTrip != null -> pendingTrip.terminal == null
+            else -> false
+        }
+        val startedAt = service?.metadata?.start_trip_at ?: pendingTrip?.startedAt
+
+        val withinWindow = CurrentServiceViewModel.shouldShowSelfServiceCancel(
+            isSelfService = isSelfService,
+            isCancelable = isCancelable,
+            startedAtEpochSeconds = startedAt,
+            nowEpochSeconds = Date().time / 1000,
+            cancelWindowSeconds = fees.selfServiceCancelWindow
+        )
+
+        btnCancelSelfService.isVisible = withinWindow
+        btnCancelSelfService.isEnabled = withinWindow && !cancelingSelfService
     }
 
     private fun getTotalFee(): Double {

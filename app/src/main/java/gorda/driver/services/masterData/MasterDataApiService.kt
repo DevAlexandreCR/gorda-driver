@@ -106,6 +106,61 @@ data class SetSelectedVehicleResponse(
     val selected: Boolean? = null
 )
 
+/**
+ * Body for POST /driver-app/me/services.
+ *
+ * Online mode only sets [location] and [trip_multiplier]. Deferred mode (a trip that started
+ * and/or finished offline) additionally sets [deferred] plus the app-reported [created_at]/
+ * [start_trip_at], the terminal [status] ("terminated" or "canceled"), and — when terminated —
+ * [end_trip_at]/[trip_fee]/[trip_distance]/[route]. Fields left null are omitted from the
+ * serialized JSON (default Gson does not serialize nulls), matching the online-mode payload
+ * shape expected by the API.
+ */
+data class CreateServiceRequest(
+    val location: ConnectLocation,
+    val trip_multiplier: Double,
+    val deferred: Boolean? = null,
+    val created_at: Long? = null,
+    val start_trip_at: Long? = null,
+    val end_trip_at: Long? = null,
+    val status: String? = null,
+    val trip_fee: Int? = null,
+    val trip_distance: Int? = null,
+    val route: String? = null
+)
+
+data class ServicePayload(
+    val service: Service
+)
+
+/** Typed rejection reasons for POST /driver-app/me/services (403/409/400 error bodies). */
+object SelfServiceRejectionReason {
+    const val DRIVER_NOT_CONNECTED = "driver_not_connected"
+    const val DRIVER_DISABLED = "driver_disabled"
+    const val NEGATIVE_BALANCE_PERCENTAGE = "negative_balance_percentage"
+    const val DRIVER_ALREADY_IN_SERVICE = "driver_already_in_service"
+    const val MALFORMED_DEFERRED_PAYLOAD = "malformed_deferred_payload"
+}
+
+/** Typed rejection reasons for POST /driver-app/me/services/{id}/cancel (403/404/409 error bodies). */
+object SelfServiceCancelRejectionReason {
+    const val SERVICE_NOT_FOUND = "service_not_found"
+    const val NOT_SELF_SERVICE = "not_self_service"
+    const val NOT_OWNER = "not_owner"
+    const val INVALID_STATUS = "invalid_status"
+    const val CANCEL_WINDOW_ELAPSED = "cancel_window_elapsed"
+}
+
+/**
+ * Shape of the terse (non-envelope) error bodies returned by the self-service create/cancel
+ * endpoints, e.g. {"error":"driver_already_in_service"} or
+ * {"error":"malformed_deferred_payload","reason":"<code>"}.
+ */
+data class SelfServiceErrorBody(
+    val error: String? = null,
+    val reason: String? = null
+)
+
 interface MasterDataApiService {
     @GET("public/master-data/ride-fees/snapshot")
     suspend fun getRideFeesSnapshot(): Response<ApiEnvelope<RideFeesPayload>>
@@ -165,4 +220,16 @@ interface MasterDataApiService {
         @Header("Authorization") authorization: String,
         @Body payload: SetSelectedVehicleRequest
     ): Response<ApiEnvelope<SetSelectedVehicleResponse>>
+
+    @POST("driver-app/me/services")
+    suspend fun createSelfService(
+        @Header("Authorization") authorization: String,
+        @Body payload: CreateServiceRequest
+    ): Response<ApiEnvelope<ServicePayload>>
+
+    @POST("driver-app/me/services/{id}/cancel")
+    suspend fun cancelSelfService(
+        @Header("Authorization") authorization: String,
+        @Path("id") serviceId: String
+    ): Response<ApiEnvelope<Map<String, Any?>>>
 }

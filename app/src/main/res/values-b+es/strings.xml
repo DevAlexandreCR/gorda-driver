@@ -167,6 +167,19 @@
     <string name="expand_collapse">Expandir o contraer detalles de tarifas</string>
     <string name="multiplier_minimum_value">Valor mínimo de multiplicador es 1</string>
     <string name="multiplier_updated">Multiplicador actualizado a %1$.1f</string>
+    <string name="self_service_entry_description">Iniciar viaje propio</string>
+    <string name="self_service_start_title">Viaje propio</string>
+    <string name="self_service_start_message">Sin cliente — este viaje se cuenta como propio. Modifica el multiplicador si es necesario:</string>
+    <string name="self_service_notification_label">tu viaje propio</string>
+    <string name="self_service_rejected_disabled">No se pudo iniciar tu viaje: tu cuenta está deshabilitada.</string>
+    <string name="self_service_rejected_negative_balance">No se pudo iniciar tu viaje: saldo insuficiente.</string>
+    <string name="self_service_rejected_already_in_service">No se pudo iniciar tu viaje: ya tienes un servicio en curso.</string>
+    <string name="self_service_rejected_malformed_deferred_payload">No se pudo sincronizar tu viaje: revisa la fecha y hora de tu dispositivo.</string>
+    <string name="self_service_cancel_action">Cancelar viaje</string>
+    <string name="self_service_cancel_title">¿Cancelar viaje propio?</string>
+    <string name="self_service_cancel_message">Este viaje se cancelará sin cobro. Esta acción no se puede deshacer.</string>
+    <string name="self_service_cancel_rejected_window_elapsed">No se pudo cancelar: el tiempo para cancelar ya pasó. Ahora solo puedes finalizar el viaje.</string>
+    <string name="self_service_cancel_rejected_generic">No se pudo cancelar este viaje. Intenta de nuevo o finalízalo normalmente.</string>
     <string name="distance_km">%1$.1f</string>
 
     <!-- History Fragment Strings -->

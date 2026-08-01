@@ -27,6 +27,18 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
+                <ImageButton
+                    android:id="@+id/notification_button"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="12dp"
+                    android:padding="12dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:scaleType="fitCenter"
+                    app:srcCompat="@drawable/notifications_active"
+                    app:tint="@android:color/white"
+                    android:contentDescription="@string/sound" />
+
                 <ImageView
                     android:id="@+id/offlineIndicator"
                     android:layout_width="20dp"

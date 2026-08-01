@@ -46,5 +46,23 @@
         app:layout_constraintTop_toBottomOf="@id/alerts_container">
 
     </androidx.recyclerview.widget.RecyclerView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/start_own_trip_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="20dp"
+        android:clickable="true"
+        android:contentDescription="@string/self_service_entry_description"
+        android:focusable="true"
+        android:src="@drawable/ic_baseline_directions_car_24"
+        android:visibility="gone"
+        app:fabSize="normal"
+        app:backgroundTint="@color/accent_container"
+        app:tint="@android:color/white"
+        app:elevation="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>
 

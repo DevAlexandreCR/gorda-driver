@@ -4,6 +4,7 @@ import gorda.driver.interfaces.LocInterface
 import gorda.driver.services.masterData.ApiEnvelope
 import gorda.driver.services.masterData.ConnectRequest
 import gorda.driver.services.masterData.ConnectResponse
+import gorda.driver.services.masterData.CreateServiceRequest
 import gorda.driver.services.masterData.DevicePayload
 import gorda.driver.services.masterData.DriverTokenPayload
 import gorda.driver.services.masterData.LocationRequest
@@ -290,5 +291,11 @@ private class FakeMasterDataApiService : MasterDataApiService {
 
     override suspend fun getVehicles(authorization: String) = error("not used in PresenceManagerTest")
     override suspend fun setSelectedVehicle(authorization: String, payload: SetSelectedVehicleRequest) =
+        error("not used in PresenceManagerTest")
+
+    override suspend fun createSelfService(authorization: String, payload: CreateServiceRequest) =
+        error("not used in PresenceManagerTest")
+
+    override suspend fun cancelSelfService(authorization: String, serviceId: String) =
         error("not used in PresenceManagerTest")
 }

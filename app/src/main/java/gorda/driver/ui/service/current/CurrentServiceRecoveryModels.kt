@@ -51,3 +51,43 @@ data class BottomSheetPresentationSnapshot(
     val serviceId: String,
     val isExpanded: Boolean
 ) : Serializable
+
+enum class SelfServiceTerminalStatus : Serializable {
+    TERMINATED,
+    CANCELED
+}
+
+/**
+ * Terminal data for a self-service trip that ended or was canceled before its creation synced
+ * (add-driver-self-service design D5, steps 2-3). Set on [SelfServiceProvisionalTrip.terminal] by
+ * `MainViewModel.endUnsyncedSelfServiceTrip`/`cancelUnsyncedSelfServiceTrip` the moment the driver
+ * acts locally; [SelfServiceTripManager.trySync] then sends a single deferred payload carrying
+ * both the creation and this terminal data instead of the online-mode create request. [endedAt],
+ * [route], [tripDistance], and [tripFee] are only meaningful for [SelfServiceTerminalStatus.TERMINATED]
+ * — a cancellation carries no terminal metrics, mirroring the API contract.
+ */
+data class SelfServiceTerminalData(
+    val status: SelfServiceTerminalStatus,
+    val endedAt: Long? = null,
+    val route: String? = null,
+    val tripDistance: Int? = null,
+    val tripFee: Int? = null
+) : Serializable
+
+/**
+ * A self-service trip started locally before the creation request synced with the API
+ * (add-driver-self-service design D5, step 1). [localId] is the client-generated id `FeesService`
+ * meters against until the real service id arrives; [gpsLat]/[gpsLng] are nullable because a GPS
+ * fix may not be available yet at confirm time (design D3) — the sync is deferred, not the trip
+ * start, until a fix shows up (see `MainViewModel.updateLocation`). [terminal] is non-null once the
+ * trip ended or was canceled locally before syncing (design D5, steps 2-3, task 4.4) — its presence
+ * is what makes [SelfServiceTripManager.trySync] send a deferred payload instead of an online create.
+ */
+data class SelfServiceProvisionalTrip(
+    val localId: String,
+    val startedAt: Long,
+    val multiplier: Double,
+    val gpsLat: Double? = null,
+    val gpsLng: Double? = null,
+    val terminal: SelfServiceTerminalData? = null
+) : Serializable

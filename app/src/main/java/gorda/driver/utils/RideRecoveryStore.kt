@@ -8,6 +8,7 @@ import gorda.driver.interfaces.RideFees
 import gorda.driver.ui.service.current.BottomSheetPresentationSnapshot
 import gorda.driver.ui.service.current.CurrentServiceUiSnapshot
 import gorda.driver.ui.service.current.PendingServiceActionSnapshot
+import gorda.driver.ui.service.current.SelfServiceProvisionalTrip
 
 object RideRecoveryStore {
 
@@ -179,12 +180,48 @@ object RideRecoveryStore {
         }
     }
 
+    fun getSelfServiceProvisionalTrip(preferences: SharedPreferences): SelfServiceProvisionalTrip? {
+        return getSnapshot(
+            preferences = preferences,
+            key = Constants.SELF_SERVICE_PROVISIONAL_TRIP,
+            clazz = SelfServiceProvisionalTrip::class.java
+        )
+    }
+
+    fun persistSelfServiceProvisionalTrip(preferences: SharedPreferences, trip: SelfServiceProvisionalTrip) {
+        persistSnapshot(preferences, Constants.SELF_SERVICE_PROVISIONAL_TRIP, trip)
+    }
+
+    fun clearSelfServiceProvisionalTrip(preferences: SharedPreferences) {
+        preferences.edit(commit = true) {
+            remove(Constants.SELF_SERVICE_PROVISIONAL_TRIP)
+        }
+    }
+
+    /**
+     * Re-keys the tracked recovery service id from the self-service trip's local id to the real
+     * id once the queued creation syncs (add-driver-self-service design D5, step 2), without
+     * disturbing the rest of the recovery record (start time, multiplier, points, distance) so
+     * the running `FeesService`/metering is not interrupted. No-op if the tracked id already
+     * moved on (e.g. the trip was cleared in the meantime).
+     */
+    fun rebindTrackedServiceId(preferences: SharedPreferences, fromLocalId: String, toRealId: String) {
+        if (getTrackedServiceId(preferences) != fromLocalId) {
+            return
+        }
+
+        preferences.edit(commit = true) {
+            putString(Constants.RIDE_RECOVERY_SERVICE_ID, toRealId)
+        }
+    }
+
     fun clear(preferences: SharedPreferences) {
         preferences.edit(commit = true) {
             clearRideSessionEntries(this)
             remove(Constants.CURRENT_SERVICE_UI_SNAPSHOT)
             remove(Constants.PENDING_SERVICE_ACTION_SNAPSHOT)
             remove(Constants.CURRENT_SERVICE_BOTTOM_SHEET_SNAPSHOT)
+            remove(Constants.SELF_SERVICE_PROVISIONAL_TRIP)
         }
     }
 

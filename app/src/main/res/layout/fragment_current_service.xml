@@ -737,6 +737,23 @@
                 app:cornerRadius="20dp" />
         </LinearLayout>
 
+        <!-- Windowed cancel action for self-service trips only (add-driver-self-service task 4.5) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_cancel_self_service"
+            style="@style/Widget.GordaDriver.Button.Danger"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginHorizontal="8dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/self_service_cancel_action"
+            android:textAllCaps="false"
+            android:textSize="15sp"
+            android:visibility="gone"
+            app:cornerRadius="16dp"
+            app:icon="@drawable/cancel_24"
+            app:iconGravity="textStart"
+            app:iconSize="18dp" />
+
         <!-- Status button fixed at bottom -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_service_status"
