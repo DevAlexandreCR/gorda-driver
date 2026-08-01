@@ -6,17 +6,22 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import gorda.driver.models.Service
 
-class ServicesEventListener(private val listener: (serviceList: MutableList<Service>) -> Unit) :
-    ValueEventListener {
+class ServicesEventListener(
+    private val driverIdProvider: () -> String?,
+    private val listener: (serviceList: MutableList<Service>) -> Unit
+) : ValueEventListener {
 
     override fun onDataChange(snapshot: DataSnapshot) {
         val list: MutableList<Service> = mutableListOf()
+        val driverId = driverIdProvider()
 
         if (snapshot.hasChildren()) {
             snapshot.children.forEach { dataSnapshot ->
                 dataSnapshot.getValue(Service::class.java)?.let { service ->
                     service.id = dataSnapshot.key.orEmpty()
-                    list.add(service)
+                    if (isVisibleToDriver(service, driverId)) {
+                        list.add(service)
+                    }
                 }
             }
         }
@@ -26,5 +31,12 @@ class ServicesEventListener(private val listener: (serviceList: MutableList<Serv
 
     override fun onCancelled(error: DatabaseError) {
         Log.e(this.javaClass.toString(), error.message)
+    }
+
+    companion object {
+        internal fun isVisibleToDriver(service: Service, driverId: String?): Boolean {
+            val directedTo = service.directed_to
+            return directedTo.isNullOrEmpty() || directedTo == driverId
+        }
     }
 }

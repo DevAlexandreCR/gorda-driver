@@ -336,7 +336,7 @@ class ApplyFragment : Fragment() {
             return
         }
 
-        service.validateForApply()
+        service.validateForApply(driver.id)
             .addOnSuccessListener { validatedService ->
                 if (!isActiveAttempt(attemptId)) {
                     return@addOnSuccessListener

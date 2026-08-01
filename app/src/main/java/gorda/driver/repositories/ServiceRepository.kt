@@ -147,7 +147,7 @@ object ServiceRepository {
             .removeValue()
     }
 
-    fun validateServiceForApply(serviceId: String): Task<Service> {
+    fun validateServiceForApply(serviceId: String, driverId: String): Task<Service> {
         val taskCompletionSource = TaskCompletionSource<Service>()
 
         Database.dbServices().child(serviceId).get()
@@ -170,6 +170,11 @@ object ServiceRepository {
 
                 if (service.status != Service.STATUS_PENDING) {
                     taskCompletionSource.setException(Exception("Service is no longer available"))
+                    return@addOnSuccessListener
+                }
+
+                if (isDirectedToAnotherDriver(service, driverId)) {
+                    taskCompletionSource.setException(Exception("Service is directed to another driver"))
                     return@addOnSuccessListener
                 }
 
@@ -308,6 +313,10 @@ object ServiceRepository {
 
     fun getStatusReference(serviceId: String): DatabaseReference {
         return Database.dbServices().child(serviceId).child(Service.STATUS)
+    }
+
+    internal fun isDirectedToAnotherDriver(service: Service, driverId: String): Boolean {
+        return !service.directed_to.isNullOrEmpty() && service.directed_to != driverId
     }
 
     internal fun validateStartTransition(

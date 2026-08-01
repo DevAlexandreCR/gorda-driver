@@ -71,7 +71,9 @@ class LocationService : Service(), TextToSpeech.OnInitListener {
     private val announcedPendingServiceKeys = linkedSetOf<String>()
     private var hasSeededPendingServices = false
     private val timer = Timer()
-    private val listener: ServicesEventListener = ServicesEventListener { services ->
+    private val listener: ServicesEventListener = ServicesEventListener(
+        driverIdProvider = { driverID }
+    ) { services ->
         listServices = services
         syncPendingServiceAlerts(services)
     }

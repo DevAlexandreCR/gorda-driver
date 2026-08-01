@@ -25,7 +25,8 @@ data class Service(
     @SerializedName("wp_client_id") var wp_client_id: String? = null,
     @SerializedName("created_at") var created_at: Long = 0,
     @SerializedName("metadata") var metadata: ServiceMetadata = ServiceMetadata(),
-    @SerializedName("client_completed_services_count") var client_completed_services_count: Int? = null
+    @SerializedName("client_completed_services_count") var client_completed_services_count: Int? = null,
+    @SerializedName("directed_to") var directed_to: String? = null
 ) : Serializable {
     companion object {
         const val CREATED_AT = "created_at"
@@ -38,6 +39,7 @@ data class Service(
         const val APPLICANTS = "applicants"
         const val DRIVER_ID = "driver_id"
         const val ID = "id"
+        const val DIRECTED_TO = "directed_to"
     }
 
     fun updateMetadata(): Task<Void> {
@@ -58,8 +60,8 @@ data class Service(
         return ServiceRepository.addApplicant(this.id, driver.id, distance, time, connection)
     }
 
-    fun validateForApply(): Task<Service> {
-        return ServiceRepository.validateServiceForApply(this.id)
+    fun validateForApply(driverId: String): Task<Service> {
+        return ServiceRepository.validateServiceForApply(this.id, driverId)
     }
 
     fun cancelApplicant(driver: Driver): Task<Void> {

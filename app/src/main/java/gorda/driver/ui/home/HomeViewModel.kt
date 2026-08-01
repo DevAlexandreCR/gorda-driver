@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import gorda.driver.R
 import gorda.driver.repositories.ServiceRepository
+import gorda.driver.services.firebase.Auth
 import gorda.driver.ui.service.ServicesEventListener
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 
@@ -13,7 +14,9 @@ class HomeViewModel : ViewModel() {
     private val _text = MutableLiveData<Int>().apply {
         value = R.string.services_list
     }
-    private val listener: ServicesEventListener = ServicesEventListener { services ->
+    private val listener: ServicesEventListener = ServicesEventListener(
+        driverIdProvider = { Auth.getCurrentUserUUID() }
+    ) { services ->
         this._serviceList.postValue(ServiceUpdates.setList(services))
     }
     private val pendingFeedSubscriptionController = PendingFeedSubscriptionController {
