@@ -38,6 +38,8 @@ class ApplyViewModel : ViewModel() {
 
         data class AppliedWaitingAssignment(val serviceName: String) : ApplyUiState()
 
+        object AssignedPreparingService : ApplyUiState()
+
         data class Failed(
             @StringRes val messageRes: Int,
             val canRetry: Boolean
@@ -137,6 +139,11 @@ class ApplyViewModel : ViewModel() {
         applicantWriteConfirmed = true
         applicantWriteInFlight = false
         _uiState.value = ApplyUiState.AppliedWaitingAssignment(serviceName)
+    }
+
+    fun showAssignedPreparingService() {
+        applicantWriteInFlight = false
+        _uiState.value = ApplyUiState.AssignedPreparingService
     }
 
     fun showFailed(@StringRes messageRes: Int, canRetry: Boolean) {

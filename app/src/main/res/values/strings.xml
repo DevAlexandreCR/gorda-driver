@@ -59,6 +59,7 @@
     <string name="applying">Applying …</string>
     <string name="applied">You have been applied successfully to service</string>
     <string name="wait_for_assign">Applied success to &lt;b> %s &lt;/b>, please wait…</string>
+    <string name="service_assigned_preparing">Service assigned! Preparing your service…</string>
     <string name="cancelApply">The Request has been cancelled</string>
     <string name="back_to_services">Back to services</string>
     <string name="retry_application">Retry application</string>

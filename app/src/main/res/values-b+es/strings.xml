@@ -52,6 +52,7 @@
     <string name="applying">Aplicando …</string>
     <string name="applied">Usted ha sido aplicado con éxito al servicio</string>
     <string name="wait_for_assign">Has aplicado al servicio &lt;b> %s &lt;/b>, por favor espera…</string>
+    <string name="service_assigned_preparing">¡Servicio asignado! Preparando tu servicio…</string>
     <string name="cancelApply">La solicitud ha sido cancelada</string>
     <string name="back_to_services">Volver a servicios</string>
     <string name="retry_application">Reintentar</string>

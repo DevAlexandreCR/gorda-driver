@@ -44,6 +44,7 @@ class ApplyFragment : Fragment() {
         private const val SERVICE_VALIDATION_TIMEOUT_MS = 8_000L
         private const val APPLICANT_WRITE_TIMEOUT_MS = 8_000L
         private const val CANCEL_TIMEOUT_MS = 8_000L
+        private const val ASSIGNMENT_POINTER_TIMEOUT_MS = 8_000L
         private const val LOCATION_RECOVERY_TIMEOUT_MS = 6_000L
         private const val RETRY_RECONNECT_WAIT_MS = 4_000L
     }
@@ -64,6 +65,7 @@ class ApplyFragment : Fragment() {
     private var applicantWriteAttemptId: Long? = null
     private var shouldAutoResumeApplyOnLocation = false
     private var locationRecoveryJob: Job? = null
+    private var assignedPreparingTimeoutJob: Job? = null
     private val writeAttemptsToCancelOnSuccess = mutableSetOf<Long>()
     private var pendingRetryAfterReconnect = false
     private val retryRevertHandler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -144,6 +146,7 @@ class ApplyFragment : Fragment() {
     override fun onDestroyView() {
         retryRevertHandler.removeCallbacks(retryRevertRunnable)
         locationRecoveryJob?.cancel()
+        assignedPreparingTimeoutJob?.cancel()
         destinationChangedListener?.let { listener ->
             navController?.removeOnDestinationChangedListener(listener)
         }
@@ -215,8 +218,23 @@ class ApplyFragment : Fragment() {
                     navigateHomeIfCurrent()
                 }
                 Service.STATUS_IN_PROGRESS -> {
-                    navigateHomeIfCurrent()
+                    applyViewModel.showAssignedPreparingService()
+                    startAssignedPreparingTimeout()
                 }
+            }
+        }
+    }
+
+    private fun startAssignedPreparingTimeout() {
+        assignedPreparingTimeoutJob?.cancel()
+        assignedPreparingTimeoutJob = viewLifecycleOwner.lifecycleScope.launch {
+            delay(ASSIGNMENT_POINTER_TIMEOUT_MS)
+            if (!isAdded) {
+                return@launch
+            }
+
+            if (applyViewModel.uiState.value is ApplyViewModel.ApplyUiState.AssignedPreparingService) {
+                navigateHomeIfCurrent()
             }
         }
     }
@@ -225,6 +243,9 @@ class ApplyFragment : Fragment() {
         destinationChangedListener = NavController.OnDestinationChangedListener { _, destination, _ ->
             if (destination.id != R.id.nav_apply) {
                 when {
+                    applyViewModel.uiState.value is ApplyViewModel.ApplyUiState.AssignedPreparingService -> {
+                        // MainActivity is navigating to the assigned service; do not cancel.
+                    }
                     applyViewModel.hasApplicantWriteConfirmed() -> {
                         cancelApplyInBackground()
                     }
@@ -239,6 +260,10 @@ class ApplyFragment : Fragment() {
     }
 
     private fun handlePrimaryAction() {
+        if (applyViewModel.uiState.value is ApplyViewModel.ApplyUiState.AssignedPreparingService) {
+            return
+        }
+
         if (applyViewModel.hasApplicantWriteConfirmed()) {
             startCancelFlow(navigateOnSuccess = true)
         } else {
@@ -247,6 +272,10 @@ class ApplyFragment : Fragment() {
     }
 
     private fun handleBackPress() {
+        if (applyViewModel.uiState.value is ApplyViewModel.ApplyUiState.AssignedPreparingService) {
+            return
+        }
+
         if (applyViewModel.hasApplicantWriteConfirmed()) {
             startCancelFlow(navigateOnSuccess = true)
         } else {
@@ -577,11 +606,19 @@ class ApplyFragment : Fragment() {
 
             is ApplyViewModel.ApplyUiState.AppliedWaitingAssignment -> {
                 cancelLocationRecovery()
-                currentBinding.progressBar.isGone = true
+                currentBinding.progressBar.isVisible = true
                 currentBinding.textView.text = waitForAssignMessage(state.serviceName)
                 currentBinding.btnCancel.text = getString(R.string.cancel_application)
                 currentBinding.btnCancel.isEnabled = true
                 currentBinding.btnRetry.isGone = true
+            }
+
+            ApplyViewModel.ApplyUiState.AssignedPreparingService -> {
+                cancelLocationRecovery()
+                currentBinding.progressBar.isVisible = true
+                currentBinding.textView.text = getString(R.string.service_assigned_preparing)
+                currentBinding.btnRetry.isGone = true
+                currentBinding.btnCancel.isGone = true
             }
 
             is ApplyViewModel.ApplyUiState.Failed -> {

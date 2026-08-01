@@ -46,6 +46,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.NavController
+import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
@@ -344,7 +345,13 @@ class MainActivity : AppCompatActivity() {
             } else if (currentService != null) {
                 this.switchConnect.visibility = View.GONE
                 if (!RideRecoveryPolicy.shouldClearRecoveryForObservedService(currentService.status)) {
-                    if (navController.currentDestination?.id != R.id.nav_current_service) {
+                    if (navController.currentDestination?.id == R.id.nav_apply) {
+                        navController.navigate(
+                            R.id.nav_current_service,
+                            null,
+                            NavOptions.Builder().setPopUpTo(R.id.nav_apply, true).build()
+                        )
+                    } else if (navController.currentDestination?.id != R.id.nav_current_service) {
                         navController.navigate(R.id.nav_current_service)
                     }
                 } else {

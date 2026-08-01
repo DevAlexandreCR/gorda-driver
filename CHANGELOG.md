@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Show a loading state ("Servicio asignado, preparando…") on the apply screen while the assigned service syncs, instead of navigating to a blank Home screen on slow connections; falls back to Home automatically after 8 seconds if the sync stalls.
 - Style Material alert dialogs with the app palette (elevated surface, 24dp corners, accent buttons without forced uppercase) instead of the default gray Material look; affects the logout-error and force-disconnect dialogs.
 - Move the notifications-mute button from a floating corner button into the app bar, next to the "Connected" switch. It previously overlaid the bottom-right corner of every NavHost-hosted screen (Home, Apply, Map, History, Profile), which on Home blocked the "start own trip" button; that button is now unobstructed.
 
