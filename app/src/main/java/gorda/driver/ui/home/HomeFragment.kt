@@ -1,5 +1,6 @@
 package gorda.driver.ui.home
 
+import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -38,7 +39,9 @@ import gorda.driver.ui.service.ServiceAdapter
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 import gorda.driver.utils.Constants
+import gorda.driver.utils.StringHelper
 import gorda.driver.utils.Utils
+import gorda.driver.utils.showTripActionDialog
 import kotlinx.coroutines.launch
 
 class HomeFragment : Fragment() {
@@ -53,6 +56,7 @@ class HomeFragment : Fragment() {
     private var alertsHandler: Handler? = null
     private var alertsRunnable: Runnable? = null
     private var wasOnline: Boolean = false
+    private var applyConfirmDialog: AlertDialog? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -71,10 +75,7 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.nav_map)
         }
         val apply: (service: Service, location: LocType) -> Unit = { service, location ->
-            mainViewModel.setServiceUpdateApply(service)
-            mainViewModel.setServiceUpdateStartLocation(location)
-            val bundle = bundleOf("service" to service)
-            findNavController().navigate(R.id.nav_apply, bundle)
+            showApplyConfirmation(service, location)
         }
         val serviceAdapter = ServiceAdapter(requireContext(), showMapFromService, apply)
         this.recyclerView.adapter = serviceAdapter
@@ -248,9 +249,52 @@ class HomeFragment : Fragment() {
         preferences.edit(true) { putString(Constants.ALERT_ACTION, newArray.toString()) }
     }
 
+    private fun navigateToApply(service: Service, location: LocType) {
+        mainViewModel.setServiceUpdateApply(service)
+        mainViewModel.setServiceUpdateStartLocation(location)
+        val bundle = bundleOf("service" to service)
+        findNavController().navigate(R.id.nav_apply, bundle)
+    }
+
+    private fun showApplyConfirmation(service: Service, location: LocType) {
+        if (applyConfirmDialog?.isShowing == true) {
+            return
+        }
+        val lines = mutableListOf(
+            getString(R.string.apply_confirm_message),
+            getString(R.string.apply_confirm_from, service.start_loc.name)
+        )
+        service.end_loc?.name?.takeIf { it.isNotBlank() }?.let { destinationName ->
+            lines.add(getString(R.string.apply_confirm_to, destinationName))
+        }
+        val message = StringHelper.getString(lines.joinToString("<br>"))
+        applyConfirmDialog = showTripActionDialog(
+            requireContext(),
+            titleRes = R.string.apply_confirm_title,
+            message = message,
+            primaryTextRes = R.string.apply_confirm_continue,
+            secondaryTextRes = R.string.cancel,
+            iconRes = R.drawable.ic_location_24,
+            primaryIconRes = R.drawable.assign_24,
+            secondaryIconRes = R.drawable.cancel_24
+        ) { confirmed ->
+            if (confirmed && isAdded && view != null) {
+                navigateToApply(service, location)
+            }
+        }.apply {
+            setOnDismissListener {
+                if (applyConfirmDialog === this) {
+                    applyConfirmDialog = null
+                }
+            }
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         alertsHandler?.removeCallbacks(alertsRunnable!!)
+        applyConfirmDialog?.dismiss()
+        applyConfirmDialog = null
         _binding = null
     }
 }

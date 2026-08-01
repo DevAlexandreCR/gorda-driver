@@ -16,6 +16,11 @@
     <string name="apply_retry_offline">Retry</string>
     <string name="apply_retry_offline_hint">No internet — tap to retry</string>
     <string name="apply_checking_connection">Checking connection…</string>
+    <string name="apply_confirm_title">Apply to this service?</string>
+    <string name="apply_confirm_message">You are applying to the service</string>
+    <string name="apply_confirm_from">&lt;b>From:&lt;/b> %s</string>
+    <string name="apply_confirm_to">&lt;b>To:&lt;/b> %s</string>
+    <string name="apply_confirm_continue">Continue</string>
     <string name="title_activity_main" translatable="false">MainActivity</string>
     <string name="navigation_drawer_open" translatable="false">Open navigation drawer</string>
     <string name="navigation_drawer_close" translatable="false">Close navigation drawer</string>

@@ -33,9 +33,16 @@
     </style>
 
     <style name="ThemeOverlay.GordaDriver.MaterialAlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
-        <item name="backgroundTint">@color/surface</item>
-        <item name="colorSurface">@color/surface</item>
+        <item name="backgroundTint">@color/surface_elevated</item>
+        <item name="colorSurface">@color/surface_elevated</item>
         <item name="colorOnSurface">@color/on_surface</item>
+        <item name="android:textColorPrimary">@color/on_surface</item>
+        <item name="android:textColorSecondary">@color/on_surface_variant</item>
+        <item name="elevationOverlayEnabled">false</item>
+        <item name="android:dialogCornerRadius">24dp</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.GordaDriver.TextButton.Accent</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.GordaDriver.TextButton.Danger</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.GordaDriver.TextButton.Accent</item>
     </style>
 
     <style name="Widget.App.Snackbar" parent="Widget.MaterialComponents.Snackbar">

@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Send a location heartbeat every 30 seconds while connected so dispatch sees live positions on the map.
 - Automatically reconnect if presence was evicted (HTTP 410); stop with a rejected connection state if another session took over (HTTP 409).
 - Hide services directed to another driver from the pending feed (home list and voice/sound alerts) and reject applying to a service directed to someone else; `Service` gained a `directed_to` field.
+- Show a confirmation dialog with the pickup and destination when the driver taps "Apply" on a pending service, only navigating to the apply screen once the driver confirms.
+
+### Fixed
+
+- Style Material alert dialogs with the app palette (elevated surface, 24dp corners, accent buttons without forced uppercase) instead of the default gray Material look; affects the logout-error and force-disconnect dialogs.
 
 ## [2.0.12(2026-06-12)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.12...2.0.11)
 

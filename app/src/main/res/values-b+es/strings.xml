@@ -16,6 +16,11 @@
     <string name="apply_retry_offline">Reintentar</string>
     <string name="apply_retry_offline_hint">Sin conexión — toca para reintentar</string>
     <string name="apply_checking_connection">Verificando conexión…</string>
+    <string name="apply_confirm_title">¿Aplicar al servicio?</string>
+    <string name="apply_confirm_message">Estás aplicando al servicio</string>
+    <string name="apply_confirm_from">&lt;b>Desde:&lt;/b> %s</string>
+    <string name="apply_confirm_to">&lt;b>Hacia:&lt;/b> %s</string>
+    <string name="apply_confirm_continue">Continuar</string>
     <string name="services_list">Servicios</string>
     <string name="apply">Postularse</string>
     <string name="menu_home">Servicios</string>
