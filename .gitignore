@@ -14,3 +14,4 @@ app/release/
 gradle/wrapper/*.jar
 /app/redblanca/release/
 docs
+.claude/
