@@ -33,6 +33,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -194,6 +195,16 @@ class MainActivity : AppCompatActivity() {
                     controller.navigate(R.id.nav_current_service)
                 }
             }
+        }
+
+        val onHomeBackPressedCallback = object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() = Unit
+        }
+        onBackPressedDispatcher.addCallback(this, onHomeBackPressedCallback)
+        onHomeBackPressedCallback.isEnabled =
+            navController.currentDestination?.id == R.id.nav_home || navController.currentDestination == null
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            onHomeBackPressedCallback.isEnabled = destination.id == R.id.nav_home
         }
 
         this.switchConnect = binding.appBarMain.toolbar.findViewById(R.id.switchConnect)
@@ -867,13 +878,6 @@ class MainActivity : AppCompatActivity() {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        if (navController.currentDestination != null && navController.currentDestination?.id != R.id.nav_home) {
-            super.onBackPressed()
-        }
     }
 
     override fun onDestroy() {

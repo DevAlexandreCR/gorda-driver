@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Target Android 16 (API level 36) to meet Google Play's target API requirement. On Home, back is now handled through the `OnBackPressedCallback` API instead of the deprecated `Activity.onBackPressed()` override, so predictive back still keeps the driver from leaving the app from the Home screen.
+
 ## [2.0.15(2026-10-06)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.15...2.0.14)
 
 ### Fixed
