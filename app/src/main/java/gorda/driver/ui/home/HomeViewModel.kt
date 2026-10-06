@@ -32,17 +32,42 @@ class HomeViewModel : ViewModel() {
 
     companion object {
         /**
-         * Entry point (add-driver-self-service D4): visible only while the driver session
-         * is connected and eligible per `DriverAvailability.canGoOnline`. The API remains
+         * Entry point (add-driver-self-service D4; fix-driver-fee-service-zombie-ticker D6):
+         * visible only while the driver session is connected, eligible per
+         * `DriverAvailability.canGoOnline`, and has no active trip. The API remains
          * the authoritative eligibility check on creation (task 4.3+).
          */
-        fun isSelfServiceEntryVisible(connected: Boolean, canGoOnline: Boolean): Boolean {
-            return connected && canGoOnline
+        fun isSelfServiceEntryVisible(
+            connected: Boolean,
+            canGoOnline: Boolean,
+            hasActiveTrip: Boolean
+        ): Boolean {
+            return connected && canGoOnline && !hasActiveTrip
+        }
+
+        /**
+         * Start-admission gate (design D6): a self-service trip cannot start while the driver
+         * has an active trip (an assigned/in-progress service, or an unsynced self-service trip).
+         */
+        fun resolveSelfServiceStart(
+            hasCurrentService: Boolean,
+            hasPendingSelfServiceTrip: Boolean
+        ): SelfServiceStartResolution {
+            return if (hasCurrentService || hasPendingSelfServiceTrip) {
+                SelfServiceStartResolution.BLOCK_ACTIVE_TRIP
+            } else {
+                SelfServiceStartResolution.ALLOW
+            }
         }
     }
 
-    fun updateSelfServiceEligibility(connected: Boolean, canGoOnline: Boolean) {
-        _selfServiceEntryVisible.value = isSelfServiceEntryVisible(connected, canGoOnline)
+    enum class SelfServiceStartResolution {
+        ALLOW,
+        BLOCK_ACTIVE_TRIP
+    }
+
+    fun updateSelfServiceEligibility(connected: Boolean, canGoOnline: Boolean, hasActiveTrip: Boolean) {
+        _selfServiceEntryVisible.value = isSelfServiceEntryVisible(connected, canGoOnline, hasActiveTrip)
     }
 
     fun startListenServices() {

@@ -5,9 +5,15 @@ import gorda.driver.repositories.ServiceObservationResult
 
 internal object ServiceObservationReducer {
 
+    internal enum class TerminalFeedback {
+        NONE,
+        CANCELED,
+        FINISHED
+    }
+
     data class CurrentServiceResolution(
         val currentService: Service?,
-        val shouldEmitCanceledFeedback: Boolean,
+        val terminalFeedback: TerminalFeedback,
         val terminalServiceId: String?
     )
 
@@ -19,21 +25,28 @@ internal object ServiceObservationReducer {
             is ServiceObservationResult.Active -> {
                 CurrentServiceResolution(
                     currentService = result.service,
-                    shouldEmitCanceledFeedback = false,
+                    terminalFeedback = TerminalFeedback.NONE,
                     terminalServiceId = null
                 )
             }
             is ServiceObservationResult.Terminal -> {
+                val feedback = if (lastTerminalServiceId == result.service.id) {
+                    TerminalFeedback.NONE
+                } else when (result.service.status) {
+                    Service.STATUS_CANCELED -> TerminalFeedback.CANCELED
+                    Service.STATUS_TERMINATED -> TerminalFeedback.FINISHED
+                    else -> TerminalFeedback.NONE
+                }
                 CurrentServiceResolution(
                     currentService = null,
-                    shouldEmitCanceledFeedback = lastTerminalServiceId != result.service.id,
+                    terminalFeedback = feedback,
                     terminalServiceId = result.service.id
                 )
             }
             ServiceObservationResult.Missing -> {
                 CurrentServiceResolution(
                     currentService = null,
-                    shouldEmitCanceledFeedback = false,
+                    terminalFeedback = TerminalFeedback.NONE,
                     terminalServiceId = lastTerminalServiceId
                 )
             }

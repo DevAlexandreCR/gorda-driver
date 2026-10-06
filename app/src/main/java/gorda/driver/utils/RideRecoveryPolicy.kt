@@ -47,6 +47,32 @@ object RideRecoveryPolicy {
         return !storedServiceId.isNullOrBlank() && storedServiceId != currentServiceId
     }
 
+    enum class OngoingTripMeterAction {
+        NONE,
+        OFFER_RECOVERY,
+        START_FROM_SERVER_START
+    }
+
+    fun resolveOngoingTripMeter(
+        hasStartedTrip: Boolean,
+        isServiceRunning: Boolean,
+        isStartingFreshTransition: Boolean,
+        hasPendingStartAction: Boolean,
+        storedServiceId: String?,
+        currentServiceId: String,
+        hasRecoverableSession: Boolean
+    ): OngoingTripMeterAction {
+        if (!hasStartedTrip || isServiceRunning || isStartingFreshTransition || hasPendingStartAction) {
+            return OngoingTripMeterAction.NONE
+        }
+
+        return if (storedServiceId == currentServiceId && hasRecoverableSession) {
+            OngoingTripMeterAction.OFFER_RECOVERY
+        } else {
+            OngoingTripMeterAction.START_FROM_SERVER_START
+        }
+    }
+
     fun shouldClearRecoveryForObservedService(status: String?): Boolean {
         return status != null && status != Service.STATUS_IN_PROGRESS
     }

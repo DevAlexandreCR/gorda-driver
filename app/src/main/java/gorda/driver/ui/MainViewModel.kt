@@ -44,6 +44,7 @@ import gorda.driver.ui.service.current.SelfServiceProvisionalTrip
 import gorda.driver.ui.service.dataclasses.LocationUpdates
 import gorda.driver.ui.service.dataclasses.ServiceUpdates
 import gorda.driver.utils.Constants
+import gorda.driver.utils.MeterSessionPolicy
 import gorda.driver.utils.RideRecoveryStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -99,7 +100,8 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         val timeFee: Double,
         val distanceFee: Double,
         val totalDistance: Double,
-        val elapsedSeconds: Long
+        val elapsedSeconds: Long,
+        val sessionToken: Long
     )
 
     /** Outcome of [cancelSelfServiceTrip] (add-driver-self-service design D6, task 4.5). */
@@ -141,6 +143,12 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private var observedDriverId: String? = null
     private var latestLocation: Location? = null
     private var lastTerminalCurrentServiceId: String? = null
+
+    /** The `FeesService` session the trip screen is currently bound to (design D2). Read/written
+     * from the main looper (fragment lifecycle callbacks, ticker-driven [updateFeeData] calls);
+     * `@Volatile` guards against any off-main caller observing a stale value. */
+    @Volatile
+    private var boundMeterSessionToken: Long? = null
 
     private val presenceManager = PresenceManager()
     private val selfServiceTripManager = SelfServiceTripManager()
@@ -462,8 +470,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             lastTerminalServiceId = lastTerminalCurrentServiceId
         )
         lastTerminalCurrentServiceId = resolution.terminalServiceId
-        if (resolution.shouldEmitCanceledFeedback) {
-            emitErrorMessage(R.string.service_canceled)
+        when (resolution.terminalFeedback) {
+            ServiceObservationReducer.TerminalFeedback.CANCELED -> emitErrorMessage(R.string.service_canceled)
+            ServiceObservationReducer.TerminalFeedback.FINISHED -> emitErrorMessage(R.string.service_finished)
+            ServiceObservationReducer.TerminalFeedback.NONE -> Unit
         }
         _currentService.postValue(resolution.currentService)
     }
@@ -489,18 +499,20 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val status = snapshot.getValue(String::class.java)
                     status?.let {
-                        _serviceUpdates.postValue(ServiceUpdates.Status(status))
+                        _serviceUpdates.postValue(ServiceUpdates.status(service.id, status))
                         when (status) {
-                            Service.STATUS_CANCELED,
+                            Service.STATUS_CANCELED -> {
+                                service.getStatusReference().removeEventListener(this)
+                            }
                             Service.STATUS_IN_PROGRESS -> {
-                                snapshot.key?.let { key ->
-                                    _isLoading.postValue(true)
-                                    ServiceRepository.validateAssignment(key).addOnCompleteListener {
-                                        _isLoading.postValue(false)
-                                    }.withTimeout {
-                                        _isLoading.postValue(false)
-                                        setErrorTimeout(true)
-                                    }
+                                _isLoading.postValue(true)
+                                ServiceRepository.validateAssignment(service.id).addOnSuccessListener { assignedToMe ->
+                                    _serviceUpdates.postValue(ServiceUpdates.assignment(service.id, assignedToMe))
+                                }.addOnCompleteListener {
+                                    _isLoading.postValue(false)
+                                }.withTimeout {
+                                    _isLoading.postValue(false)
+                                    setErrorTimeout(true)
                                 }
                                 service.getStatusReference().removeEventListener(this)
                             }
@@ -670,14 +682,28 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         return DriverRepository.updateDevice(driverID, device)
     }
 
+    /** Binds the trip screen to a `FeesService` session (design D2); set in `onServiceConnected`. */
+    fun bindMeterSession(token: Long) {
+        boundMeterSessionToken = token
+    }
+
+    /** Unbinds the trip screen from any session; set in `onServiceDisconnected`/`stopFeeService`. */
+    fun unbindMeterSession() {
+        boundMeterSessionToken = null
+    }
+
     fun updateFeeData(
         totalFee: Double,
         timeFee: Double,
         distanceFee: Double,
         totalDistance: Double,
-        elapsedSeconds: Long
+        elapsedSeconds: Long,
+        sessionToken: Long
     ) {
-        val feeData = FeeData(totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds)
+        if (!MeterSessionPolicy.shouldAcceptFeeUpdate(boundMeterSessionToken, sessionToken)) {
+            return
+        }
+        val feeData = FeeData(totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds, sessionToken)
         _currentFeeData.postValue(feeData)
     }
 

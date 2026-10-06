@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.15(2026-10-06)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.15...2.0.14)
+
+### Fixed
+
+- Stop the in-trip price card from flickering between the live meter and a stale reading from a previous trip, caused by a leaked metering ticker that kept publishing into the shared fee stream; the metering service now enforces a single ticker per instance, gates fee updates by the session that produced them, and stops any running meter before starting a new one.
+- Restore the tracked trip's elapsed time and fares when the metering service is restarted by the system after a process death, instead of running a stateless meter with zero fares and the wrong elapsed time; the service now resumes the tracked trip from local recovery storage, or stops itself when there is nothing to restore.
+- Block starting a self-service trip from Home while another trip is active (assigned, in progress, or not yet synced); it previously stopped the live trip's meter and left it frozen after the API rejected the self trip. The driver now sees a message to end the current trip first, with a shortcut to the current trip screen.
+- Start metering a trip that was started from the admin panel, or whose local meter data was lost, from the server's trip start time, instead of showing "Trip running…" with no meter; the service now meters elapsed time from the server, distance from zero, and live fares or the saved pricing snapshot, tells the driver that earlier distance could not be recovered, and never starts the meter with zero fares.
+- Stop telling the driver a finished trip "has been canceled"; a trip ending with status `terminated` now shows a distinct "Service finished" toast, while a genuinely canceled trip still shows "Service has been canceled". Both messages still navigate home from the current-service screen and clear the local ride-recovery state.
+- Stop showing the applicant screen's "Service assigned! Preparing your service…" view (and then silently going home after 8s) when a service the driver applied to was actually assigned to another driver. The apply screen now shows a "Checking assignment…" state while the assignment is verified, then either proceeds to the preparing-service view when assigned to this driver, or shows "The service was assigned to another driver" and returns home immediately otherwise. Also fixed `ServiceRepository.validateAssignment` comparing driver IDs by reference instead of value, and it now resolves to "not assigned" instead of hanging when there is no signed-in user.
+
 ## [2.0.14(2026-08-01)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.14...2.0.13)
 
 ### Added

@@ -7,7 +7,6 @@ import android.content.Context.BIND_NOT_FOREGROUND
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.SystemClock
@@ -129,6 +128,7 @@ class CurrentServiceFragment : Fragment() {
     private var isExpanded = false
     private var ongoingTripRecoveryDialog: AlertDialog? = null
     private var ongoingTripRecoveryServiceId: String? = null
+    private var ongoingTripMeterPricingDialog: AlertDialog? = null
     private var feesService: FeesService = FeesService()
     private var fees: RideFees = RideFees()
     private var totalRide: Double = 0.0
@@ -143,6 +143,7 @@ class CurrentServiceFragment : Fragment() {
     private var shouldReconcileRestoredAction = true
     private var deferredInitialNullRecoveryClear = false
     private var cancelingSelfService = false
+    private var isResolvingOngoingTripMeterFromServerStart = false
     private lateinit var haveArrived: String
     private lateinit var startTrip: String
     private lateinit var endTrip: String
@@ -175,15 +176,17 @@ class CurrentServiceFragment : Fragment() {
             startingRide = false
             val binder = service as FeesService.ChronometerBinder
             feesService = binder.getService()
+            mainViewModel.bindMeterSession(binder.getSessionToken())
             mainViewModel.changeConnectTripService(true)
             chronometer.base = feesService.getBaseTime()
-            feesService.setFeeUpdateCallback { totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds ->
-                mainViewModel.updateFeeData(totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds)
+            feesService.setFeeUpdateCallback { totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds, sessionToken ->
+                mainViewModel.updateFeeData(totalFee, timeFee, distanceFee, totalDistance, elapsedSeconds, sessionToken)
             }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             isServiceBound = false
+            mainViewModel.unbindMeterSession()
             mainViewModel.changeConnectTripService(false)
             chronometer.base = SystemClock.elapsedRealtime()
             chronometer.stop()
@@ -236,6 +239,8 @@ class CurrentServiceFragment : Fragment() {
 
     override fun onDestroyView() {
         clearOngoingTripRecoveryDialog(dismiss = true)
+        clearOngoingTripMeterPricingDialog(dismiss = true)
+        isResolvingOngoingTripMeterFromServerStart = false
         if (::bottomSheetBehavior.isInitialized) {
             bottomSheetBehavior.removeBottomSheetCallback(bottomSheetCallback)
         }
@@ -604,8 +609,10 @@ class CurrentServiceFragment : Fragment() {
             override.treatAsStarted || service.metadata.start_trip_at != null -> {
                 btnStatus.text = endTrip
                 if (service.metadata.start_trip_at != null) {
+                    val hadPendingStartAction = currentServiceViewModel.getPendingActionSnapshot()?.actionType ==
+                        PendingServiceActionType.START
                     currentServiceViewModel.onTripStartedObserved()
-                    maybeRestoreOngoingTrip(service)
+                    maybeRestoreOngoingTrip(service, hadPendingStartAction)
                 }
                 scrollViewFees.visibility = View.VISIBLE
             }
@@ -620,7 +627,7 @@ class CurrentServiceFragment : Fragment() {
         updateFeesScrollBottomPadding()
     }
 
-    private fun maybeRestoreOngoingTrip(service: Service) {
+    private fun maybeRestoreOngoingTrip(service: Service, hasPendingStartAction: Boolean) {
         val serviceRunning = ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)
         if (serviceRunning) {
             return
@@ -633,21 +640,42 @@ class CurrentServiceFragment : Fragment() {
             clearOngoingTripRecoveryDialog(dismiss = false)
         }
 
-        val storedServiceId = RideRecoveryStore.getTrackedServiceId(sharedPreferences)
-        if (RideRecoveryPolicy.shouldClearStaleRecovery(storedServiceId, service.id)) {
-            RideRecoveryStore.clear(sharedPreferences)
-            return
+        ongoingTripMeterPricingDialog?.let { dialog ->
+            if (dialog.isShowing) {
+                return
+            }
+            clearOngoingTripMeterPricingDialog(dismiss = false)
         }
 
-        if (!RideRecoveryPolicy.shouldOfferRecovery(
+        val storedServiceId = RideRecoveryStore.getTrackedServiceId(sharedPreferences)
+        if (RideRecoveryPolicy.shouldClearStaleRecovery(storedServiceId, service.id)) {
+            // Side effect only: the resolver below still runs so a started trip with no (or a
+            // stale) local session falls through to START_FROM_SERVER_START instead of returning.
+            RideRecoveryStore.clear(sharedPreferences)
+        }
+
+        val hasRecoverableSession = storedServiceId != null &&
+            RideRecoveryStore.hasRecoverableSession(sharedPreferences, storedServiceId)
+
+        when (
+            RideRecoveryPolicy.resolveOngoingTripMeter(
                 hasStartedTrip = service.metadata.start_trip_at != null,
                 isServiceRunning = serviceRunning,
                 isStartingFreshTransition = startingRide,
+                hasPendingStartAction = hasPendingStartAction,
                 storedServiceId = storedServiceId,
-                currentServiceId = service.id
+                currentServiceId = service.id,
+                hasRecoverableSession = hasRecoverableSession
             )
         ) {
-            return
+            RideRecoveryPolicy.OngoingTripMeterAction.NONE -> return
+            RideRecoveryPolicy.OngoingTripMeterAction.START_FROM_SERVER_START -> {
+                startOngoingTripMeterFromServerStart(service)
+                return
+            }
+            RideRecoveryPolicy.OngoingTripMeterAction.OFFER_RECOVERY -> {
+                // Falls through to the existing recovery dialog below.
+            }
         }
 
         ongoingTripRecoveryServiceId = service.id
@@ -679,6 +707,131 @@ class CurrentServiceFragment : Fragment() {
                     clearOngoingTripRecoveryDialog(dismiss = false)
                 }
             }
+        }
+    }
+
+    /**
+     * Design D7: a trip the server already started (`start_trip_at` set) with no recoverable
+     * local session meters from the server start time instead of leaving the screen without a
+     * meter. Resolves fares live (as [beginStartTrip] does) before starting anything.
+     */
+    private fun startOngoingTripMeterFromServerStart(service: Service) {
+        if (isResolvingOngoingTripMeterFromServerStart) {
+            return
+        }
+        isResolvingOngoingTripMeterFromServerStart = true
+
+        SettingsRepository.getRideFeesTask()
+            .addOnSuccessListener { liveFees ->
+                finishOngoingTripMeterFromServerStart(service, liveFees)
+            }
+            .addOnFailureListener { exception ->
+                Log.w(TAG, "Unable to refresh ride fees for ongoing-trip meter restart", exception)
+                finishOngoingTripMeterFromServerStart(service, null)
+            }
+            .withTimeout(RIDE_FEES_TIMEOUT_MS) {
+                Log.w(TAG, "Ride fees refresh timed out for ongoing-trip meter restart")
+                finishOngoingTripMeterFromServerStart(service, null)
+            }
+    }
+
+    private fun finishOngoingTripMeterFromServerStart(service: Service, liveFees: RideFees?) {
+        if (!isResolvingOngoingTripMeterFromServerStart) {
+            return
+        }
+        isResolvingOngoingTripMeterFromServerStart = false
+
+        if (!isAdded) {
+            return
+        }
+
+        val observedService = currentService
+        val startedAtSec = observedService?.metadata?.start_trip_at
+        if (observedService == null || observedService.id != service.id || startedAtSec == null) {
+            return
+        }
+
+        if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
+            return
+        }
+
+        val storedServiceId = RideRecoveryStore.getTrackedServiceId(sharedPreferences)
+        val hasRecoverableSession = storedServiceId != null &&
+            RideRecoveryStore.hasRecoverableSession(sharedPreferences, storedServiceId)
+        val hasPendingStartAction = currentServiceViewModel.getPendingActionSnapshot()?.actionType ==
+            PendingServiceActionType.START
+
+        val action = RideRecoveryPolicy.resolveOngoingTripMeter(
+            hasStartedTrip = true,
+            isServiceRunning = false,
+            isStartingFreshTransition = startingRide,
+            hasPendingStartAction = hasPendingStartAction,
+            storedServiceId = storedServiceId,
+            currentServiceId = observedService.id,
+            hasRecoverableSession = hasRecoverableSession
+        )
+        if (action != RideRecoveryPolicy.OngoingTripMeterAction.START_FROM_SERVER_START) {
+            return
+        }
+
+        val storedFees = getStoredRideFeesSnapshot()
+        val resolvedFees = when {
+            RideRecoveryPolicy.isValidRideFeesSnapshot(liveFees) -> liveFees
+            RideRecoveryPolicy.isValidRideFeesSnapshot(storedFees) -> storedFees
+            else -> null
+        }
+
+        if (resolvedFees == null) {
+            // Deliberately not CurrentServiceViewModel.showStartFailed: that state's retry drives
+            // the manual start flow (beginStartTrip -> submitTripStart), which would write
+            // start_trip_at on an already-started trip. This dialog's retry only re-runs fee
+            // resolution for the D7 auto-start.
+            showOngoingTripMeterPricingUnavailableDialog(observedService)
+            return
+        }
+
+        applyRideFees(resolvedFees)
+        mainViewModel.setRideFees(resolvedFees)
+        persistRideFeesSnapshot(resolvedFees)
+
+        startServiceFee(observedService.id, observedService.start_loc.name, tripStartedAtSec = startedAtSec)
+        scrollViewFees.visibility = View.VISIBLE
+        showToast(R.string.ongoing_trip_distance_not_recovered)
+    }
+
+    private fun showOngoingTripMeterPricingUnavailableDialog(service: Service) {
+        if (ongoingTripMeterPricingDialog?.isShowing == true) {
+            return
+        }
+
+        ongoingTripMeterPricingDialog = showTripActionDialog(
+            requireContext(),
+            titleRes = R.string.service_start_trip,
+            message = getText(R.string.start_trip_pricing_unavailable),
+            primaryTextRes = R.string.retry_start_trip,
+            secondaryTextRes = R.string.cancel,
+            iconRes = R.drawable.ic_baseline_info_24,
+            primaryIconRes = R.drawable.assign_24,
+            secondaryIconRes = R.drawable.cancel_24
+        ) { confirmed ->
+            if (confirmed) {
+                startOngoingTripMeterFromServerStart(currentService ?: service)
+            }
+        }.apply {
+            setOnDismissListener {
+                if (ongoingTripMeterPricingDialog === this) {
+                    ongoingTripMeterPricingDialog = null
+                }
+            }
+        }
+    }
+
+    private fun clearOngoingTripMeterPricingDialog(dismiss: Boolean) {
+        val dialog = ongoingTripMeterPricingDialog
+        ongoingTripMeterPricingDialog = null
+
+        if (dismiss && dialog?.isShowing == true) {
+            dialog.dismiss()
         }
     }
 
@@ -1661,7 +1814,12 @@ class CurrentServiceFragment : Fragment() {
         startServiceFee(currentService?.id.orEmpty(), origin, resumeRide)
     }
 
-    private fun startServiceFee(serviceId: String, origin: String, resumeRide: Boolean = false) {
+    private fun startServiceFee(
+        serviceId: String,
+        origin: String,
+        resumeRide: Boolean = false,
+        tripStartedAtSec: Long? = null
+    ) {
         if (serviceId.isBlank()) {
             return
         }
@@ -1673,6 +1831,9 @@ class CurrentServiceFragment : Fragment() {
         intentFee.putExtra(FeesService.SERVICE_ID, serviceId)
         intentFee.putExtra(ORIGIN, origin)
         intentFee.putExtra(FEE_MULTIPLIER, feeMultiplier)
+        if (tripStartedAtSec != null) {
+            intentFee.putExtra(FeesService.TRIP_STARTED_AT_SEC, tripStartedAtSec)
+        }
 
         persistRideFeesSnapshot(
             RideRecoveryPolicy.selectRideFeesSnapshotForPersistence(
@@ -1688,16 +1849,13 @@ class CurrentServiceFragment : Fragment() {
             updateMultiplierViews(feeMultiplier)
         }
 
-        if (ServiceHelper.isServiceRunning(requireContext(), FeesService::class.java)) {
-            val stopIntent = Intent(requireContext(), FeesService::class.java)
-            requireContext().stopService(stopIntent)
+        if (isServiceBound) {
+            requireContext().unbindService(serviceConnection)
+            isServiceBound = false
+            mainViewModel.unbindMeterSession()
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            requireContext().startForegroundService(intentFee)
-        } else {
-            requireContext().startService(intentFee)
-        }
+        FeesService.launch(requireContext(), intentFee)
 
         requireContext().bindService(intentFee, serviceConnection, BIND_NOT_FOREGROUND)
     }
@@ -1939,6 +2097,7 @@ class CurrentServiceFragment : Fragment() {
         if (isServiceBound) {
             requireContext().unbindService(serviceConnection)
             isServiceBound = false
+            mainViewModel.unbindMeterSession()
         }
 
         val intentFee = Intent(requireContext(), FeesService::class.java)

@@ -15,7 +15,9 @@ sealed class ServiceUpdates {
 
     data class DistanceTime(var distance: Int, val time: Int): ServiceUpdates()
 
-    data class Status(var status: String): ServiceUpdates()
+    data class Status(val serviceId: String, var status: String): ServiceUpdates()
+
+    data class Assignment(val serviceId: String, val assignedToMe: Boolean): ServiceUpdates()
 
     companion object {
         fun setList(services: MutableList<Service>): SetList = SetList(services)
@@ -28,6 +30,8 @@ sealed class ServiceUpdates {
 
         fun distanceTime(distance: Int, time: Int): DistanceTime = DistanceTime(distance, time)
 
-        fun status(status: String): Status = Status(status)
+        fun status(serviceId: String, status: String): Status = Status(serviceId, status)
+
+        fun assignment(serviceId: String, assignedToMe: Boolean): Assignment = Assignment(serviceId, assignedToMe)
     }
 }
