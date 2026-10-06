@@ -80,6 +80,7 @@
     <string name="end_trip_not_ended_yet">El viaje sigue activo y aún no se ha finalizado.</string>
     <string name="using_saved_pricing_snapshot">Usando tarifas guardadas para continuar con el inicio del viaje.</string>
     <string name="start_trip_pricing_unavailable">No fue posible actualizar las tarifas. El viaje aún no ha iniciado.</string>
+    <string name="ongoing_trip_distance_not_recovered">Se restableció el taxímetro, pero no fue posible recuperar la distancia recorrida antes de este momento.</string>
     <string name="service_trip_already_started">El viaje ya fue iniciado.</string>
     <string name="service_trip_not_started">El viaje aún no ha iniciado.</string>
     <string name="service_not_exists">El servicio ya no existe</string>
@@ -106,6 +107,7 @@
     <string name="service_to">Servicio para </string>
     <string name="service_from">Servicio de %1$s </string>
     <string name="service_running">Viaje iniciado…</string>
+    <string name="restored_service_notification_label">tu viaje</string>
     <string name="not_waze">Waze no está instalado! </string>
     <string name="navigation">Navegar: </string>
     <string name="error_timeout">No fue posible conectar con el servicio. Verifique su conexión a internet o inténtelo más tarde.</string>
@@ -181,6 +183,9 @@
     <string name="self_service_cancel_message">Este viaje se cancelará sin cobro. Esta acción no se puede deshacer.</string>
     <string name="self_service_cancel_rejected_window_elapsed">No se pudo cancelar: el tiempo para cancelar ya pasó. Ahora solo puedes finalizar el viaje.</string>
     <string name="self_service_cancel_rejected_generic">No se pudo cancelar este viaje. Intenta de nuevo o finalízalo normalmente.</string>
+    <string name="self_service_blocked_title">Viaje en curso</string>
+    <string name="self_service_blocked_message">Ya tienes un viaje en curso. Finalízalo antes de iniciar uno nuevo.</string>
+    <string name="self_service_blocked_action">Ver viaje actual</string>
     <string name="distance_km">%1$.1f</string>
 
     <!-- History Fragment Strings -->

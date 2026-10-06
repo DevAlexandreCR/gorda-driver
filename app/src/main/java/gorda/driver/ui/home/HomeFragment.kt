@@ -80,6 +80,7 @@ class HomeFragment : Fragment() {
     private var wasOnline: Boolean = false
     private var applyConfirmDialog: AlertDialog? = null
     private var selfServiceStartDialog: AlertDialog? = null
+    private var activeTripBlockedDialog: AlertDialog? = null
     private var inMemoryRideFees: RideFees = RideFees()
     private var selfServiceFeeMultiplier: Double = 1.0
     private var selfServiceRideFeesAttemptId: Long = 0L
@@ -147,13 +148,20 @@ class HomeFragment : Fragment() {
             inMemoryRideFees = rideFees
         }
 
-        // "Start own trip" entry (add-driver-self-service): visible only while connected
-        // and availability.canGoOnline is true; react to both driver and presence changes.
-        mainViewModel.driver.observe(viewLifecycleOwner) { driver ->
-            homeViewModel.updateSelfServiceEligibility(
-                connected = mainViewModel.presenceState.value.actualOnline,
-                canGoOnline = driver?.canGoOnline() ?: false
-            )
+        // "Start own trip" entry (add-driver-self-service; fix-driver-fee-service-zombie-ticker
+        // D6): visible only while connected, availability.canGoOnline is true, and there is no
+        // active trip; react to driver, presence, current-service, and self-service-rejection
+        // changes, since a terminal rejection clears the pending trip on its own.
+        mainViewModel.driver.observe(viewLifecycleOwner) {
+            refreshSelfServiceEligibility()
+        }
+
+        mainViewModel.currentService.observe(viewLifecycleOwner) {
+            refreshSelfServiceEligibility()
+        }
+
+        mainViewModel.selfServiceRejection.observe(viewLifecycleOwner) {
+            refreshSelfServiceEligibility()
         }
 
         homeViewModel.selfServiceEntryVisible.observe(viewLifecycleOwner) { visible ->
@@ -187,10 +195,7 @@ class HomeFragment : Fragment() {
                         homeViewModel.restartListenServices()
                     }
                     wasOnline = presence.actualOnline
-                    homeViewModel.updateSelfServiceEligibility(
-                        connected = presence.actualOnline,
-                        canGoOnline = mainViewModel.driver.value?.canGoOnline() ?: false
-                    )
+                    refreshSelfServiceEligibility()
                 }
             }
         }
@@ -298,6 +303,60 @@ class HomeFragment : Fragment() {
         preferences.edit(true) { putString(Constants.ALERT_ACTION, newArray.toString()) }
     }
 
+    /**
+     * Recomputes self-service entry visibility (design D6) from the latest snapshot of every
+     * signal it depends on. Called from each observer that can change one of those signals.
+     */
+    private fun refreshSelfServiceEligibility() {
+        homeViewModel.updateSelfServiceEligibility(
+            connected = mainViewModel.presenceState.value.actualOnline,
+            canGoOnline = mainViewModel.driver.value?.canGoOnline() ?: false,
+            hasActiveTrip = mainViewModel.currentService.value != null || mainViewModel.hasPendingSelfServiceTrip()
+        )
+    }
+
+    /**
+     * Start-admission guard (design D6): blocks a self-service start while another trip is
+     * active, without touching `RideRecoveryStore` or `FeesService`. Returns true when blocked.
+     */
+    private fun blockSelfServiceStartIfActiveTrip(): Boolean {
+        val resolution = HomeViewModel.resolveSelfServiceStart(
+            hasCurrentService = mainViewModel.currentService.value != null,
+            hasPendingSelfServiceTrip = mainViewModel.hasPendingSelfServiceTrip()
+        )
+        if (resolution == HomeViewModel.SelfServiceStartResolution.ALLOW) {
+            return false
+        }
+        showActiveTripBlockedDialog()
+        return true
+    }
+
+    private fun showActiveTripBlockedDialog() {
+        if (activeTripBlockedDialog?.isShowing == true) {
+            return
+        }
+        activeTripBlockedDialog = showTripActionDialog(
+            requireContext(),
+            titleRes = R.string.self_service_blocked_title,
+            message = getText(R.string.self_service_blocked_message),
+            primaryTextRes = R.string.self_service_blocked_action,
+            secondaryTextRes = R.string.cancel,
+            iconRes = R.drawable.connected_service_24,
+            primaryIconRes = R.drawable.ic_location_24,
+            secondaryIconRes = R.drawable.cancel_24
+        ) { confirmed ->
+            if (confirmed && isAdded) {
+                findNavController().navigate(R.id.nav_current_service)
+            }
+        }.apply {
+            setOnDismissListener {
+                if (activeTripBlockedDialog === this) {
+                    activeTripBlockedDialog = null
+                }
+            }
+        }
+    }
+
     private fun navigateToApply(service: Service, location: LocType) {
         mainViewModel.setServiceUpdateApply(service)
         mainViewModel.setServiceUpdateStartLocation(location)
@@ -340,6 +399,9 @@ class HomeFragment : Fragment() {
     }
 
     private fun handleStartOwnTripTapped() {
+        if (blockSelfServiceStartIfActiveTrip()) {
+            return
+        }
         if (homeViewModel.selfServiceEntryVisible.value != true) {
             return
         }
@@ -447,6 +509,9 @@ class HomeFragment : Fragment() {
      * `FeesService` binding) reflects both that and any terminal rejection.
      */
     private fun onSelfServiceTripConfirmed(multiplier: Double, startedAt: Long, gpsFix: Location?) {
+        if (blockSelfServiceStartIfActiveTrip()) {
+            return
+        }
         val localId = "local-" + UUID.randomUUID().toString()
 
         RideRecoveryStore.clearIfStale(preferences, localId)
@@ -457,11 +522,7 @@ class HomeFragment : Fragment() {
             putExtra(ORIGIN, getString(R.string.self_service_notification_label))
             putExtra(FEE_MULTIPLIER, multiplier)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            requireContext().startForegroundService(intentFee)
-        } else {
-            requireContext().startService(intentFee)
-        }
+        FeesService.launch(requireContext(), intentFee)
 
         mainViewModel.startSelfServiceTrip(
             localId = localId,
@@ -484,6 +545,8 @@ class HomeFragment : Fragment() {
         applyConfirmDialog = null
         selfServiceStartDialog?.dismiss()
         selfServiceStartDialog = null
+        activeTripBlockedDialog?.dismiss()
+        activeTripBlockedDialog = null
         _binding = null
     }
 }

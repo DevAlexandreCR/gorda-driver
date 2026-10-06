@@ -17,6 +17,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.preference.PreferenceManager
+import java.util.concurrent.atomic.AtomicLong
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.maps.model.LatLng
@@ -28,8 +29,11 @@ import gorda.driver.interfaces.RideFees
 import gorda.driver.location.LocationHandler
 import gorda.driver.maps.Map
 import gorda.driver.utils.Constants
+import gorda.driver.utils.MeterSessionPolicy
 import gorda.driver.utils.NumberHelper
+import gorda.driver.utils.RideRecoveryPolicy
 import gorda.driver.utils.RideRecoveryStore
+import gorda.driver.utils.ServiceHelper
 
 class FeesService: Service() {
 
@@ -40,9 +44,28 @@ class FeesService: Service() {
         const val RESUME_RIDE = "RESUME_RIDE"
         const val SERVICE_ID = "SERVICE_ID"
         const val TOTAL_DISTANCE = "TOTAL_DISTANCE"
+        const val TRIP_STARTED_AT_SEC = "TRIP_STARTED_AT_SEC"
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "FeesServiceChannel"
         private const val UPDATE_INTERVAL = 1000L // Update every second
+        private val sessionTokenGenerator = AtomicLong(0)
+
+        /**
+         * Single entry point to (re)start [FeesService]: stops a running instance first so the
+         * new one always starts from a fresh session token and baseline (design D3). Callers that
+         * are bound to the previous instance must unbind before calling this.
+         */
+        fun launch(context: Context, intent: Intent) {
+            if (ServiceHelper.isServiceRunning(context, FeesService::class.java)) {
+                context.stopService(Intent(context, FeesService::class.java))
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
     }
 
     private val binder = ChronometerBinder()
@@ -55,14 +78,20 @@ class FeesService: Service() {
     private var rideFees: RideFees = RideFees()
     private var totalDistance = 0.0
     private lateinit var locationHandler: LocationHandler
+    private var sessionToken: Long = 0
 
-    // Add periodic update mechanism
+    // Periodic fee update mechanism
     private val updateHandler = Handler(Looper.getMainLooper())
-    private var updateRunnable: Runnable? = null
-    private var feeUpdateCallback: ((Double, Double, Double, Double, Long) -> Unit)? = null
+    private val ticker = MeterTicker(
+        post = { runnable, delayMs -> updateHandler.postDelayed(runnable, delayMs) },
+        cancel = { runnable -> updateHandler.removeCallbacks(runnable) },
+        intervalMs = UPDATE_INTERVAL
+    )
+    private var feeUpdateCallback: ((Double, Double, Double, Double, Long, Long) -> Unit)? = null
 
     inner class ChronometerBinder : Binder() {
         fun getService(): FeesService = this@FeesService
+        fun getSessionToken(): Long = this@FeesService.sessionToken
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -73,16 +102,45 @@ class FeesService: Service() {
         super.onCreate()
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         rideFees = RideFees()
+        sessionToken = sessionTokenGenerator.incrementAndGet()
         createNotificationChannel()
         locationHandler = LocationHandler.getInstance(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        intent?.let {
-            name = it.getStringExtra(ORIGIN) ?: ""
-            serviceId = it.getStringExtra(SERVICE_ID).orEmpty()
-            multiplier = it.getDoubleExtra(FEE_MULTIPLIER, 1.0)
-            val resumeRide = it.getBooleanExtra(RESUME_RIDE, false)
+        if (intent == null) {
+            val trackedServiceId = RideRecoveryStore.getTrackedServiceId(sharedPreferences)
+            val hasRecoverableSession = trackedServiceId != null &&
+                RideRecoveryStore.hasRecoverableSession(sharedPreferences, trackedServiceId)
+
+            when (MeterSessionPolicy.resolveNullIntentStart(trackedServiceId, hasRecoverableSession)) {
+                MeterSessionPolicy.NullIntentStartAction.STOP -> {
+                    Log.w("FeesService", "Null-intent restart with no recoverable session, stopping")
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+                MeterSessionPolicy.NullIntentStartAction.RESTORE -> {
+                    // The origin name is not persisted, so the restored notification uses a
+                    // generic label instead of the original caller's description.
+                    val storedFees = RideRecoveryStore.getRideFeesSnapshot(sharedPreferences)
+                    if (!RideRecoveryPolicy.isValidRideFeesSnapshot(storedFees)) {
+                        Log.w("FeesService", "Recoverable session for $trackedServiceId has no valid fees snapshot, stopping")
+                        stopSelf()
+                        return START_NOT_STICKY
+                    }
+
+                    serviceId = trackedServiceId!!
+                    name = getString(R.string.restored_service_notification_label)
+                    rideFees = storedFees!!
+                    restoreRideData()
+                    startLocationTracking()
+                }
+            }
+        } else {
+            name = intent.getStringExtra(ORIGIN) ?: ""
+            serviceId = intent.getStringExtra(SERVICE_ID).orEmpty()
+            multiplier = intent.getDoubleExtra(FEE_MULTIPLIER, 1.0)
+            val resumeRide = intent.getBooleanExtra(RESUME_RIDE, false)
 
             if (serviceId.isNotBlank()) {
                 RideRecoveryStore.attachToService(sharedPreferences, serviceId)
@@ -102,7 +160,13 @@ class FeesService: Service() {
             ) {
                 restoreRideData()
             } else {
-                startTime = SystemClock.elapsedRealtime()
+                val tripStartedAtSec = intent.getLongExtra(TRIP_STARTED_AT_SEC, 0L)
+                startTime = if (tripStartedAtSec > 0) {
+                    SystemClock.elapsedRealtime() -
+                        MeterSessionPolicy.elapsedOffsetMs(tripStartedAtSec, System.currentTimeMillis())
+                } else {
+                    SystemClock.elapsedRealtime()
+                }
                 points.clear()
                 totalDistance = 0.0
                 saveStartTime()
@@ -113,7 +177,7 @@ class FeesService: Service() {
         }
 
         startForeground()
-        startPeriodicUpdates()
+        ticker.start { publishFeeUpdate() }
         return START_STICKY
     }
 
@@ -286,8 +350,10 @@ class FeesService: Service() {
     fun getPoints(): ArrayList<LatLng> = points
 
     override fun onDestroy() {
+        ticker.stop()
+        updateHandler.removeCallbacksAndMessages(null)
+        feeUpdateCallback = null
         stopLocationTracking()
-        stopPeriodicUpdates()
         super.onDestroy()
     }
 
@@ -295,34 +361,18 @@ class FeesService: Service() {
         return (SystemClock.elapsedRealtime() - startTime) / 1000
     }
 
-    private fun startPeriodicUpdates() {
-        updateRunnable = object : Runnable {
-            override fun run() {
-                // Calculate and update fees periodically
-                val totalFee = getTotalFee()
-                val timeFee = getTimeFee()
-                val distanceFee = getDistanceFee()
-                val currentTotalDistance = getTotalDistance()
-                val elapsedSeconds = getElapsedSeconds()
+    private fun publishFeeUpdate() {
+        val totalFee = getTotalFee()
+        val timeFee = getTimeFee()
+        val distanceFee = getDistanceFee()
+        val currentTotalDistance = getTotalDistance()
+        val elapsedSeconds = getElapsedSeconds()
 
-                // Invoke the callback if set - pass totalDistance instead of baseFee
-                feeUpdateCallback?.invoke(totalFee, timeFee, distanceFee, currentTotalDistance, elapsedSeconds)
-
-                // Schedule the next update
-                updateHandler.postDelayed(this, UPDATE_INTERVAL)
-            }
-        }
-
-        updateHandler.post(updateRunnable!!)
+        // Pass totalDistance instead of baseFee
+        feeUpdateCallback?.invoke(totalFee, timeFee, distanceFee, currentTotalDistance, elapsedSeconds, sessionToken)
     }
 
-    private fun stopPeriodicUpdates() {
-        updateRunnable?.let {
-            updateHandler.removeCallbacks(it)
-        }
-    }
-
-    fun setFeeUpdateCallback(callback: (Double, Double, Double, Double, Long) -> Unit) {
+    fun setFeeUpdateCallback(callback: (Double, Double, Double, Double, Long, Long) -> Unit) {
         this.feeUpdateCallback = callback
     }
 }

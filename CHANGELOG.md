@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Stop the in-trip price card from flickering between the live meter and a stale reading from a previous trip, caused by a leaked metering ticker that kept publishing into the shared fee stream; the metering service now enforces a single ticker per instance, gates fee updates by the session that produced them, and stops any running meter before starting a new one.
+- Restore the tracked trip's elapsed time and fares when the metering service is restarted by the system after a process death, instead of running a stateless meter with zero fares and the wrong elapsed time; the service now resumes the tracked trip from local recovery storage, or stops itself when there is nothing to restore.
+- Block starting a self-service trip from Home while another trip is active (assigned, in progress, or not yet synced); it previously stopped the live trip's meter and left it frozen after the API rejected the self trip. The driver now sees a message to end the current trip first, with a shortcut to the current trip screen.
+- Start metering a trip that was started from the admin panel, or whose local meter data was lost, from the server's trip start time, instead of showing "Trip running…" with no meter; the service now meters elapsed time from the server, distance from zero, and live fares or the saved pricing snapshot, tells the driver that earlier distance could not be recovered, and never starts the meter with zero fares.
+
 ## [2.0.14(2026-08-01)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.14...2.0.13)
 
 ### Added

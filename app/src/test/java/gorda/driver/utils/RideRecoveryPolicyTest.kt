@@ -171,4 +171,132 @@ class RideRecoveryPolicyTest {
         reconciliation as RideRecoveryPolicy.PendingActionReconciliation.Restore
         assertEquals(RideRecoveryPolicy.RestoredActionRenderMode.BLOCKED, reconciliation.renderMode)
     }
+
+    @Test
+    fun notStartedTripHasNoOngoingMeterAction() {
+        assertEquals(
+            RideRecoveryPolicy.OngoingTripMeterAction.NONE,
+            RideRecoveryPolicy.resolveOngoingTripMeter(
+                hasStartedTrip = false,
+                isServiceRunning = false,
+                isStartingFreshTransition = false,
+                hasPendingStartAction = false,
+                storedServiceId = "service-1",
+                currentServiceId = "service-1",
+                hasRecoverableSession = true
+            )
+        )
+    }
+
+    @Test
+    fun runningMeterHasNoOngoingMeterAction() {
+        assertEquals(
+            RideRecoveryPolicy.OngoingTripMeterAction.NONE,
+            RideRecoveryPolicy.resolveOngoingTripMeter(
+                hasStartedTrip = true,
+                isServiceRunning = true,
+                isStartingFreshTransition = false,
+                hasPendingStartAction = false,
+                storedServiceId = "service-1",
+                currentServiceId = "service-1",
+                hasRecoverableSession = true
+            )
+        )
+    }
+
+    @Test
+    fun freshStartTransitionHasNoOngoingMeterAction() {
+        assertEquals(
+            RideRecoveryPolicy.OngoingTripMeterAction.NONE,
+            RideRecoveryPolicy.resolveOngoingTripMeter(
+                hasStartedTrip = true,
+                isServiceRunning = false,
+                isStartingFreshTransition = true,
+                hasPendingStartAction = false,
+                storedServiceId = "service-1",
+                currentServiceId = "service-1",
+                hasRecoverableSession = true
+            )
+        )
+    }
+
+    @Test
+    fun pendingStartActionWhileSnapshotAlreadyStartedHasNoOngoingMeterAction() {
+        assertEquals(
+            RideRecoveryPolicy.OngoingTripMeterAction.NONE,
+            RideRecoveryPolicy.resolveOngoingTripMeter(
+                hasStartedTrip = true,
+                isServiceRunning = false,
+                isStartingFreshTransition = false,
+                hasPendingStartAction = true,
+                storedServiceId = "service-1",
+                currentServiceId = "service-1",
+                hasRecoverableSession = true
+            )
+        )
+    }
+
+    @Test
+    fun sameIdRecoverableSessionOffersRecovery() {
+        assertEquals(
+            RideRecoveryPolicy.OngoingTripMeterAction.OFFER_RECOVERY,
+            RideRecoveryPolicy.resolveOngoingTripMeter(
+                hasStartedTrip = true,
+                isServiceRunning = false,
+                isStartingFreshTransition = false,
+                hasPendingStartAction = false,
+                storedServiceId = "service-1",
+                currentServiceId = "service-1",
+                hasRecoverableSession = true
+            )
+        )
+    }
+
+    @Test
+    fun noStoredIdStartsFromServerStart() {
+        assertEquals(
+            RideRecoveryPolicy.OngoingTripMeterAction.START_FROM_SERVER_START,
+            RideRecoveryPolicy.resolveOngoingTripMeter(
+                hasStartedTrip = true,
+                isServiceRunning = false,
+                isStartingFreshTransition = false,
+                hasPendingStartAction = false,
+                storedServiceId = null,
+                currentServiceId = "service-1",
+                hasRecoverableSession = false
+            )
+        )
+    }
+
+    @Test
+    fun storedIdForAnotherTripStartsFromServerStart() {
+        assertEquals(
+            RideRecoveryPolicy.OngoingTripMeterAction.START_FROM_SERVER_START,
+            RideRecoveryPolicy.resolveOngoingTripMeter(
+                hasStartedTrip = true,
+                isServiceRunning = false,
+                isStartingFreshTransition = false,
+                hasPendingStartAction = false,
+                storedServiceId = "service-2",
+                currentServiceId = "service-1",
+                hasRecoverableSession = true
+            )
+        )
+    }
+
+    @Test
+    fun sameIdNotRecoverableStartsFromServerStart() {
+        assertEquals(
+            RideRecoveryPolicy.OngoingTripMeterAction.START_FROM_SERVER_START,
+            RideRecoveryPolicy.resolveOngoingTripMeter(
+                hasStartedTrip = true,
+                isServiceRunning = false,
+                isStartingFreshTransition = false,
+                hasPendingStartAction = false,
+                storedServiceId = "service-1",
+                currentServiceId = "service-1",
+                hasRecoverableSession = false
+            )
+        )
+    }
 }

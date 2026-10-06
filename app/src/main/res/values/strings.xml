@@ -87,6 +87,7 @@
     <string name="end_trip_not_ended_yet">Trip is still active and has not been ended yet.</string>
     <string name="using_saved_pricing_snapshot">Using saved pricing to continue starting the trip.</string>
     <string name="start_trip_pricing_unavailable">Unable to refresh pricing. Trip has not started yet.</string>
+    <string name="ongoing_trip_distance_not_recovered">Trip meter restored, but distance travelled before now could not be recovered.</string>
     <string name="service_trip_already_started">Trip already started.</string>
     <string name="service_trip_not_started">Trip has not started yet.</string>
     <string name="service_not_exists">Service no longer exists</string>
@@ -113,6 +114,7 @@
     <string name="service_to">Service to </string>
     <string name="service_from">Service from %1$s </string>
     <string name="service_running">Trip running…</string>
+    <string name="restored_service_notification_label">your trip</string>
     <string name="not_waze">Waze is not installed! </string>
     <string name="navigation">Navigation: </string>
     <string name="error_timeout">It was not possible to connect to the service. Please check your internet connection or try again later.</string>
@@ -187,6 +189,9 @@
     <string name="self_service_cancel_message">This trip will be canceled with no charge. This action cannot be undone.</string>
     <string name="self_service_cancel_rejected_window_elapsed">Unable to cancel: the cancel window has passed. You can only end the trip now.</string>
     <string name="self_service_cancel_rejected_generic">Unable to cancel this trip. Try again or end it normally.</string>
+    <string name="self_service_blocked_title">Trip in progress</string>
+    <string name="self_service_blocked_message">You already have a trip in progress. End it before starting a new one.</string>
+    <string name="self_service_blocked_action">View current trip</string>
     <string name="distance_km">%1$.1f</string>
 
     <!-- History Fragment Strings -->
