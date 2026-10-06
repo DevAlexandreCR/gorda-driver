@@ -24,7 +24,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GordaDriver"
         android:usesCleartextTraffic="true"
-        tools:targetApi="33">
+        tools:targetApi="36">
         <activity
             android:name="gorda.driver.activity.StartActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"

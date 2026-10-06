@@ -33,12 +33,12 @@ def firebaseEmulatorHost = (
 def baseUrl = readConfigProperty("BASE_URL", "").toString()
 
 android {
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "gorda.driver"
         minSdk 24
-        targetSdk 35
+        targetSdk 36
         versionCode 87
         versionName "2.0.15"
 
