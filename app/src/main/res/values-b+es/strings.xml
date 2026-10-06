@@ -53,6 +53,8 @@
     <string name="applied">Usted ha sido aplicado con éxito al servicio</string>
     <string name="wait_for_assign">Has aplicado al servicio &lt;b> %s &lt;/b>, por favor espera…</string>
     <string name="service_assigned_preparing">¡Servicio asignado! Preparando tu servicio…</string>
+    <string name="checking_assignment">Verificando asignación…</string>
+    <string name="service_assigned_to_other">El servicio fue asignado a otro conductor</string>
     <string name="cancelApply">La solicitud ha sido cancelada</string>
     <string name="back_to_services">Volver a servicios</string>
     <string name="retry_application">Reintentar</string>
@@ -67,6 +69,7 @@
     <string name="location_pending_placeholder">—</string>
     <string name="canceling_application">Cancelando postulación</string>
     <string name="service_canceled">El servicio ha sido cancelado</string>
+    <string name="service_finished">Servicio finalizado</string>
     <string name="retry_start_trip">Reintentar inicio</string>
     <string name="retry_end_trip">Reintentar finalización</string>
     <string name="starting_trip">Iniciando viaje</string>

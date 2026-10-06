@@ -208,19 +208,44 @@ class ApplyFragment : Fragment() {
 
     private fun observeServiceStatus() {
         mainViewModel.serviceUpdates.observe(viewLifecycleOwner) { update ->
-            if (update !is ServiceUpdates.Status || !isAdded) {
+            if (!isAdded) {
                 return@observe
             }
 
-            when (update.status) {
-                Service.STATUS_CANCELED -> {
-                    showToastIfAvailable(R.string.service_canceled, Toast.LENGTH_SHORT)
-                    navigateHomeIfCurrent()
+            when (update) {
+                is ServiceUpdates.Status -> {
+                    if (update.serviceId != service.id) {
+                        return@observe
+                    }
+
+                    when (update.status) {
+                        Service.STATUS_CANCELED -> {
+                            showToastIfAvailable(R.string.service_canceled, Toast.LENGTH_SHORT)
+                            navigateHomeIfCurrent()
+                        }
+                        Service.STATUS_IN_PROGRESS -> {
+                            applyViewModel.showCheckingAssignment()
+                            startAssignedPreparingTimeout()
+                        }
+                    }
                 }
-                Service.STATUS_IN_PROGRESS -> {
-                    applyViewModel.showAssignedPreparingService()
-                    startAssignedPreparingTimeout()
+                is ServiceUpdates.Assignment -> {
+                    if (update.serviceId != service.id) {
+                        return@observe
+                    }
+
+                    if (update.assignedToMe) {
+                        applyViewModel.showAssignedPreparingService()
+                    } else {
+                        assignedPreparingTimeoutJob?.cancel()
+                        // State remains CheckingAssignment: the service is no longer pending once
+                        // assigned to another driver, so registerNavigationExitGuard() already skips
+                        // cancelApply for this state (a cancel write here would be harmless but moot).
+                        showToastIfAvailable(R.string.service_assigned_to_other, Toast.LENGTH_LONG)
+                        navigateHomeIfCurrent()
+                    }
                 }
+                else -> Unit
             }
         }
     }
@@ -233,7 +258,7 @@ class ApplyFragment : Fragment() {
                 return@launch
             }
 
-            if (applyViewModel.uiState.value is ApplyViewModel.ApplyUiState.AssignedPreparingService) {
+            if (applyViewModel.isAwaitingAssignmentOutcome()) {
                 navigateHomeIfCurrent()
             }
         }
@@ -243,8 +268,13 @@ class ApplyFragment : Fragment() {
         destinationChangedListener = NavController.OnDestinationChangedListener { _, destination, _ ->
             if (destination.id != R.id.nav_apply) {
                 when {
-                    applyViewModel.uiState.value is ApplyViewModel.ApplyUiState.AssignedPreparingService -> {
-                        // MainActivity is navigating to the assigned service; do not cancel.
+                    applyViewModel.isAwaitingAssignmentOutcome() -> {
+                        // AssignedPreparingService: MainActivity is navigating to the assigned
+                        // service; do not cancel. CheckingAssignment: either still waiting on
+                        // validateAssignment(), or the service was assigned to another driver and
+                        // we already navigated home ourselves (see observeServiceStatus()) — the
+                        // service is no longer pending in both cases, so a cancel write here would
+                        // be harmless but moot.
                     }
                     applyViewModel.hasApplicantWriteConfirmed() -> {
                         cancelApplyInBackground()
@@ -260,7 +290,7 @@ class ApplyFragment : Fragment() {
     }
 
     private fun handlePrimaryAction() {
-        if (applyViewModel.uiState.value is ApplyViewModel.ApplyUiState.AssignedPreparingService) {
+        if (applyViewModel.isAwaitingAssignmentOutcome()) {
             return
         }
 
@@ -272,7 +302,7 @@ class ApplyFragment : Fragment() {
     }
 
     private fun handleBackPress() {
-        if (applyViewModel.uiState.value is ApplyViewModel.ApplyUiState.AssignedPreparingService) {
+        if (applyViewModel.isAwaitingAssignmentOutcome()) {
             return
         }
 
@@ -611,6 +641,14 @@ class ApplyFragment : Fragment() {
                 currentBinding.btnCancel.text = getString(R.string.cancel_application)
                 currentBinding.btnCancel.isEnabled = true
                 currentBinding.btnRetry.isGone = true
+            }
+
+            ApplyViewModel.ApplyUiState.CheckingAssignment -> {
+                cancelLocationRecovery()
+                currentBinding.progressBar.isVisible = true
+                currentBinding.textView.text = getString(R.string.checking_assignment)
+                currentBinding.btnRetry.isGone = true
+                currentBinding.btnCancel.isGone = true
             }
 
             ApplyViewModel.ApplyUiState.AssignedPreparingService -> {

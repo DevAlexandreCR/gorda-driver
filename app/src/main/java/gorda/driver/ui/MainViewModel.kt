@@ -470,8 +470,10 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
             lastTerminalServiceId = lastTerminalCurrentServiceId
         )
         lastTerminalCurrentServiceId = resolution.terminalServiceId
-        if (resolution.shouldEmitCanceledFeedback) {
-            emitErrorMessage(R.string.service_canceled)
+        when (resolution.terminalFeedback) {
+            ServiceObservationReducer.TerminalFeedback.CANCELED -> emitErrorMessage(R.string.service_canceled)
+            ServiceObservationReducer.TerminalFeedback.FINISHED -> emitErrorMessage(R.string.service_finished)
+            ServiceObservationReducer.TerminalFeedback.NONE -> Unit
         }
         _currentService.postValue(resolution.currentService)
     }
@@ -497,18 +499,20 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val status = snapshot.getValue(String::class.java)
                     status?.let {
-                        _serviceUpdates.postValue(ServiceUpdates.Status(status))
+                        _serviceUpdates.postValue(ServiceUpdates.status(service.id, status))
                         when (status) {
-                            Service.STATUS_CANCELED,
+                            Service.STATUS_CANCELED -> {
+                                service.getStatusReference().removeEventListener(this)
+                            }
                             Service.STATUS_IN_PROGRESS -> {
-                                snapshot.key?.let { key ->
-                                    _isLoading.postValue(true)
-                                    ServiceRepository.validateAssignment(key).addOnCompleteListener {
-                                        _isLoading.postValue(false)
-                                    }.withTimeout {
-                                        _isLoading.postValue(false)
-                                        setErrorTimeout(true)
-                                    }
+                                _isLoading.postValue(true)
+                                ServiceRepository.validateAssignment(service.id).addOnSuccessListener { assignedToMe ->
+                                    _serviceUpdates.postValue(ServiceUpdates.assignment(service.id, assignedToMe))
+                                }.addOnCompleteListener {
+                                    _isLoading.postValue(false)
+                                }.withTimeout {
+                                    _isLoading.postValue(false)
+                                    setErrorTimeout(true)
                                 }
                                 service.getStatusReference().removeEventListener(this)
                             }

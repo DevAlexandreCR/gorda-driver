@@ -60,6 +60,8 @@
     <string name="applied">You have been applied successfully to service</string>
     <string name="wait_for_assign">Applied success to &lt;b> %s &lt;/b>, please wait…</string>
     <string name="service_assigned_preparing">Service assigned! Preparing your service…</string>
+    <string name="checking_assignment">Checking assignment…</string>
+    <string name="service_assigned_to_other">The service was assigned to another driver</string>
     <string name="cancelApply">The Request has been cancelled</string>
     <string name="back_to_services">Back to services</string>
     <string name="retry_application">Retry application</string>
@@ -74,6 +76,7 @@
     <string name="location_pending_placeholder">—</string>
     <string name="canceling_application">Canceling application</string>
     <string name="service_canceled">Service has been canceled</string>
+    <string name="service_finished">Service finished</string>
     <string name="retry_start_trip">Retry start trip</string>
     <string name="retry_end_trip">Retry end trip</string>
     <string name="starting_trip">Starting trip</string>

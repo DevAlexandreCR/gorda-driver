@@ -248,7 +248,7 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.errorMessageRes.observe(this) { messageRes ->
             messageRes?.let {
-                if (it == R.string.service_canceled) {
+                if (it == R.string.service_canceled || it == R.string.service_finished) {
                     if (navController.currentDestination?.id == R.id.nav_current_service) {
                         navController.navigate(R.id.nav_home)
                     }

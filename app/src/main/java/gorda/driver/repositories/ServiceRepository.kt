@@ -108,17 +108,21 @@ object ServiceRepository {
 
     fun validateAssignment(serviceId: String): Task<Boolean> {
         val taskCompletionSource = TaskCompletionSource<Boolean>()
-        Auth.getCurrentUserUUID()?.let {
-            Database.dbServices().child(serviceId).child(Service.DRIVER_ID)
-                .get().addOnSuccessListener { snapshot ->
-                    if (snapshot.exists()) {
-                        val driverId = snapshot.value
-                        taskCompletionSource.setResult(driverId === it)
-                    } else {
-                        taskCompletionSource.setResult(false)
-                    }
-                }.addOnFailureListener { e-> taskCompletionSource.setException(e) }
+        val currentUserId = Auth.getCurrentUserUUID()
+        if (currentUserId == null) {
+            taskCompletionSource.setResult(false)
+            return taskCompletionSource.task
         }
+
+        Database.dbServices().child(serviceId).child(Service.DRIVER_ID)
+            .get().addOnSuccessListener { snapshot ->
+                if (snapshot.exists()) {
+                    val driverId = snapshot.value as? String
+                    taskCompletionSource.setResult(driverId == currentUserId)
+                } else {
+                    taskCompletionSource.setResult(false)
+                }
+            }.addOnFailureListener { e -> taskCompletionSource.setException(e) }
 
         return taskCompletionSource.task
     }
