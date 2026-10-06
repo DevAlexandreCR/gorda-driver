@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.15(2026-10-06)](https://github.com/DevAlexandreCR/gorda-driver/compare/2.0.15...2.0.14)
+
 ### Fixed
 
 - Stop the in-trip price card from flickering between the live meter and a stale reading from a previous trip, caused by a leaked metering ticker that kept publishing into the shared fee stream; the metering service now enforces a single ticker per instance, gates fee updates by the session that produced them, and stops any running meter before starting a new one.
